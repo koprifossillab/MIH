@@ -47,6 +47,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var state = {
     frames: [], i: 0, taxon: "", playing: null,
+    proj: "eq",                             // 투영: eq(정거원통) · moll(몰바이데, 024)
     units: {}, kids: {}, focus: null,       // 층서표: 고른 단위(없으면 지금 지도의 절)
     periods: [],                            // 기 단위 — 시대 색에 쓴다
     tree: [], termTop: {}, termGroup: {},   // 퇴적 환경 나무
@@ -144,21 +145,91 @@
     return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#1b1b1b" : "#ffffff";
   }
 
+  // ── 몰바이데 투영(024) ──────────────────────────────────────────────
+  // 반지름 1: x ∈ [−2√2, 2√2], y ∈ [−√2, √2]. pipeline/relief.py 의 mollweide_lookup 과 같은 식이어야
+  // 배경 그림과 점·선이 맞는다. 변환 계수는 EPSG:4326 과 같은 배율이 되게 골랐다 — 확대 z 에서 세계가
+  // 512·2^z × 256·2^z 픽셀이라 배경 해상도(reliefWidth)와 전 지구 맞추기가 두 투영에서 같다.
+  var SQRT2 = Math.SQRT2, DEG = Math.PI / 180;
+  var Mollweide = {
+    bounds: L.bounds([-2 * SQRT2, -SQRT2], [2 * SQRT2, SQRT2]),
+    project: function (latlng) {
+      var phi = Math.max(-90, Math.min(90, latlng.lat)) * DEG, lam = latlng.lng * DEG, theta = phi;
+      if (Math.abs(phi) < Math.PI / 2 - 1e-9) {
+        // 2θ + sin 2θ = π sin φ 를 뉴턴법으로
+        for (var k = 0; k < 30; k++) {
+          var d = (2 * theta + Math.sin(2 * theta) - Math.PI * Math.sin(phi)) / (2 + 2 * Math.cos(2 * theta));
+          theta -= d;
+          if (Math.abs(d) < 1e-10) break;
+        }
+      }
+      return L.point(2 * SQRT2 / Math.PI * lam * Math.cos(theta), SQRT2 * Math.sin(theta));
+    },
+    unproject: function (point) {
+      var theta = Math.asin(Math.max(-1, Math.min(1, point.y / SQRT2))), c = Math.cos(theta);
+      var lat = Math.asin(Math.max(-1, Math.min(1, (2 * theta + Math.sin(2 * theta)) / Math.PI))) / DEG;
+      var lng = c > 1e-12 ? Math.PI * point.x / (2 * SQRT2 * c) / DEG : 0;
+      return L.latLng(lat, lng);
+    },
+  };
+  var MOLL = L.extend({}, L.CRS.Earth, {
+    code: "Mollweide", projection: Mollweide, infinite: false,
+    transformation: new L.Transformation(1 / (2 * SQRT2), 1, -1 / (2 * SQRT2), 0.5),
+  });
+  var EQ_MAX_BOUNDS = [[-100, -200], [100, 200]];
+  // 커서가 몰바이데 타원 안인가 — 밖이면 위경도가 없다. 위경도로 되돌리면 극·경도가 잘려 판단할 수 없어
+  // 화면 자리를 투영 평면의 자리로 바꿔 타원 식으로 본다.
+  function onGlobe(containerPoint) {
+    if (state.proj !== "moll") return true;
+    var crs = map.options.crs, zoom = map.getZoom();
+    var p = crs.transformation.untransform(map.containerPointToLayerPoint(containerPoint).add(map.getPixelOrigin()), crs.scale(zoom));
+    return p.x * p.x / 8 + p.y * p.y / 2 <= 1;
+  }
+
+  // 투영 평면의 사각형 전체에 붙는 그림. 위경도 사각형으로 두면 몰바이데에서는 네 모서리가 타원 밖이라
+  // 자리를 잡을 수 없다. 정거원통에서는 평면 = 위경도 사각형이라 전과 같다.
+  var PlaneOverlay = L.ImageOverlay.extend({
+    _planeBounds: function (zoom, origin) {
+      var crs = this._map.options.crs, b = crs.projection.bounds, scale = crs.scale(zoom);
+      var nw = crs.transformation.transform(L.point(b.min.x, b.max.y), scale);
+      var se = crs.transformation.transform(L.point(b.max.x, b.min.y), scale);
+      return L.bounds(nw.subtract(origin), se.subtract(origin));
+    },
+    _reset: function () {
+      var box = this._planeBounds(this._map.getZoom(), this._map.getPixelOrigin()), size = box.getSize();
+      L.DomUtil.setPosition(this._image, box.min);
+      this._image.style.width = size.x + "px";
+      this._image.style.height = size.y + "px";
+    },
+    _animateZoom: function (e) {
+      var scale = this._map.getZoomScale(e.zoom);
+      var box = this._planeBounds(e.zoom, this._map._getNewPixelOrigin(e.center, e.zoom));
+      L.DomUtil.setTransform(this._image, box.min, scale);
+    },
+  });
+
   // ── 지도 ────────────────────────────────────────────────────────────
   var map = L.map("map", {
     crs: L.CRS.EPSG4326,
     center: [0, 0], zoom: 1, minZoom: 1, maxZoom: 7,
-    maxBounds: [[-100, -200], [100, 200]], maxBoundsViscosity: 0.8,
+    maxBounds: EQ_MAX_BOUNDS, maxBoundsViscosity: 0.8,
     worldCopyJump: false, attributionControl: true,
   });
   map.attributionControl.setPrefix(false);
-  map.fitBounds(WORLD);
+  // 지구 전체가 들어오는 가장 큰 확대 — 두 투영 모두 확대 0 에서 512 × 256 픽셀이다.
+  // fitBounds(WORLD) 는 몰바이데에서 쓸 수 없다(위경도 사각형의 모서리가 극점 하나로 모인다).
+  function worldZoom() {
+    var size = map.getSize();
+    if (!size.x || !size.y) return map.getMinZoom();
+    return Math.max(map.getMinZoom(), Math.floor(Math.log(Math.min(size.x / 512, size.y / 256)) / Math.LN2));
+  }
+  function fitWorld() { map.setView([0, 0], worldZoom()); }
+  fitWorld();
   if (window.ResizeObserver) {
     var wasEmpty = true;
     new ResizeObserver(function (entries) {
       var box = entries[0].contentRect;
       map.invalidateSize();
-      if (wasEmpty && box.width > 0 && box.height > 0) map.fitBounds(WORLD);
+      if (wasEmpty && box.width > 0 && box.height > 0) fitWorld();
       wasEmpty = !(box.width > 0 && box.height > 0);
     }).observe($("map"));
   }
@@ -166,9 +237,12 @@
   // 겹 순서: 배경(380) < 기온(390) < 해안선·국경(400) < 화석(450)
   map.createPane("base").style.zIndex = 380;
   map.createPane("climate").style.zIndex = 390;
-  var relief = L.imageOverlay("", WORLD, { interactive: false, className: "relief", pane: "base" }).addTo(map);
+  var relief = new PlaneOverlay("", WORLD, { interactive: false, className: "relief", pane: "base" }).addTo(map);
   // 기온 격자는 1° 칸의 가운데가 정수 경위도다(361×181). 그림 가장자리를 반 칸 밖에 둬야 칸이 제자리에 앉는다.
   var climateLayer = L.imageOverlay("", [[-90.5, -180.5], [90.5, 180.5]],
+    { interactive: false, className: "climate", pane: "climate", opacity: 0.55 });
+  // 몰바이데의 기온 층 — 격자가 작아(361×181) 브라우저에서 타원으로 옮겨 그린다(drawClimate).
+  var climateMoll = new PlaneOverlay("", WORLD,
     { interactive: false, className: "climate", pane: "climate", opacity: 0.55 });
   // 해안선은 SVG 로, 화석은 그 위 전용 창의 캔버스로 그린다. 둘 다 캔버스로 두면 나중에
   // 생긴 해안선 캔버스가 화석 캔버스를 덮어 점을 눌러도 아무 일이 없다.
@@ -190,8 +264,10 @@
   var fossilLayer = L.layerGroup().addTo(map);
   var taxonLayer = L.layerGroup().addTo(map);
   var gridLayer = L.layerGroup();
-  for (var lon = -180; lon <= 180; lon += 30) gridLayer.addLayer(L.polyline([[-90, lon], [90, lon]], { color: "#fff", weight: 0.5, opacity: 0.35, interactive: false }));
-  for (var lat = -60; lat <= 60; lat += 30) gridLayer.addLayer(L.polyline([[lat, -180], [lat, 180]], { color: "#fff", weight: lat === 0 ? 1 : 0.5, opacity: 0.35, interactive: false }));
+  // 2° 마다 점을 찍는다 — 몰바이데에서 경선이 곡선이다.
+  function steps(a, b) { var out = []; for (var v = a; v <= b; v += 2) out.push(v); return out; }
+  for (var lon = -180; lon <= 180; lon += 30) gridLayer.addLayer(L.polyline(steps(-90, 90).map(function (la) { return [la, lon]; }), { color: "#fff", weight: 0.5, opacity: 0.35, interactive: false }));
+  for (var lat = -60; lat <= 60; lat += 30) gridLayer.addLayer(L.polyline(steps(-180, 180).map(function (lo) { return [lat, lo]; }), { color: "#fff", weight: lat === 0 ? 1 : 0.5, opacity: 0.35, interactive: false }));
   window.Wegener = { map: map, fossils: fossilLayer, taxa: taxonLayer, borders: borderLayer, state: state };   // 콘솔에서 들여다보기용
 
   // 배경 해상도: EPSG:4326 에서 세계 폭은 512·2^zoom 픽셀이다. zoom 2 까지는 2048,
@@ -199,7 +275,29 @@
   function reliefWidth() { return map.getZoom() >= 3 ? "4096" : "2048"; }
   function reliefUrl(f) {
     var files = f.relief_files || {};
+    if (state.proj === "moll") return dataUrl(files["moll-" + reliefWidth()]);
     return dataUrl(files[reliefWidth()] || f.relief);
+  }
+  // 가공물에 몰바이데 배경이 있는가 — 옛 가공물이면 투영 고르기를 숨긴다.
+  function hasMollweide() { return state.frames.length > 0 && !!(state.frames[0].relief_files || {})["moll-2048"]; }
+
+  // 투영을 바꾼다. 지도를 새로 만들지 않고 좌표계만 바꿔 다시 그린다 — 층들은 viewreset 에서 새 좌표계로 다시 투영된다.
+  function setProjection(proj) {
+    if (proj !== "moll") proj = "eq";
+    if (proj === state.proj) return;
+    state.proj = proj;
+    map.options.crs = proj === "moll" ? MOLL : L.CRS.EPSG4326;
+    map.setMaxBounds(proj === "moll" ? null : EQ_MAX_BOUNDS);   // 몰바이데는 위경도 사각형으로 가둘 수 없다
+    document.querySelectorAll('input[name="proj"]').forEach(function (r) { r.checked = r.value === proj; });
+    map._resetView(L.latLng(0, 0), worldZoom(), true);
+    var f = frame();
+    if (!f) return;
+    relief.setUrl(reliefUrl(f));
+    drawClimate(f);
+    writeHash(f);
+  }
+  function writeHash(f) {
+    try { history.replaceState(null, "", "#age=" + f.age + (state.proj === "moll" ? "&proj=moll" : "")); } catch (e) { /* 미리보기 등 */ }
   }
   map.on("zoomend", function () {
     var f = frame();
@@ -335,7 +433,7 @@
     $("slider").value = state.i;
     renderHeader(f);
     renderChrono();
-    try { history.replaceState(null, "", "#age=" + f.age); } catch (e) { /* 미리보기 등 */ }
+    writeHash(f);
 
     relief.setUrl(reliefUrl(f));
     noteRelief(f);
@@ -1309,7 +1407,7 @@
       if (li) { e.preventDefault(); pick(+li.dataset.k); }
     });
     input.addEventListener("blur", function () { setTimeout(function () { box.hidden = true; }, 150); });
-    $("country-clear").addEventListener("click", function () { setCountry(null); map.flyToBounds(WORLD, { duration: 0.6 }); });
+    $("country-clear").addEventListener("click", function () { setCountry(null); map.flyTo([0, 0], worldZoom(), { duration: 0.6 }); });
     // 시점을 옮기면 나라가 움직인다 — 그 시점의 자리로 다시 당긴다.
     $("country-focus").addEventListener("click", function () { drawBorders(frame(), true); });
   }
@@ -1402,10 +1500,17 @@
     $("climate-note").textContent = !info ? "이 시점에는 기온 지도가 없다." :
       (info.source_age === f.age ? "" : "가장 가까운 " + fmtAge(info.source_age) + " 지도. ") +
       "전 지구 평균 " + info.gmst.toFixed(1) + " ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.";
-    if (!on || !info) { map.removeLayer(climateLayer); return; }
+    if (!on || !info) { map.removeLayer(climateLayer); map.removeLayer(climateMoll); return; }
     var want = f.age;
     loadGrid(info).then(function (grid) {
       if (frame().age !== want || !$("climate").checked) return;
+      if (state.proj === "moll") {
+        map.removeLayer(climateLayer);
+        climateMoll.setUrl(mollClimate(grid));
+        if (!map.hasLayer(climateMoll)) climateMoll.addTo(map);
+        return;
+      }
+      map.removeLayer(climateMoll);
       var c = document.createElement("canvas");
       c.width = grid.w; c.height = grid.h;
       var ctx = c.getContext("2d"), out = ctx.createImageData(grid.w, grid.h);
@@ -1419,13 +1524,31 @@
     });
   }
 
+  // 기온 격자를 몰바이데 타원에 옮겨 그린 그림(720×360, 타원 밖은 투명). 칸마다 가장 가까운 격자값.
+  function mollClimate(grid) {
+    var w = 720, h = 360, c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    var ctx = c.getContext("2d"), out = ctx.createImageData(w, h);
+    for (var r = 0; r < h; r++) {
+      var y = SQRT2 - (r + 0.5) / h * 2 * SQRT2;
+      for (var q = 0; q < w; q++) {
+        var x = (q + 0.5) / w * 4 * SQRT2 - 2 * SQRT2;
+        if (x * x / 8 + y * y / 2 > 1) continue;
+        var ll = Mollweide.unproject(L.point(x, y)), rgb = tempColor(tempAt(grid, ll.lat, ll.lng)), k = (r * w + q) * 4;
+        out.data[k] = rgb[0]; out.data[k + 1] = rgb[1]; out.data[k + 2] = rgb[2]; out.data[k + 3] = 255;
+      }
+    }
+    ctx.putImageData(out, 0, 0);
+    return c.toDataURL();
+  }
+
   // 커서 자리의 기온 — 기온 층을 켰을 때만.
   var readout = L.control({ position: "bottomleft" });
   readout.onAdd = function () { var div = L.DomUtil.create("div", "temp-readout"); div.id = "temp-readout"; return div; };
   readout.addTo(map);
   map.on("mousemove", function (e) {
     var f = frame(), box = $("temp-readout");
-    if (!f || !f.climate || !$("climate").checked) { box.textContent = ""; return; }
+    if (!f || !f.climate || !$("climate").checked || !onGlobe(e.containerPoint)) { box.textContent = ""; return; }
     loadGrid(f.climate).then(function (grid) {
       box.textContent = "기온 " + tempAt(grid, e.latlng.lat, e.latlng.lng).toFixed(0) + " ℃ · " +
         e.latlng.lat.toFixed(1) + "°, " + e.latlng.lng.toFixed(1) + "°";
@@ -1526,6 +1649,7 @@
     $("climate").addEventListener("change", function () { drawClimate(frame()); });
     $("climate-opacity").addEventListener("input", function () {
       climateLayer.setOpacity(+this.value / 100);
+      climateMoll.setOpacity(+this.value / 100);
       $("climate-opacity-value").textContent = this.value + "%";
     });
     $("point-opacity").addEventListener("input", function () {
@@ -1535,6 +1659,9 @@
     });
     document.querySelectorAll('input[name="color-by"]').forEach(function (radio) {
       radio.addEventListener("change", function () { if (radio.checked) { state.colorBy = radio.value; redraw(); } });
+    });
+    document.querySelectorAll('input[name="proj"]').forEach(function (radio) {
+      radio.addEventListener("change", function () { if (radio.checked) setProjection(radio.value); });
     });
     $("grid").addEventListener("change", function () {
       if (this.checked) gridLayer.addTo(map); else map.removeLayer(gridLayer);
@@ -1577,7 +1704,10 @@
       initCountries(index.countries || []);
       loadLabels();
       bind();
+      // 주소를 먼저 읽는다 — 투영을 바꾸면 주소를 다시 쓴다
       var wanted = parseFloat((location.hash.match(/age=([\d.]+)/) || [])[1]);
+      $("proj-row").hidden = !hasMollweide();
+      if (hasMollweide() && /proj=moll/.test(location.hash)) setProjection("moll");
       var first = state.frames.findIndex(function (f) { return f.age === wanted; });
       if (first < 0) first = state.frames.findIndex(function (f) { return f.age === 250; });
       show(first < 0 ? 0 : first);

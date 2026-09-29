@@ -10,8 +10,13 @@
 정수로 반올림해 적어서, 나이가 1 Myr 안인 것을 짝으로 삼는다.
 
 뷰어는 넓게 볼 때 2048, 확대하면 4096 을 부른다.
+
+몰바이데 투영(024)의 배경도 같은 두 폭으로 굽는다 — 정거원통으로 그린 그림을 타원 안으로 옮긴 것이고
+타원 밖은 투명하다. 뷰어가 그림을 투영하지 않게 하려는 것이다(4096 폭을 시점마다 브라우저에서 옮기면
+밀대가 무거워진다).
 """
 import sys
+from functools import lru_cache
 
 import netCDF4
 import numpy as np
@@ -74,13 +79,49 @@ def hillshade(z, azimuth=315.0, altitude=45.0, exaggeration=12.0):
 
 
 def render(z, width=WIDTH):
+    """정거원통 RGB 배열(uint8, 높이 = 폭/2)과 뭍의 비율."""
     fine = resample(z, width)
     colour = np.where((fine > 0)[..., None], ramp(fine, LAND), ramp(np.minimum(fine, 0), SEA))
     shade = hillshade(fine)
     # 뭍은 음영을 세게, 바다는 약하게 — 해저 지형이 뭍보다 눈에 띄지 않게 한다.
     strength = np.where(fine > 0, 0.55, 0.25)[..., None]
     lit = colour * (1.0 - strength + strength * 1.35 * shade[..., None])
-    return Image.fromarray(np.clip(lit, 0, 255).astype(np.uint8)), float((fine > 0).mean())
+    return np.clip(lit, 0, 255).astype(np.uint8), float((fine > 0).mean())
+
+
+@lru_cache(maxsize=None)
+def mollweide_lookup(width):
+    """몰바이데 그림(폭 × 폭/2)의 각 픽셀이 정거원통 그림(같은 폭)의 어느 자리인지 — (행, 열, 타원 안).
+
+    반지름 1 의 몰바이데는 x ∈ [−2√2, 2√2], y ∈ [−√2, √2] 이고 그림이 이 사각형을 꼭 채운다.
+    역변환: θ = asin(y/√2), φ = asin((2θ + sin 2θ)/π), λ = πx / (2√2 cos θ).
+    뷰어의 좌표계(map.js 의 Mollweide)와 같은 식이어야 점과 그림이 맞는다.
+    """
+    height = width // 2
+    rows, cols = np.mgrid[0:height, 0:width]
+    x = (cols + 0.5) / width * 4 * np.sqrt(2) - 2 * np.sqrt(2)
+    y = np.sqrt(2) - (rows + 0.5) / height * 2 * np.sqrt(2)
+    inside = x * x / 8 + y * y / 2 <= 1
+    theta = np.arcsin(np.clip(y / np.sqrt(2), -1, 1))
+    lat = np.degrees(np.arcsin(np.clip((2 * theta + np.sin(2 * theta)) / np.pi, -1, 1)))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lon = np.degrees(np.pi * x / (2 * np.sqrt(2) * np.cos(theta)))
+    lon = np.clip(np.nan_to_num(lon), -180, 180)
+    src_row = (90.0 - lat) / 180.0 * height - 0.5
+    src_col = (lon + 180.0) / 360.0 * width - 0.5
+    return src_row, src_col, inside
+
+
+def mollweide(rgb):
+    """정거원통 RGB 배열 → 몰바이데 RGBA 그림(같은 크기, 타원 밖은 투명)."""
+    height, width = rgb.shape[:2]
+    src_row, src_col, inside = mollweide_lookup(width)
+    out = np.zeros((height, width, 4), dtype=np.uint8)
+    for i in range(3):
+        band = ndimage.map_coordinates(rgb[..., i].astype(np.float32), [src_row, src_col], order=1, mode="nearest")
+        out[..., i] = np.clip(band, 0, 255).astype(np.uint8)
+    out[..., 3] = np.where(inside, 255, 0)
+    return Image.fromarray(out, "RGBA")
 
 
 def _scan(folder):
@@ -113,6 +154,7 @@ def grids():
 def build(only=None):
     for width in WIDTHS:
         (DERIVED / "relief" / str(width)).mkdir(parents=True, exist_ok=True)
+        (DERIVED / "relief" / f"moll-{width}").mkdir(parents=True, exist_ok=True)
     entries = []
     for age, label, path, grid in grids():
         if only and age not in only:
@@ -120,10 +162,13 @@ def build(only=None):
         z = read_grid(path)
         files = {}
         for width in WIDTHS:
-            image, land = render(z, width)
+            rgb, land = render(z, width)
             name = f"relief/{width}/{age_key(age)}.webp"
-            image.save(DERIVED / name, "WEBP", quality=QUALITY, method=4)
+            Image.fromarray(rgb).save(DERIVED / name, "WEBP", quality=QUALITY, method=4)
             files[str(width)] = name
+            name = f"relief/moll-{width}/{age_key(age)}.webp"
+            mollweide(rgb).save(DERIVED / name, "WEBP", quality=QUALITY, method=4)
+            files[f"moll-{width}"] = name
         entries.append({"age": age, "label": label, "file": files[str(WIDTH)], "files": files,
                         "grid": grid, "land_fraction": round(land, 3)})
         print(f"  배경 {age:6.1f} Ma  {label:40s} {grid}  뭍 {land:5.1%}")
