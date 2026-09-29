@@ -5,7 +5,7 @@ venv
 __pycache__
 *.pyc
 
-# 자료는 이미지에 굽지 않는다. 운영은 /srv/MIH/data 를 마운트해 본다.
+# 자료는 이미지에 굽지 않는다. 운영은 /srv/WegenersDream/data 를 마운트해 본다.
 data/
 
 # 가공 파이프라인은 웹 이미지에 필요 없다 (무거운 의존성이 딸려 온다).

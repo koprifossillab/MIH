@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MIH — 고지리 화석 지도</title>
+<title>Wegener's Dream — 베게너의 꿈</title>
 <link rel="stylesheet" href="{% static 'viewer/vendor/leaflet/leaflet.css' %}">
 <link rel="stylesheet" href="{% static 'viewer/map.css' %}?v={{ version }}">
 </head>
@@ -16,8 +16,8 @@
 
   <header class="bar">
     <div class="brand">
-      <strong>MIH</strong>
-      <span class="sub">고지리 화석 지도</span>
+      <strong>Wegener's Dream</strong>
+      <span class="sub">베게너의 꿈 · 고지리 화석 지도</span>
     </div>
     <div class="now" aria-live="polite">
       <span id="now-age" class="age">—</span>
@@ -159,7 +159,7 @@
         <h2>자료</h2>
         <ul id="sources"></ul>
         <p class="note">배경·해안선·국경·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 산지의 지금 좌표를 <b>지도 시점의 나이로</b> 해안선과 같은 판 모델(v19o)로 돌린 것이라, 범위가 넓은 산지도 시점마다 그때 자리에 그려진다. 그 나이에 판이 없는 드문 산지(0.1% 미만)만 PBDB 고좌표(연대 중간값)를 쓴다 — 팝업에 적는다.</p>
-        <p class="note">MIH {{ version }}{% if built_at %} · 자료 {{ built_at|slice:":10" }}{% endif %}</p>
+        <p class="note">Wegener's Dream {{ version }}{% if built_at %} · 자료 {{ built_at|slice:":10" }}{% endif %}</p>
       </section>
     </aside>
   </main>

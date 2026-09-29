@@ -33,7 +33,7 @@ def load_index():
 def map_page(request):
     index = load_index()
     return render(request, "viewer/map.html", {
-        "version": settings.MIH_VERSION,
+        "version": settings.WEGENER_VERSION,
         "has_data": index is not None,
         "frame_count": len(index["frames"]) if index else 0,
         "built_at": index.get("built_at") if index else None,
@@ -62,7 +62,7 @@ def labels_view(request):
         return response
 
     if not can_edit:
-        return JsonResponse({"error": "이 서버에서는 명칭을 고칠 수 없다(MIH_EDITOR_KEY 가 없다)"}, status=403)
+        return JsonResponse({"error": "이 서버에서는 명칭을 고칠 수 없다(WEGENER_EDITOR_KEY 가 없다)"}, status=403)
     try:
         body = json.loads(request.body.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
@@ -84,7 +84,7 @@ def labels_view(request):
 def healthz(request):
     """판 번호와 자료 상태. 자료가 없으면 화면은 뜨지만 쓸 수 없으므로 503 이다."""
     index = load_index()
-    body = {"app": "MIH", "version": settings.MIH_VERSION}
+    body = {"app": "WegenersDream", "version": settings.WEGENER_VERSION}
     if index is None:
         body.update(status="no-data", detail="index.json 이 없다 — 파이프라인을 돌린다")
         return JsonResponse(body, status=503)

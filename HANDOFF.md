@@ -1,11 +1,14 @@
-# HANDOFF — 2026-09-29 현재 상태
+# HANDOFF — 2026-09-30 현재 상태 · 베게너의 꿈 (Wegener's Dream)
 
 이어서 작업할 사람(또는 다음 세션)을 위한 인수 문서. **무엇이 돌아가고 있고, 무엇이 반쯤 되어 있고,
 어디에 함정이 있는지**를 적는다. **지난 일은 여기 안 남긴다** — 그것은 `devlog/` 의 몫이고, 여기는
 **지금**만 말한다.
 
-**브랜치** `main` = `0.10.1` (09-29 작업 마감에 병합) · 병합을 기다리는 브랜치는 없다. 다음 코드 작업은 그날의
-새 브랜치(`work/<YYYYMMDD>-koprifossillab`)를 `main` 에서 만든다. 0.9.0 부터 모호한 연대 산지를 세모로(016),
+**이름**: 09-30 에 `MIH` → **베게너의 꿈 (Wegener's Dream)**. 저장소·URL `/WegenersDream/`, 환경변수 `WEGENER_*`,
+패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
+
+**브랜치** `main` = `0.10.1` · **`work/20260930-koprifossillab` = `0.11.0`(이름 바꾸기)이 병합을 기다린다**.
+다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-koprifossillab`)를 `main` 에서 만든다. 0.9.0 부터 모호한 연대 산지를 세모로(016),
 화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
 `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
 화석 파일에 `precise`·`rotated` 칸이 있어야 한다.
@@ -29,7 +32,7 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
   명칭 덮어쓰기(`/labels` GET·POST, 003·0.3.0)
 - 지도는 Leaflet 1.9.4(저장소에 담음), EPSG:4326. 배경은 2048·4096 두 벌을 확대 정도로 고른다(002)
 - 브라우저가 PBDB 를 곧장 부른다(CORS). 무엇을 부르는지는 CLAUDE.md "PBDB 에 바로 묻는 것"
-- 개발: `MIH_DEBUG=1` 로 `web/manage.py runserver`. 명칭 고치기는 개발에서 열쇠 없이 열린다
+- 개발: `WEGENER_DEBUG=1` 로 `web/manage.py runserver`. 명칭 고치기는 개발에서 열쇠 없이 열린다
 
 ### 파이프라인 (`pipeline/`, `python -m pipeline fetch|build|all`)
 
@@ -49,7 +52,7 @@ Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값�
 
 ### 시험
 
-`python -m unittest discover -s pipeline/tests -t .`(26 — 판 모델 시험 3 개는 원본이 있을 때만) · `MIH_SECRET_KEY=x web/manage.py test viewer`(13).
+`python -m unittest discover -s pipeline/tests -t .`(26 — 판 모델 시험 3 개는 원본이 있을 때만) · `WEGENER_SECRET_KEY=x web/manage.py test viewer`(13).
 CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이미지를 굽는다(Docker Hub 비밀값이 아직 없다).
 
 ## 3. 지금 조심할 것
@@ -65,7 +68,7 @@ CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이
 
 환경 이름의 기본은 `pipeline/environments.py`, 화면에서 고친 것은 `<STATE_DIR>/labels.json` 의 덮어쓰기다.
 0.4.0 에서 연구자가 고친 이름을 기본으로 옮기고 표를 비웠다(003). 옮기기 전 표는
-`data/state/labels.before-0.4.json`(로컬, 커밋 안 함). 운영에서는 `MIH_EDITOR_KEY` 가 없으면 고치기가 닫힌다.
+`data/state/labels.before-0.4.json`(로컬, 커밋 안 함). 운영에서는 `WEGENER_EDITOR_KEY` 가 없으면 고치기가 닫힌다.
 
 ### 3.3 개발 서버의 템플릿 캐시
 

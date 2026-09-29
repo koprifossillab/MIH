@@ -20,7 +20,7 @@ from pathlib import Path
 
 from .common import ROOT, manifest, source_path
 
-USER_AGENT = "MIH/0.1 (koprifossillab; paleogeography viewer)"
+USER_AGENT = "WegenersDream/1 (koprifossillab; paleogeography viewer)"
 CHUNK = 1 << 20
 
 

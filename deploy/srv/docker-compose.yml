@@ -1,27 +1,27 @@
-# /srv/MIH/docker-compose.yml 에 두는 것. **운영이 이 파일로 돈다.**
+# /srv/WegenersDream/docker-compose.yml 에 두는 것. **운영이 이 파일로 돈다.**
 #
-#   cd /srv/MIH && MIH_TAG=v0.1.0 docker compose pull && MIH_TAG=v0.1.0 docker compose up -d web
+#   cd /srv/WegenersDream && WEGENER_TAG=v0.1.0 docker compose pull && WEGENER_TAG=v0.1.0 docker compose up -d web
 #
 # 운영 장비에 저장소를 두지 않는다(GSM·ForGIA 와 같다). 여기에는 이미지 이름과 마운트만 있다.
 # 포트 8095 는 GSM(8094) 다음 자리다. 올리기 전에 `ss -ltnp | grep 8095` 로 비었는지 본다.
 
-name: mih
+name: wegenersdream
 
 services:
   web:
-    image: koprifossillab/mih:${MIH_TAG:-latest}
+    image: koprifossillab/wegenersdream:${WEGENER_TAG:-latest}
     restart: unless-stopped
     user: "1000:1000"
     env_file: .env
     environment:
       TZ: Asia/Seoul
-      MIH_DEBUG: "0"
-      MIH_URL_PREFIX: "MIH/"
-      MIH_DATA_DIR: /srv/MIH/data
-      MIH_STATE_DIR: /srv/MIH/state
+      WEGENER_DEBUG: "0"
+      WEGENER_URL_PREFIX: "WegenersDream/"
+      WEGENER_DATA_DIR: /srv/WegenersDream/data
+      WEGENER_STATE_DIR: /srv/WegenersDream/state
     volumes:
       # 자료는 읽기만 한다. 새로 만든 자료는 장비 밖에서 가공해 이 폴더를 통째로 바꾼다.
-      - /srv/MIH/data:/srv/MIH/data:ro
-      - /srv/MIH/state:/srv/MIH/state
+      - /srv/WegenersDream/data:/srv/WegenersDream/data:ro
+      - /srv/WegenersDream/state:/srv/WegenersDream/state
     ports:
       - "127.0.0.1:8095:9090"

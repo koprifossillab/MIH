@@ -67,7 +67,7 @@ class DataFileTest(DataDirMixin, SimpleTestCase):
 
     def test_refuses_other_suffixes_and_escape(self):
         self.assertEqual(self.client.get("/data/secret.txt").status_code, 404)
-        self.assertEqual(self.client.get("/data/../mihweb/settings.py").status_code, 404)
+        self.assertEqual(self.client.get("/data/../wegenerweb/settings.py").status_code, 404)
         self.assertEqual(self.client.get("/data/%2e%2e/%2e%2e/web/manage.py").status_code, 404)
         self.assertEqual(self.client.get("/data/relief/none.webp").status_code, 404)
 
@@ -129,9 +129,9 @@ class LabelsTest(DataDirMixin, SimpleTestCase):
         self.assertEqual(self.post(kind="env", id="m", name="바다").status_code, 200)
 
 
-@override_settings(URL_PREFIX="MIH/")
+@override_settings(URL_PREFIX="WegenersDream/")
 class PrefixTest(SimpleTestCase):
     def test_urls_do_not_hardcode_prefix(self):
-        # 접두사는 mihweb/urls.py 가 import 될 때 한 번 붙는다. 앱 urls 는 모른다.
+        # 접두사는 wegenerweb/urls.py 가 import 될 때 한 번 붙는다. 앱 urls 는 모른다.
         from viewer import urls
-        self.assertTrue(all(not str(p.pattern).startswith("MIH") for p in urls.urlpatterns))
+        self.assertTrue(all(not str(p.pattern).startswith("WegenersDream") for p in urls.urlpatterns))

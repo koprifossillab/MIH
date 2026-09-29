@@ -9,8 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "sources"
-# 뷰어가 읽는 자리. 운영에서는 이 폴더를 /srv/MIH/data 로 옮겨 마운트한다.
-DERIVED = Path(os.environ.get("MIH_DATA_DIR", ROOT / "data" / "derived"))
+# 뷰어가 읽는 자리. 운영에서는 이 폴더를 /srv/WegenersDream/data 로 옮겨 마운트한다.
+DERIVED = Path(os.environ.get("WEGENER_DATA_DIR", ROOT / "data" / "derived"))
 
 
 def manifest(name):
