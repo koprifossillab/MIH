@@ -1,8 +1,8 @@
-/* MIH 뷰어 — 시점마다 PaleoDEM 배경, PaleoCoastlines 해안선, PBDB 채집지를 겹친다.
+/* MIH 뷰어 — 시점마다 PaleoDEM 배경, PaleoCoastlines 해안선, PBDB 산지를 겹친다.
  *
  * 자료는 파이프라인이 만든 파일(data/…)만 읽는다. 층서표와 퇴적 환경 나무도 index.json 에서
  * 받는다(pipeline/timescale.py·environments.py 가 한 곳). PBDB 에 바로 묻는 것은 셋이다 —
- * 채집지 산출 목록, 분류군 찾기, 분류군 이름 후보. PBDB 는 CORS 를 열어 두었다(`*`).
+ * 산지 산출 목록, 분류군 찾기, 분류군 이름 후보. PBDB 는 CORS 를 열어 두었다(`*`).
  */
 (function () {
   "use strict";
@@ -11,13 +11,13 @@
   var DATA = app.dataset.dataBase.replace(/x$/, "");
   var LABELS_URL = app.dataset.labelsUrl;
   // 시점 파일은 하루 캐시된다(views.FRAME_MAX_AGE). 다시 가공해도 이름이 같아, 주소에 가공 시각을 붙여
-  // 가공할 때마다 새 주소가 되게 한다 — 안 붙이면 013 에서 고친 노릭절 채집지가 하루 동안 안 보였다.
+  // 가공할 때마다 새 주소가 되게 한다 — 안 붙이면 013 에서 고친 노릭절 산지가 하루 동안 안 보였다.
   var BUILT = "";
   function dataUrl(path) { return DATA + path + (BUILT ? "?b=" + encodeURIComponent(BUILT) : ""); }
   var CSRF = app.dataset.csrf;
   var PBDB = "https://paleobiodb.org/data1.2/";
   var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
-  // 채집지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
+  // 산지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
   var WINDOW_MA = 2.5;
   var MAX_SPAN_MA = 21.6;
   var OLDEST = 540;
@@ -39,7 +39,8 @@
     taxonRank: "", taxonLow: false,         // 찾은 분류군의 계급 — 과 이하이면 커서만 대도 산출 목록
     grids: {},                              // 기온 격자(파일 → {w, h, data, offset})
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
-    dist: null,                             // 찾은 분류군의 산출 시대 분포(절 단위, PBDB diversity)
+    dist: null,                             // 찾은 분류군의 산출 시대 분포(센 결과)
+    distBase: null,                         // 그 바탕 — PBDB 절 단위 수, 산출이 적으면 산출 기록 자체(014)
     labels: { env: {} }, editable: false, needsKey: false, editing: false,
   };
   var cache = {};
@@ -65,7 +66,7 @@
 
   // ── 점 색 ───────────────────────────────────────────────────────────
   // 퇴적기원: 환경군의 색(해양기원 하늘색→남색, 육상기원 주황→빨강, 미상 흰색).
-  // 시대: 채집지 연대 중간값이 든 기(Period)의 층서표 색.
+  // 시대: 산지 연대 중간값이 든 기(Period)의 층서표 색.
   function envColor(environment) {
     return state.groupColor[state.termGroup[termKey(environment)]] || UNKNOWN_COLOR;
   }
@@ -84,7 +85,7 @@
     }
     return envColor(environment);
   }
-  // 채집지를 보일지 — 켠 환경, 고른 나라.
+  // 산지를 보일지 — 켠 환경, 고른 나라.
   function passes(environment, cc) {
     if (!state.enabled[termKey(environment)]) return false;
     return !state.country || cc === state.country;
@@ -356,6 +357,7 @@
       var on = input.checked;
       termsUnder(input.dataset.level, input.dataset.id).forEach(function (t) { state.enabled[t] = on; });
       syncChecks();
+      if (state.taxon) computeDist();   // 산출 시대의 수도 고른 퇴적기원을 따른다(014)
       redraw();
     });
     box.addEventListener("click", function (e) {
@@ -508,15 +510,18 @@
     });
   }
 
-  function syncCounts(rows, col) {
+  // 환경 칸마다의 수. 평소에는 산지 수, 분류군을 찾는 동안에는 그 분류군의 산출 건수(weight = n_occs)다.
+  // 꺼 둔 환경의 칸에도 수를 적는다 — 켜면 몇 건이 더해지는지 보이게.
+  function syncCounts(rows, col, weight) {
     var counts = {};
     rows.forEach(function (row) {
-      var t = termKey(row[col.environment]);
-      counts["term:" + t] = (counts["term:" + t] || 0) + 1;
+      var t = termKey(row[col.environment]), n = weight ? weight(row) : 1;
+      counts["term:" + t] = (counts["term:" + t] || 0) + n;
       var g = state.termGroup[t], top = t === UNLISTED ? "o" : state.termTop[t];
-      counts["group:" + g] = (counts["group:" + g] || 0) + 1;
-      counts["top:" + top] = (counts["top:" + top] || 0) + 1;
+      counts["group:" + g] = (counts["group:" + g] || 0) + n;
+      counts["top:" + top] = (counts["top:" + top] || 0) + n;
     });
+    $("env-count-note").textContent = weight ? "수: " + state.taxon + " 산출 건수(지금 지도)" : "수: 산지 수(지금 지도)";
     document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
       var n = counts[el.dataset.count] || 0;
       el.textContent = fmtNum(n);
@@ -526,7 +531,7 @@
     });
   }
 
-  // ── 화석 채집지 ─────────────────────────────────────────────────────
+  // ── 화석 산지 ─────────────────────────────────────────────────────
   function loadFossils(f) {
     $("fossil-count").textContent = "";
     state.payload = null;
@@ -537,7 +542,7 @@
       if (frame().age !== want) return;
       state.payload = payload;
       drawFossils();
-      if (state.taxon && $("coeval").checked) drawTaxa();   // 같은 시대 다른 산지는 채집지 자료가 있어야 그린다
+      if (state.taxon && $("coeval").checked) drawTaxa();   // 같은 시대 다른 산지는 산지 자료가 있어야 그린다
     });
   }
 
@@ -557,16 +562,16 @@
     return col;
   }
 
-  // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 채집지 점은 찾기를 지우면 돌아온다.
+  // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 산지 점은 찾기를 지우면 돌아온다.
   function drawFossils() {
     var payload = state.payload;
     fossilLayer.clearLayers();
     if (!payload) return;
     var col = columns(payload);
+    if (state.taxon) { $("fossil-count").textContent = "분류군 찾기 결과만 보인다"; return; }   // 수는 drawTaxa 가 적는다
     var inCountry = state.country
       ? payload.rows.filter(function (row) { return row[col.cc] === state.country; }) : payload.rows;
     syncCounts(inCountry, col);
-    if (state.taxon) { $("fossil-count").textContent = "분류군 찾기 결과만 보인다"; return; }
     var shown = 0;
     payload.rows.forEach(function (row) {
       if (!passes(row[col.environment], row[col.cc])) return;
@@ -579,7 +584,7 @@
     renderLegend();
   }
 
-  // ── 채집지 팝업 ─────────────────────────────────────────────────────
+  // ── 산지 팝업 ─────────────────────────────────────────────────────
   function openCollection(latlng, row, col) {
     var no = row[col.collection_no];
     var interval = row[col.early_interval] + (row[col.late_interval] ? " – " + row[col.late_interval] : "");
@@ -591,14 +596,14 @@
         if (g.id === group) groupName = labelFor(top.id, top.ko) + " › " + labelFor(g.id, g.ko);
       });
     });
-    var html = "<h3>" + esc(row[col.collection_name] || "이름 없는 채집지") + "</h3><dl>" +
+    var html = "<h3>" + esc(row[col.collection_name] || "이름 없는 산지") + "</h3><dl>" +
       "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma)</dd>" +
       (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
       "<dt>환경</dt><dd>" + esc(env || "기록 없음") + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
       "<dt>고좌표</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°</dd>" +
       (row[col.cc] ? "<dt>지금 국가</dt><dd>" + esc(countryName(row[col.cc])) + "</dd>" : "") +
       (row.matched ? "<dt>찾은 분류군</dt><dd><i>" + row.matched.map(esc).join("</i>, <i>") + "</i></dd>" : "") +
-      '</dl><a href="' + PBDB_COLL_PAGE + no + '" target="_blank" rel="noopener">PBDB 채집지 ' + no + "</a>" +
+      '</dl><a href="' + PBDB_COLL_PAGE + no + '" target="_blank" rel="noopener">PBDB 산지 ' + no + "</a>" +
       '<div class="muted taxa-box">산출 ' + row[col.n_occs] + "건 읽는 중…</div>";
     // 내용을 문자열이 아니라 요소로 준다. 문자열이면 popup.update() 가 처음 문자열로 다시
     // 그려, 받아 온 산출 목록이 "읽는 중…" 으로 되돌아간다.
@@ -630,12 +635,12 @@
   }
 
   // ── 분류군 찾기 ─────────────────────────────────────────────────────
-  // 채집지 점과 같은 규칙으로 거른다(pipeline/common.py 의 belongs): 연대 범위가 시점
+  // 산지 점과 같은 규칙으로 거른다(pipeline/common.py 의 belongs): 연대 범위가 시점
   // ±2.5 Myr 창과 겹치고, 범위가 가장 긴 절(21.6 Myr) 이하. PBDB 의 overlap 도 같은 뜻이다.
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
                   early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12 };
   var taxonSeq = 0;
-  // 과 이하 — 커서만 대도 산출 목록이 뜨는 계급. 그 위(목·강…)는 채집지 하나에 수십~수백 건이라 요약만.
+  // 과 이하 — 커서만 대도 산출 목록이 뜨는 계급. 그 위(목·강…)는 산지 하나에 수십~수백 건이라 요약만.
   var LOW_RANKS = { family: 1, subfamily: 1, tribe: 1, subtribe: 1, genus: 1, subgenus: 1, species: 1, subspecies: 1 };
   var TOOLTIP_MAX = 15;
 
@@ -645,9 +650,9 @@
       .catch(function () { return ""; });
   }
 
-  // 커서를 댔을 때의 내용. 과 이하이면 이 채집지에서 찾은 분류군 아래의 산출을 모두(15 건까지) 적는다.
+  // 커서를 댔을 때의 내용. 과 이하이면 이 산지에서 찾은 분류군 아래의 산출을 모두(15 건까지) 적는다.
   function taxonTip(row) {
-    var head = "<b>" + esc(row[COLUMNS.collection_name] || "이름 없는 채집지") + "</b>";
+    var head = "<b>" + esc(row[COLUMNS.collection_name] || "이름 없는 산지") + "</b>";
     if (!state.taxonLow) {
       return head + "<small>" + esc(state.taxon) + " 산출 " + row.occs.length + "건 — 누르면 목록</small>";
     }
@@ -665,6 +670,13 @@
   // 분류군도 응답이 수 KB 다. 이것으로 (1) 산출이 있는 기를 아이콘으로 (2) 층서표 칩에 수를
   // (3) 시점 막대 밑에 시점별 산출 막대를 그리고 (4) 차례로 보기(011)의 시점 목록을 만든다.
   // PBDB 의 절 경계는 ICS 2024 와 조금 달라서, 절을 가운데 나이로 우리 단위에 넣는다.
+  //
+  // 퇴적기원으로 거르면 수도 따라가야 한다(014). diversity 는 우리 환경군으로 거를 수 없으므로, 산출이
+  // OCC_LIMIT 건 이하인 분류군은 **산출 기록 자체(나이·환경)** 를 한 번 받아 두고 브라우저에서 센다 —
+  // 그러면 지도와 같은 규칙(창과 겹침, 가장 긴 절 이하)으로 셀 수 있다. 그보다 많은 분류군(삼엽충 4.5 만)은
+  // 절 단위 수를 그대로 쓰고 퇴적기원이 수에 반영되지 않는다고 적는다.
+  var OCC_LIMIT = 5000;
+
   function loadDistribution(name) {
     var key = name + "|" + (state.country || "");
     if (state.dist && state.dist.key === key) return Promise.resolve(state.dist);
@@ -677,28 +689,66 @@
       var stages = (both[0].records || []).filter(function (r) { return +r.noc > 0; }).map(function (r) {
         return { name: r.nam, base: +r.eag, top: +r.lag, n: +r.noc };
       });
-      var units = {}, frames = {}, total = 0;
-      stages.forEach(function (s) {
-        total += s.n;
-        var mid = (s.base + s.top) / 2;
-        Object.keys(state.units).forEach(function (id) {
-          var u = state.units[id];
-          if (mid > u.top && mid <= u.base) units[id] = (units[id] || 0) + s.n;
-        });
-      });
-      // 시점의 창(±2.5 Myr)과 겹치는 절의 산출을 더한다 — 채집지 점과 같은 겹침 규칙이다.
-      state.frames.forEach(function (f, j) {
-        var n = 0;
-        stages.forEach(function (s) { if (s.base >= f.age - WINDOW_MA && s.top <= f.age + WINDOW_MA) n += s.n; });
-        if (n) frames[j] = n;
-      });
-      state.dist = { key: key, stages: stages, units: units, frames: frames, total: total,
-                     app: (both[1].records || [])[0] || null };
-      renderDist();
-      renderChrono();
+      var base = { key: key, stages: stages, app: (both[1].records || [])[0] || null, occs: null,
+                   stageTotal: stages.reduce(function (a, s) { return a + s.n; }, 0) };
+      if (base.stageTotal > OCC_LIMIT) return base;
+      return getJSON(PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) + cc +
+                     "&show=env&vocab=pbdb&limit=" + (OCC_LIMIT + 1)).then(function (d) {
+        var recs = d.records || [];
+        if (recs.length <= OCC_LIMIT) {
+          base.occs = recs.map(function (r) { return { old: +r.max_ma, young: +r.min_ma, env: r.environment || "" }; });
+        }
+        return base;
+      }).catch(function () { return base; });
+    }).then(function (base) {
+      if (!base || state.taxon !== name) return null;
+      state.distBase = base;
+      computeDist();
       if ($("coeval").checked) drawTaxa();     // "같은 시대" 구간은 절 분포로 잡는다
       return state.dist;
-    }).catch(function () { state.dist = null; renderDist(); return null; });
+    }).catch(function () { state.dist = null; state.distBase = null; renderDist(); return null; });
+  }
+
+  // 받아 둔 것으로 분포를 센다. 퇴적기원 선택을 바꿀 때마다 다시 부른다(PBDB 에 다시 묻지 않는다).
+  function computeDist() {
+    var base = state.distBase;
+    if (!base) { state.dist = null; renderDist(); renderChrono(); return; }
+    var units = {}, frames = {}, total = 0;
+    var addUnits = function (mid, n) {
+      Object.keys(state.units).forEach(function (id) {
+        var u = state.units[id];
+        if (mid > u.top && mid <= u.base) units[id] = (units[id] || 0) + n;
+      });
+    };
+    if (base.occs) {
+      // 산출 하나하나 — 켠 환경만, 지도와 같은 규칙으로
+      base.occs.forEach(function (o) {
+        if (!state.enabled[termKey(o.env)]) return;
+        total += 1;
+        if (o.old - o.young > MAX_SPAN_MA + 1e-6) return;
+        addUnits((o.old + o.young) / 2, 1);
+        state.frames.forEach(function (f, j) {
+          if (o.old >= f.age - WINDOW_MA && o.young <= f.age + WINDOW_MA) frames[j] = (frames[j] || 0) + 1;
+        });
+      });
+    } else {
+      // 절 단위 수 — 퇴적기원을 거를 수 없다
+      base.stages.forEach(function (s) {
+        total += s.n;
+        addUnits((s.base + s.top) / 2, s.n);
+        state.frames.forEach(function (f, j) {
+          if (s.base >= f.age - WINDOW_MA && s.top <= f.age + WINDOW_MA) frames[j] = (frames[j] || 0) + s.n;
+        });
+      });
+    }
+    state.dist = { key: base.key, stages: base.stages, app: base.app, units: units, frames: frames, total: total,
+                   exact: !!base.occs, filtered: !!base.occs && !allEnvEnabled() };
+    renderDist();
+    renderChrono();
+  }
+
+  function allEnvEnabled() {
+    return Object.keys(state.enabled).every(function (t) { return state.enabled[t]; });
   }
 
   // 산출 시대 칩을 누르면 그 기 안에서 찾은 분류군의 산출이 가장 많은 지도로 간다. 기의 가운데로
@@ -714,7 +764,7 @@
     stopTour();
     show(best, { focus: p });
     $("chrono-note").textContent = p.full + " 에서 " + state.taxon + " 산출이 가장 많은 " + fmtAge(state.frames[best].age) +
-      " 지도(절 단위 " + fmtNum(d.frames[best]) + "건).";
+      " 지도(" + fmtNum(d.frames[best]) + "건).";
   }
 
   function renderDist() {
@@ -723,7 +773,8 @@
     strip.hidden = box.hidden;
     strip.innerHTML = "";
     if (box.hidden) return;
-    $("dist-total").textContent = "산출 " + fmtNum(d.total) + "건" + (state.country ? " · " + countryName(state.country) : "");
+    $("dist-total").textContent = "산출 " + fmtNum(d.total) + "건" + (state.country ? " · " + countryName(state.country) : "") +
+      (d.filtered ? " · 고른 퇴적기원만" : "");
     // 산출이 있는 기 — 층서표 색 아이콘에 수를 붙인다. 누르면 그 기의 가운데 지도로 간다.
     var periods = state.periods.slice().sort(byOldFirst).filter(function (p) { return d.units[p.id]; });
     $("dist-periods").innerHTML = "";
@@ -739,10 +790,12 @@
       $("dist-periods").appendChild(b);
     });
     var a = d.app;
-    $("dist-note").textContent = !periods.length ? "PBDB 에 절 단위로 매겨진 산출이 없다." :
+    $("dist-note").textContent = (!periods.length ? (d.exact ? "고른 퇴적기원에 드는 산출이 없다. " : "PBDB 에 절 단위로 매겨진 산출이 없다. ") : "") +
       (a && a.early_interval ? "처음 " + a.early_interval + " (" + a.firstapp_max_ma + "–" + a.firstapp_min_ma + " Ma) · 마지막 " +
         a.late_interval + " (" + a.lastapp_max_ma + "–" + a.lastapp_min_ma + " Ma). " : "") +
-      "칩과 막대의 수는 PBDB 가 절 단위로 센 산출이다 — 절보다 넓게 매겨진 산출은 빠진다.";
+      (d.exact
+        ? "칩과 막대의 수는 산출 하나하나를 지도와 같은 규칙으로 센 것이고, 고른 퇴적기원을 따른다."
+        : "산출이 " + fmtNum(OCC_LIMIT) + "건이 넘어 PBDB 가 절 단위로 센 수를 쓴다 — 퇴적기원 선택이 이 수에는 반영되지 않고, 절보다 넓게 매겨진 산출은 빠진다.");
     // 시점 막대 밑 — 시점마다 로그 높이의 막대
     var max = 0;
     Object.keys(d.frames).forEach(function (j) { max = Math.max(max, d.frames[j]); });
@@ -809,7 +862,7 @@
   function searchTaxon(name) {
     var f = frame();
     var seq = ++taxonSeq;
-    if (state.taxon !== name) state.dist = null;
+    if (state.taxon !== name) { state.dist = null; state.distBase = null; }
     state.taxon = name;
     state.taxa = null;
     loadDistribution(name);
@@ -826,7 +879,7 @@
     return getJSON(taxonUrl(name, f.age)).then(function (data) {
       if (seq !== taxonSeq) return;
       if (data.errors) throw new Error(data.errors.join(" "));
-      // 산출을 채집지로 묶는다 — 한 채집지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
+      // 산출을 산지로 묶는다 — 한 산지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
       var byColl = {}, rows = [];
       (data.records || []).forEach(function (r) {
         if (r.max_ma - r.min_ma > MAX_SPAN_MA + 1e-6) return;     // 227.3 − 205.7 = 21.600000000000023
@@ -855,13 +908,13 @@
 
   // ── 같은 시대 다른 산지 (속 이하) ───────────────────────────────────
   // 지금 지도에서 찾은 분류군 산출들의 연대 범위를 한 구간(가장 젊은 min ~ 가장 오래된 max)으로
-  // 잡고, 그 구간과 연대가 겹치는 다른 채집지(그 분류군이 안 나온 곳)를 작고 흐리게 함께 그린다.
+  // 잡고, 그 구간과 연대가 겹치는 다른 산지(그 분류군이 안 나온 곳)를 작고 흐리게 함께 그린다.
   // 환경 거르기는 따르고 국가 거르기는 따르지 않는다 — 나라를 골라 그 나라의 분류군을 보면서
   // 같은 시대의 다른 나라 기록과 견주려는 것이다.
   var GENUS_RANKS = { genus: 1, subgenus: 1, species: 1, subspecies: 1 };
 
   // "같은 시대" 의 구간. 산출 하나하나의 범위를 합치면 넓게 매겨진 산출 하나(예: 83.6–66 Ma)가 구간을
-  // 지도 전체로 넓혀, 거의 모든 채집지가 "같은 시대" 가 된다(Tyrannosaurus 70 Ma 에서 14,288 곳 중
+  // 지도 전체로 넓혀, 거의 모든 산지가 "같은 시대" 가 된다(Tyrannosaurus 70 Ma 에서 14,288 곳 중
   // 14,204 곳). 그래서 **절 단위 분포(010)에서 그 분류군이 실제로 나온 절**, 그중 지도 시점의 창에 걸치는
   // 절들로 구간을 잡는다. 절 단위 산출이 없는 시점만 산출 범위의 합으로 돌아간다.
   function coevalSpan(rows) {
@@ -905,7 +958,7 @@
     if (!GENUS_RANKS[state.taxonRank] || !$("coeval").checked) { note.textContent = ""; return 0; }
     var span = coevalSpan(rows), payload = state.payload;
     if (!span || !payload) {
-      note.textContent = span ? "채집지 자료를 읽는 중…" : "이 시점에는 찾은 분류군의 산출이 없어 견줄 시대가 없다.";
+      note.textContent = span ? "산지 자료를 읽는 중…" : "이 시점에는 찾은 분류군의 산출이 없어 견줄 시대가 없다.";
       return 0;
     }
     var col = columns(payload), own = {}, n = 0, inside = $("coeval-rule").value === "inside";
@@ -920,7 +973,7 @@
       L.circleMarker([row[col.paleolat], row[col.paleolng]], {
         renderer: renderer, radius: 2.6, weight: 0.6, color: "#ffffff", opacity: Math.min(1, a + 0.15),
         fillColor: pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]), fillOpacity: a,
-      }).bindTooltip("<b>" + esc(row[col.collection_name] || "이름 없는 채집지") + "</b><small>" +
+      }).bindTooltip("<b>" + esc(row[col.collection_name] || "이름 없는 산지") + "</b><small>" +
                      esc(row[col.early_interval]) + " · " + esc(countryName(row[col.cc])) + " · 같은 시대 다른 산지</small>",
                      { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { openCollection(e.latlng, row, col); })
@@ -938,6 +991,9 @@
     if (!state.taxon || !rows) return;
     var shown = 0, occs = 0, visible = [];
     rows.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc])) visible.push(row); });
+    // 환경 칸의 수 = 이 지도에서 찾은 분류군의 산출 건수(나라는 거르되 환경은 거르지 않고 센다)
+    syncCounts(rows.filter(function (row) { return !state.country || row[COLUMNS.cc] === state.country; }),
+               COLUMNS, function (row) { return row[COLUMNS.n_occs]; });
     drawCoeval(visible);            // 먼저 그려 찾은 분류군의 점 밑에 깐다
     rows.forEach(function (row) {
       if (!passes(row[COLUMNS.environment], row[COLUMNS.cc])) return;
@@ -952,9 +1008,9 @@
     });
     $("taxon-status").textContent = state.taxon +
       (state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "") + " — " +
-      fmtAge(frame().age) + " 무렵 채집지 " + fmtNum(shown) + "곳 (산출 " + fmtNum(occs) + "건)" +
+      fmtAge(frame().age) + " 무렵 산지 " + fmtNum(shown) + "곳 (산출 " + fmtNum(occs) + "건)" +
       (state.country ? ", " + countryName(state.country) : "") + "." +
-      (state.taxonLow ? " 채집지에 커서를 대면 그 아래 산출이 뜬다." : "");
+      (state.taxonLow ? " 산지에 커서를 대면 그 아래 산출이 뜬다." : "");
     renderLegend();
   }
 
@@ -969,6 +1025,7 @@
     state.taxonRank = "";
     state.taxonLow = false;
     state.dist = null;
+    state.distBase = null;
     renderDist();
     renderChrono();
     $("coeval-row").hidden = true;
@@ -1093,7 +1150,7 @@
   }
 
   // ── 국가 ────────────────────────────────────────────────────────────
-  // 목록은 index.json 의 countries(PBDB 채집지에 나오는 국가 코드 + Natural Earth 한글 이름).
+  // 목록은 index.json 의 countries(PBDB 산지에 나오는 국가 코드 + Natural Earth 한글 이름).
   // PBDB 는 영국을 UK, 대양을 O1~O7 로 적는다 — 국경선 파일은 ISO(GB)다.
   function countryIso(cc) { var c = state.countryBy[cc]; return c ? c.iso : cc; }
   function countryName(cc) { var c = state.countryBy[cc]; return c ? c.ko : cc; }
@@ -1112,7 +1169,7 @@
       active = -1;
       box.innerHTML = items.map(function (c, k) {
         return '<li role="option" data-k="' + k + '"><span class="nm-plain">' + esc(c.ko) + ' <small>' + esc(c.en) +
-          "</small></span><span class=\"meta\">" + esc(c.cc) + " · 채집지 " + fmtNum(c.collections) + "</span></li>";
+          "</small></span><span class=\"meta\">" + esc(c.cc) + " · 산지 " + fmtNum(c.collections) + "</span></li>";
       }).join("") || (q ? '<li class="empty-sg">없다</li>' : "");
       box.hidden = !q;
     };
@@ -1155,7 +1212,7 @@
   function noteCountry() {
     var c = state.countryBy[state.country];
     $("country-note").textContent = !c ? "" :
-      c.ko + (c.ocean ? " (대양, PBDB 해양 시추 등)" : "") + " — 지금 이 나라(땅)에서 나온 채집지만 보인다. 전체 " +
+      c.ko + (c.ocean ? " (대양, PBDB 해양 시추 등)" : "") + " — 지금 이 나라(땅)에서 나온 산지만 보인다. 전체 " +
       fmtNum(c.collections) + "곳.";
   }
 
@@ -1181,7 +1238,7 @@
 
   // ── 고기후: 지표 기온 (Scotese 2021) ────────────────────────────────
   // 가공물은 회색조 PNG 한 장(361×181, 값 = 기온 + offset). 이것을 캔버스로 읽어 (1) 색을 입혀
-  // 겹치고 (2) 커서·채집지 자리의 기온을 읽는다. 색표는 여기에만 있다.
+  // 겹치고 (2) 커서·산지 자리의 기온을 읽는다. 색표는 여기에만 있다.
   var TEMP_STOPS = [[-40, [44, 62, 158]], [-20, [70, 125, 205]], [0, [127, 196, 232]], [10, [232, 240, 214]],
                     [20, [249, 214, 140]], [30, [240, 140, 70]], [40, [178, 24, 43]]];
   function tempColor(t) {
@@ -1264,7 +1321,7 @@
   // 고른 나라의 범위로 지도를 당긴다.
   // - 국경 조각들 가운데 가장 큰 조각을 잡고, 그 둘레(20°)의 조각만 함께 넣는다 — 알래스카·하와이,
   //   날짜변경선에서 잘린 러시아 동쪽 끝 같은 조각까지 넣으면 지구 전체로 물러난다
-  // - 국경이 없으면(대양 코드, 그 시점에 아직 없는 땅) 그 나라 채집지들의 범위로
+  // - 국경이 없으면(대양 코드, 그 시점에 아직 없는 땅) 그 나라 산지들의 범위로
   function focusCountry(picked) {
     var bounds = null;
     if (picked) {

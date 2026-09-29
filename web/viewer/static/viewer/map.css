@@ -141,7 +141,7 @@ body {
   font: 12px/1.6 system-ui, sans-serif; font-variant-numeric: tabular-nums;
 }
 .temp-readout:empty { display: none; }
-/* 과 이하 분류군을 찾을 때 채집지 위에 뜨는 산출 목록 */
+/* 과 이하 분류군을 찾을 때 산지 위에 뜨는 산출 목록 */
 .leaflet-tooltip.occ-tip { width: max-content; min-width: 180px; max-width: 320px; white-space: normal; padding: 6px 8px; }
 .occ-tip b { display: block; margin-bottom: 2px; }
 .occ-tip ul { margin: 0; padding-left: 16px; }

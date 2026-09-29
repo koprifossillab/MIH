@@ -59,7 +59,7 @@
       </section>
 
       <section>
-        <h2 class="with-tool">화석 채집지 <small id="fossil-count"></small>
+        <h2 class="with-tool">화석 산지 <small id="fossil-count"></small>
           <button type="button" id="edit-toggle" class="tool" hidden aria-pressed="false">✎ 명칭 고치기</button></h2>
         <div class="editbar" id="editbar" hidden>
           <p class="note">이름 옆 ✎ 를 눌러 고친다. 비우고 저장하면 기본 이름으로 돌아간다. 고친 이름은 서버에 저장되어 모두에게 보인다.</p>
@@ -73,8 +73,9 @@
         </div>
         <label class="opacity">점 불투명도 <input type="range" id="point-opacity" min="15" max="100" step="5" value="60" aria-label="점 불투명도"> <output id="point-opacity-value">60%</output></label>
         <div class="legend" id="legend" aria-live="polite"></div>
+        <p class="note env-count-note" id="env-count-note">수: 산지 수(지금 지도)</p>
         <div class="envtree" id="envtree"></div>
-        <p class="note">점 하나가 PBDB 채집지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고, 범위가 가장 긴 절(노릭절 21.6 Myr) 이하인 것이 오른다 — 범위가 넓은 채집지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
+        <p class="note">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고, 범위가 가장 긴 절(노릭절 21.6 Myr) 이하인 것이 오른다 — 범위가 넓은 산지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
 
       <section>
@@ -122,7 +123,7 @@
             <ul id="country-list" class="suggest" role="listbox" hidden></ul>
           </div>
         </div>
-        <p class="note" id="country-note">고르면 지금 그 나라 땅에서 나온 채집지만 보이고, 분류군 찾기도 그 나라로 좁힌다.</p>
+        <p class="note" id="country-note">고르면 지금 그 나라 땅에서 나온 산지만 보이고, 분류군 찾기도 그 나라로 좁힌다.</p>
         <div class="links">
           <button type="button" id="country-focus" class="link" hidden>이 나라로 다시 가기</button>
           <button type="button" id="country-clear" class="link" hidden>국가 지우기</button>
@@ -149,7 +150,7 @@
       <section class="sources">
         <h2>자료</h2>
         <ul id="sources"></ul>
-        <p class="note">배경·해안선·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 PBDB 가 채집지 연대의 중간값에서 계산한 것이라, 범위가 넓은 채집지는 지도 시점과 다른 때의 위치다(대개 1° 안).</p>
+        <p class="note">배경·해안선·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 PBDB 가 산지 연대의 중간값에서 계산한 것이라, 범위가 넓은 산지는 지도 시점과 다른 때의 위치다(대개 1° 안).</p>
         <p class="note">MIH {{ version }}{% if built_at %} · 자료 {{ built_at|slice:":10" }}{% endif %}</p>
       </section>
     </aside>
