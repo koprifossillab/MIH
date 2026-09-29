@@ -30,6 +30,9 @@
     enabled: {},                            // 켠 원 용어(UNLISTED 포함)
     payload: null,
     colorBy: "env",                         // 점 색: env(퇴적기원) · age(기 단위 시대)
+    opacity: 0.6,                           // 점 불투명도 — 겹친 점과 밑그림이 함께 보이게
+    taxonRank: "", taxonLow: false,         // 찾은 분류군의 계급 — 과 이하이면 커서만 대도 산출 목록
+    grids: {},                              // 기온 격자(파일 → {w, h, data, offset})
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
     labels: { env: {} }, editable: false, needsKey: false, editing: false,
   };
@@ -106,7 +109,13 @@
     }).observe($("map"));
   }
 
-  var relief = L.imageOverlay("", WORLD, { interactive: false, className: "relief" }).addTo(map);
+  // 겹 순서: 배경(380) < 기온(390) < 해안선·국경(400) < 화석(450)
+  map.createPane("base").style.zIndex = 380;
+  map.createPane("climate").style.zIndex = 390;
+  var relief = L.imageOverlay("", WORLD, { interactive: false, className: "relief", pane: "base" }).addTo(map);
+  // 기온 격자는 1° 칸의 가운데가 정수 경위도다(361×181). 그림 가장자리를 반 칸 밖에 둬야 칸이 제자리에 앉는다.
+  var climateLayer = L.imageOverlay("", [[-90.5, -180.5], [90.5, 180.5]],
+    { interactive: false, className: "climate", pane: "climate", opacity: 0.55 });
   // 해안선은 SVG 로, 화석은 그 위 전용 창의 캔버스로 그린다. 둘 다 캔버스로 두면 나중에
   // 생긴 해안선 캔버스가 화석 캔버스를 덮어 점을 눌러도 아무 일이 없다.
   var coastLayer = L.geoJSON(null, {
@@ -253,7 +262,7 @@
       return '<span class="unit" style="background:' + u.color + ";color:" + ink(u.color) + '" title="' + esc(u.en) + '">' +
         esc(u.rank === "epoch" ? chipName(u) : u.ko) + "</span>";
     }).join('<span class="sep">›</span>');
-    $("now-label").textContent = f.label;
+    $("now-label").textContent = f.label + (f.climate ? " · 전 지구 평균 " + f.climate.gmst.toFixed(1) + " ℃" : "");
   }
 
   // ── 시점 ────────────────────────────────────────────────────────────
@@ -274,6 +283,7 @@
     noteRelief(f);
     drawCoast(f);
     drawBorders(f, false);
+    drawClimate(f);
     loadFossils(f);
     if (state.taxon) searchTaxon(state.taxon);
     [state.i - 1, state.i + 1].forEach(function (j) {
@@ -521,10 +531,12 @@
   }
 
   // 점 하나. 테두리를 흰색으로 두어 푸른 바다 위 푸른 점, 짙은 땅 위 붉은 점도 보이게 한다.
+  // 반투명하게 두어(기본 60%) 겹친 점과 그 밑의 해안선·지형이 함께 보이게 한다.
   function marker(latlng, color, big) {
+    var a = state.opacity;
     return L.circleMarker(latlng, {
-      renderer: renderer, radius: big ? 4.6 : 3.4, weight: big ? 1.4 : 0.8,
-      color: big ? "#111" : "#ffffff", opacity: 0.9, fillColor: color, fillOpacity: 0.95,
+      renderer: renderer, radius: big ? 4.6 : 3.4, weight: big ? 1.2 : 0.7,
+      color: big ? "#111" : "#ffffff", opacity: Math.min(1, a + 0.15), fillColor: color, fillOpacity: a,
     });
   }
 
@@ -584,6 +596,17 @@
     el.innerHTML = html;
     var box = el.querySelector(".taxa-box");
     var popup = L.popup({ maxWidth: 340 }).setLatLng(latlng).setContent(el).openOn(map);
+    // 그때 그 자리의 지표 기온 — 기온 층을 켜지 않아도 적는다.
+    var f = frame();
+    if (f.climate) {
+      loadGrid(f.climate).then(function (grid) {
+        var dl = el.querySelector("dl");
+        dl.insertAdjacentHTML("beforeend", "<dt>그때 기온</dt><dd>" +
+          tempAt(grid, Number(row[col.paleolat]), Number(row[col.paleolng])).toFixed(0) +
+          " ℃ <small>(" + fmtAge(f.climate.source_age) + " 지도, Scotese 2021)</small></dd>");
+        popup.update();
+      });
+    }
     getJSON(PBDB + "occs/list.json?coll_id=" + no + "&show=class&vocab=pbdb&limit=500").then(function (data) {
       var items = (data.records || []).map(function (r) {
         var grp = [r.phylum, r["class"]].filter(function (x) { return x && x !== "NO_CLASS_SPECIFIED"; }).join(" · ");
@@ -871,6 +894,88 @@
     });
   }
 
+  // ── 고기후: 지표 기온 (Scotese 2021) ────────────────────────────────
+  // 가공물은 회색조 PNG 한 장(361×181, 값 = 기온 + offset). 이것을 캔버스로 읽어 (1) 색을 입혀
+  // 겹치고 (2) 커서·채집지 자리의 기온을 읽는다. 색표는 여기에만 있다.
+  var TEMP_STOPS = [[-40, [44, 62, 158]], [-20, [70, 125, 205]], [0, [127, 196, 232]], [10, [232, 240, 214]],
+                    [20, [249, 214, 140]], [30, [240, 140, 70]], [40, [178, 24, 43]]];
+  function tempColor(t) {
+    if (t <= TEMP_STOPS[0][0]) return TEMP_STOPS[0][1];
+    for (var k = 1; k < TEMP_STOPS.length; k++) {
+      var hi = TEMP_STOPS[k];
+      if (t <= hi[0]) {
+        var lo = TEMP_STOPS[k - 1], f = (t - lo[0]) / (hi[0] - lo[0]);
+        return [0, 1, 2].map(function (c) { return Math.round(lo[1][c] + (hi[1][c] - lo[1][c]) * f); });
+      }
+    }
+    return TEMP_STOPS[TEMP_STOPS.length - 1][1];
+  }
+
+  function loadGrid(info) {
+    if (!state.grids[info.file]) {
+      state.grids[info.file] = new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () {
+          var c = document.createElement("canvas");
+          c.width = img.width; c.height = img.height;
+          var ctx = c.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0);
+          var px = ctx.getImageData(0, 0, c.width, c.height).data, values = new Float32Array(c.width * c.height);
+          for (var k = 0; k < values.length; k++) values[k] = px[k * 4] - info.offset;
+          resolve({ w: c.width, h: c.height, values: values });
+        };
+        img.onerror = reject;
+        img.src = DATA + info.file;
+      });
+    }
+    return state.grids[info.file];
+  }
+
+  // 격자 칸의 가운데가 정수 경위도(북 90 → 남 −90, 서 −180 → 동 180)다.
+  function tempAt(grid, lat, lng) {
+    var row = Math.round(90 - lat), col = Math.round(((lng + 180) % 360 + 360) % 360);
+    row = Math.max(0, Math.min(grid.h - 1, row));
+    col = Math.max(0, Math.min(grid.w - 1, col));
+    return grid.values[row * grid.w + col];
+  }
+
+  function drawClimate(f) {
+    var on = $("climate").checked, info = f.climate;
+    $("temp-legend").hidden = !on;
+    $("climate-note").textContent = !info ? "이 시점에는 기온 지도가 없다." :
+      (info.source_age === f.age ? "" : "가장 가까운 " + fmtAge(info.source_age) + " 지도. ") +
+      "전 지구 평균 " + info.gmst.toFixed(1) + " ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.";
+    if (!on || !info) { map.removeLayer(climateLayer); return; }
+    var want = f.age;
+    loadGrid(info).then(function (grid) {
+      if (frame().age !== want || !$("climate").checked) return;
+      var c = document.createElement("canvas");
+      c.width = grid.w; c.height = grid.h;
+      var ctx = c.getContext("2d"), out = ctx.createImageData(grid.w, grid.h);
+      for (var k = 0; k < grid.values.length; k++) {
+        var rgb = tempColor(grid.values[k]);
+        out.data[k * 4] = rgb[0]; out.data[k * 4 + 1] = rgb[1]; out.data[k * 4 + 2] = rgb[2]; out.data[k * 4 + 3] = 255;
+      }
+      ctx.putImageData(out, 0, 0);
+      climateLayer.setUrl(c.toDataURL());
+      if (!map.hasLayer(climateLayer)) climateLayer.addTo(map);
+    });
+  }
+
+  // 커서 자리의 기온 — 기온 층을 켰을 때만.
+  var readout = L.control({ position: "bottomleft" });
+  readout.onAdd = function () { var div = L.DomUtil.create("div", "temp-readout"); div.id = "temp-readout"; return div; };
+  readout.addTo(map);
+  map.on("mousemove", function (e) {
+    var f = frame(), box = $("temp-readout");
+    if (!f || !f.climate || !$("climate").checked) { box.textContent = ""; return; }
+    loadGrid(f.climate).then(function (grid) {
+      box.textContent = "기온 " + tempAt(grid, e.latlng.lat, e.latlng.lng).toFixed(0) + " ℃ · " +
+        e.latlng.lat.toFixed(1) + "°, " + e.latlng.lng.toFixed(1) + "°";
+    });
+  });
+  map.on("mouseout", function () { $("temp-readout").textContent = ""; });
+
   // ── 범례(시대 색) ───────────────────────────────────────────────────
   // 퇴적기원 색은 환경 나무의 색 견본이 범례를 겸한다. 시대 색일 때는 지금 보이는 점의 기를 적는다.
   function renderLegend() {
@@ -911,6 +1016,12 @@
     });
     $("coast").addEventListener("change", function () { drawCoast(frame()); });
     $("borders").addEventListener("change", function () { drawBorders(frame(), false); });
+    $("climate").addEventListener("change", function () { drawClimate(frame()); });
+    $("point-opacity").addEventListener("input", function () {
+      state.opacity = +this.value / 100;
+      $("point-opacity-value").textContent = this.value + "%";
+      redraw();
+    });
     document.querySelectorAll('input[name="color-by"]').forEach(function (radio) {
       radio.addEventListener("change", function () { if (radio.checked) { state.colorBy = radio.value; redraw(); } });
     });
@@ -942,6 +1053,9 @@
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
+      $("temp-bar").style.background = "linear-gradient(90deg," + [-40, -30, -20, -10, 0, 10, 20, 30, 40].map(function (t) {
+        return "rgb(" + tempColor(t).join(",") + ")";
+      }).join(",") + ")";
       initEnvironments(index.environments || []);
       initCountries(index.countries || []);
       loadLabels();

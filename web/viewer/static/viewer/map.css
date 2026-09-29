@@ -108,6 +108,25 @@ body {
 .env .kids { margin-left: 13px; padding-left: 12px; border-left: 1px solid var(--line); }
 .env.group > .row, .env.term > .row { font-size: 13px; }
 .line.border { border-top: 1px solid var(--ink); opacity: .6; }
+.line.temp { height: 8px; border: 0; border-radius: 2px; background: linear-gradient(90deg, #2c3e9e, #7fc4e8, #f5f0c8, #f39a4a, #b2182b); }
+.opacity { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.opacity input { flex: 1; min-width: 0; }
+.opacity output { width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+.temp-legend { margin: 2px 0 4px 24px; }
+.temp-legend .bar { height: 8px; border-radius: 2px; }
+.temp-legend .ticks { margin: 1px 0 0; }
+/* 지도 위 커서 자리의 기온 */
+.temp-readout {
+  background: rgba(20, 22, 26, .78); color: #fff; padding: 2px 8px; border-radius: 4px;
+  font: 12px/1.6 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+}
+.temp-readout:empty { display: none; }
+/* 과 이하 분류군을 찾을 때 채집지 위에 뜨는 산출 목록 */
+.leaflet-tooltip.occ-tip { max-width: 320px; white-space: normal; padding: 6px 8px; }
+.occ-tip b { display: block; margin-bottom: 2px; }
+.occ-tip ul { margin: 0; padding-left: 16px; }
+.occ-tip li i { font-style: italic; }
+.occ-tip small { color: #666; }
 .colorby { display: flex; gap: 10px; align-items: center; font-size: 13px; margin: 2px 0 6px; }
 .colorby > span { color: var(--muted); font-size: 12px; }
 .colorby label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
