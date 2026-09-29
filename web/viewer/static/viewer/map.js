@@ -8,6 +8,9 @@
   "use strict";
 
   var app = document.getElementById("app");
+  // 화면 문구(027) — i18n.js. `t` 는 이 파일에서 지역 이름으로 흔히 써서 `tr` 로 받는다.
+  var I18N = window.WegenerI18n, tr = I18N.t, EN = I18N.lang === "en";
+  I18N.apply();
   var DATA = app.dataset.dataBase.replace(/x$/, "");
   var LABELS_URL = app.dataset.labelsUrl;
   // 시점 파일은 하루 캐시된다(views.FRAME_MAX_AGE). 다시 가공해도 이름이 같아, 주소에 가공 시각을 붙여
@@ -84,7 +87,7 @@
   }
 
   function fmtAge(age) { return (age % 1 ? age.toFixed(1) : String(age)) + " Ma"; }
-  function fmtNum(n) { return Number(n).toLocaleString("ko-KR"); }
+  function fmtNum(n) { return Number(n).toLocaleString(EN ? "en-US" : "ko-KR"); }
 
   // ── 점 색 ───────────────────────────────────────────────────────────
   // 퇴적기원: 환경군의 색(해양기원 하늘색→남색, 육상기원 주황→빨강, 미상 흰색).
@@ -125,12 +128,12 @@
   function tooWide(precise, maxMa, minMa) {
     return (precise || state.showWide) && !ageOk(precise, maxMa, minMa);
   }
-  function fmtSpan(v) { return v === Infinity ? "제한 없음" : v + " Myr 이하"; }
+  function fmtSpan(v) { return v === Infinity ? tr("span.none") : tr("span.le", { v: v }); }
   // 범위가 길어 가린 수를 적는다. what: "산지" · "산출 산지"
   function spanNote(hidden, what) {
     $("span-value").textContent = fmtSpan(state.maxSpan);
     $("span-note").textContent = state.maxSpan === Infinity ? "" :
-      "연대 범위가 " + state.maxSpan + " Myr 를 넘어 가린 " + what + " " + fmtNum(hidden) + "곳.";
+      tr("span.hidden", { max: state.maxSpan, what: what, n: fmtNum(hidden) });
   }
 
   // 연대가 절 단위로 정해졌는가(pipeline/intervals.is_vague 의 반대). PBDB 시대 이름 둘 가운데 하나라도
@@ -420,7 +423,8 @@
   function writeHash(f) {
     var lon0 = Math.round(Mollweide.lon0 * 10) / 10;
     try {
-      history.replaceState(null, "", "#age=" + f.age + (state.proj === "moll" ? "&proj=moll" + (lon0 ? "&lon=" + lon0 : "") : ""));
+      history.replaceState(null, "", "#age=" + f.age + (state.proj === "moll" ? "&proj=moll" + (lon0 ? "&lon=" + lon0 : "") : "") +
+        (EN ? "&lang=en" : ""));
     } catch (e) { /* 미리보기 등 */ }
   }
   // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
@@ -496,8 +500,7 @@
     noteRelief(f);
   });
   function noteRelief(f) {
-    $("relief-note").textContent = "배경: PaleoDEM " + (f.grid === "6min" ? "0.1° 격자" : "1° 격자") +
-      ", " + reliefWidth() + " 폭 그림.";
+    $("relief-note").textContent = tr("relief.note", { grid: tr(f.grid === "6min" ? "grid.6min" : "grid.1deg"), w: reliefWidth() });
   }
 
   // ── 층서표 ──────────────────────────────────────────────────────────
@@ -574,12 +577,12 @@
         b.style.color = ink(u.color);
         b.textContent = chipName(u);
         if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
-        b.title = u.full + " · " + u.en + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? " · 지금 지도" : "") +
-          (n !== null ? " · " + state.taxon + " 산출 " + fmtNum(n) + "건" : "");
+        b.title = u.full + (EN ? "" : " · " + u.en) + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? tr("chip.now") : "") +
+          (n !== null ? tr("chip.taxon", { taxon: state.taxon, n: fmtNum(n) }) : "");
         b.addEventListener("click", function () { focusUnit(u); });
         box.appendChild(b);
       });
-      if (!lists[rank].length) box.innerHTML = '<span class="none">' + (rank === "age" && picked.epoch ? "절로 나뉘지 않았다" : "—") + "</span>";
+      if (!lists[rank].length) box.innerHTML = '<span class="none">' + (rank === "age" && picked.epoch ? tr("chrono.noage") : "—") + "</span>";
     });
   }
 
@@ -597,8 +600,8 @@
     var j = bestInside >= 0 ? bestInside : best;
     show(j, { focus: u });
     $("chrono-note").textContent = bestInside >= 0
-      ? u.full + " (" + u.base + "–" + u.top + " Ma) 안의 " + fmtAge(state.frames[j].age) + " 지도."
-      : u.full + " (" + u.base + "–" + u.top + " Ma) 안에는 지도 시점이 없다 — 가장 가까운 " + fmtAge(state.frames[j].age) + " 지도를 보인다.";
+      ? tr("focus.inside", { unit: u.full, base: u.base, top: u.top, age: fmtAge(state.frames[j].age) })
+      : tr("focus.nearest", { unit: u.full, base: u.base, top: u.top, age: fmtAge(state.frames[j].age) });
   }
 
   function renderHeader(f) {
@@ -607,7 +610,7 @@
       return '<span class="unit" style="background:' + u.color + ";color:" + ink(u.color) + '" title="' + esc(u.en) + '">' +
         esc(u.rank === "epoch" ? chipName(u) : u.ko) + "</span>";
     }).join('<span class="sep">›</span>');
-    $("now-label").textContent = f.label + (f.climate ? " · 전 지구 평균 " + f.climate.gmst.toFixed(1) + " ℃" : "");
+    $("now-label").textContent = f.label + (f.climate ? tr("header.gmst", { t: f.climate.gmst.toFixed(1) }) : "");
   }
 
   // ── 시점 ────────────────────────────────────────────────────────────
@@ -643,10 +646,10 @@
   // 옛 해안선은 새 것이 올 때까지 둔다 — 먼저 지우면 받는 동안 비어 깜박인다(021)
   function drawCoast(f) {
     var note = $("coast-note");
-    if (!f.coastline) { coastLayer.clearLayers(); note.textContent = "이 시점 ±10 Myr 안에 해안선 자료가 없다."; return; }
+    if (!f.coastline) { coastLayer.clearLayers(); note.textContent = tr("coast.none"); return; }
     note.textContent = f.coastline.age === f.age
       ? "PaleoCoastlines " + fmtAge(f.coastline.age) + "."
-      : "가장 가까운 " + fmtAge(f.coastline.age) + " 해안선을 그었다.";
+      : tr("coast.nearest", { age: fmtAge(f.coastline.age) });
     var want = f.age;
     getJSON(dataUrl(f.coastline.file)).then(function (geo) {
       if (frame().age !== want) return;
@@ -716,10 +719,10 @@
     var el = document.createElement("div");
     el.className = "env " + level;
     el.dataset.id = id;
-    el.innerHTML = '<div class="row"><button type="button" class="tog" aria-label="펼치기" hidden>▸</button>' +
+    el.innerHTML = '<div class="row"><button type="button" class="tog" aria-label="' + tr("tog.open") + '" hidden>▸</button>' +
       '<label><input type="checkbox" data-level="' + level + '" data-id="' + esc(id) + '"> ' + prefix +
       ' <span class="name" data-label="' + esc(labelId) + '" data-default="' + esc(ko) + '">' + esc(ko) + "</span>" +
-      (original ? ' <span class="orig">' + esc(original) + "</span>" : "") + "</label>" +
+      (original && original !== ko ? ' <span class="orig">' + esc(original) + "</span>" : "") + "</label>" +
       '<button type="button" class="pen" title="이름 고치기" aria-label="' + esc(ko) + ' 이름 고치기">✎</button>' +
       '<small class="n" data-count="' + level + ":" + esc(id) + '"></small></div>';
     return el;
@@ -823,7 +826,7 @@
     var tog = el.querySelector(".tog");
     var paint = function () {
       tog.textContent = kids.hidden ? "▸" : "▾";
-      tog.setAttribute("aria-label", kids.hidden ? "펼치기" : "접기");
+      tog.setAttribute("aria-label", tr(kids.hidden ? "tog.open" : "tog.close"));
       tog.setAttribute("aria-expanded", String(!kids.hidden));
     };
     tog.hidden = false;
@@ -859,7 +862,7 @@
       counts["group:" + g] = (counts["group:" + g] || 0) + n;
       counts["top:" + top] = (counts["top:" + top] || 0) + n;
     });
-    $("env-count-note").textContent = weight ? "수: " + state.taxon + " 산출 건수(지금 지도)" : "수: 산지 수(지금 지도)";
+    $("env-count-note").textContent = weight ? tr("env.count.occ", { taxon: state.taxon }) : tr("env.count.coll");
     document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
       var n = counts[el.dataset.count] || 0;
       el.textContent = fmtNum(n);
@@ -920,7 +923,7 @@
     fossilLayer.clearLayers();
     if (!payload) return;
     var col = columns(payload);
-    if (state.taxon) { $("fossil-count").textContent = "분류군 찾기 결과만 보인다"; return; }   // 수는 drawTaxa 가 적는다
+    if (state.taxon) { $("fossil-count").textContent = tr("fossil.taxonOnly"); return; }   // 수는 drawTaxa 가 적는다
     // 환경 칸의 수 — 나라와 연대 거르기는 따르고 환경은 따르지 않는다(018 부터 연대 거르기도 따른다)
     var inCountry = payload.rows.filter(function (row) {
       return (!state.country || row[col.cc] === state.country) && ageOk(rowPrecise(row, col), row[col.max_ma], row[col.min_ma]);
@@ -928,7 +931,7 @@
     syncCounts(inCountry, col);
     spanNote(payload.rows.filter(function (row) {
       return (!state.country || row[col.cc] === state.country) && tooWide(rowPrecise(row, col), row[col.max_ma], row[col.min_ma]);
-    }).length, "산지");
+    }).length, tr("what.coll"));
     var shown = 0, wide = 0;
     payload.rows.forEach(function (row) {
       var precise = rowPrecise(row, col);
@@ -940,8 +943,8 @@
         .on("click", function (e) { openCollection(e.latlng, row, col); })
         .addTo(fossilLayer);
     });
-    $("fossil-count").textContent = fmtNum(shown) + (shown === payload.rows.length ? "곳" : " / " + fmtNum(payload.rows.length) + "곳") +
-      (wide ? " (모호한 연대 " + fmtNum(wide) + ")" : "");
+    $("fossil-count").textContent = (shown === payload.rows.length ? tr("fossil.all", { n: fmtNum(shown) })
+      : tr("fossil.some", { n: fmtNum(shown), total: fmtNum(payload.rows.length) })) + (wide ? tr("fossil.vague", { n: fmtNum(wide) }) : "");
     renderLegend();
   }
 
@@ -957,20 +960,20 @@
         if (g.id === group) groupName = labelFor(top.id, top.ko) + " › " + labelFor(g.id, g.ko);
       });
     });
-    var html = "<h3>" + esc(row[col.collection_name] || "이름 없는 산지") + "</h3><dl>" +
-      "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma, 범위 " +
+    var html = "<h3>" + esc(row[col.collection_name] || tr("pop.noname")) + "</h3><dl>" +
+      "<dt>" + tr("pop.age") + "</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma, " + tr("pop.range") + " " +
         +(row[col.max_ma] - row[col.min_ma]).toFixed(1) + " Myr)" +
-        (rowPrecise(row, col) ? "" : '<br><small class="wide-note">▲ 모호한 연대 — 절 단위로 정해지지 않은 기록(세·기·대). 걸친 모든 시점에 보인다</small>') + "</dd>" +
-      (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
-      "<dt>환경</dt><dd>" + esc(env || "기록 없음") + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
-      "<dt>고좌표</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°<br><small>" +
+        (rowPrecise(row, col) ? "" : '<br><small class="wide-note">' + tr("pop.vague") + "</small>") + "</dd>" +
+      (row[col.formation] ? "<dt>" + tr("pop.formation") + "</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
+      "<dt>" + tr("pop.env") + "</dt><dd>" + esc(env || tr("pop.noenv")) + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
+      "<dt>" + tr("pop.paleo") + "</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°<br><small>" +
         (col.rotated != null && row[col.rotated]
-          ? "이 지도 나이(" + fmtAge(frame().age) + ")로 계산 — PALEOMAP v19o"
-          : "PBDB 제공 — 산지 연대의 중간값에서 계산한 자리") + "</small></dd>" +
-      (row[col.cc] ? "<dt>지금 국가</dt><dd>" + esc(countryName(row[col.cc])) + "</dd>" : "") +
-      (row.matched ? "<dt>찾은 분류군</dt><dd><i>" + row.matched.map(esc).join("</i>, <i>") + "</i></dd>" : "") +
-      '</dl><a href="' + PBDB_COLL_PAGE + no + '" target="_blank" rel="noopener">PBDB 산지 ' + no + "</a>" +
-      '<div class="muted taxa-box">산출 ' + row[col.n_occs] + "건 읽는 중…</div>";
+          ? tr("pop.rotated", { age: fmtAge(frame().age) })
+          : tr("pop.pbdb")) + "</small></dd>" +
+      (row[col.cc] ? "<dt>" + tr("pop.country") + "</dt><dd>" + esc(countryName(row[col.cc])) + "</dd>" : "") +
+      (row.matched ? "<dt>" + tr("pop.matched") + "</dt><dd><i>" + row.matched.map(esc).join("</i>, <i>") + "</i></dd>" : "") +
+      '</dl><a href="' + PBDB_COLL_PAGE + no + '" target="_blank" rel="noopener">' + tr("pop.link", { no: no }) + "</a>" +
+      '<div class="muted taxa-box">' + tr("pop.loading", { n: row[col.n_occs] }) + "</div>";
     // 내용을 문자열이 아니라 요소로 준다. 문자열이면 popup.update() 가 처음 문자열로 다시
     // 그려, 받아 온 산출 목록이 "읽는 중…" 으로 되돌아간다.
     var el = document.createElement("div");
@@ -983,9 +986,9 @@
     if (f.climate) {
       loadGrid(f.climate).then(function (grid) {
         var dl = el.querySelector("dl");
-        dl.insertAdjacentHTML("beforeend", "<dt>그때 기온</dt><dd>" +
+        dl.insertAdjacentHTML("beforeend", "<dt>" + tr("pop.temp") + "</dt><dd>" +
           tempAt(grid, Number(row[col.paleolat]), Number(row[col.paleolng])).toFixed(0) +
-          " ℃ <small>(" + fmtAge(f.climate.source_age) + " 지도, Scotese 2021)</small></dd>");
+          (EN ? " °C" : " ℃") + " <small>(" + tr("pop.tempsrc", { age: fmtAge(f.climate.source_age) }) + ")</small></dd>");
         popup.update();
       });
     }
@@ -995,9 +998,9 @@
         return "<li><i>" + esc(r.accepted_name || r.identified_name) + "</i>" + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
       });
       box.className = items.length ? "" : "muted";
-      box.innerHTML = items.length ? '<ul class="taxa">' + items.join("") + "</ul>" : "산출 기록이 없다.";
+      box.innerHTML = items.length ? '<ul class="taxa">' + items.join("") + "</ul>" : tr("pop.none");
       popup.update();
-    }).catch(function () { box.textContent = "PBDB 에 닿지 못했다 — 위 링크로 본다."; });
+    }).catch(function () { box.textContent = tr("pop.fail"); });
   }
 
   // ── 분류군 찾기 ─────────────────────────────────────────────────────
@@ -1019,16 +1022,16 @@
 
   // 커서를 댔을 때의 내용. 과 이하이면 이 산지에서 찾은 분류군 아래의 산출을 모두(15 건까지) 적는다.
   function taxonTip(row) {
-    var head = "<b>" + esc(row[COLUMNS.collection_name] || "이름 없는 산지") + "</b>";
+    var head = "<b>" + esc(row[COLUMNS.collection_name] || tr("pop.noname")) + "</b>";
     if (!state.taxonLow) {
-      return head + "<small>" + esc(state.taxon) + " 산출 " + row.occs.length + "건 — 누르면 목록</small>";
+      return head + "<small>" + tr("tip.count", { taxon: esc(state.taxon), n: row.occs.length }) + "</small>";
     }
     var items = row.occs.slice(0, TOOLTIP_MAX).map(function (o) {
       var shown = "<i>" + esc(o.accepted) + "</i>";
       if (o.identified && o.identified !== o.accepted) shown += " <small>(" + esc(o.identified) + ")</small>";
       return "<li>" + shown + (o.rank && o.rank !== "species" ? " <small>" + esc(RANK_KO[o.rank] || o.rank) + "</small>" : "") + "</li>";
     });
-    if (row.occs.length > TOOLTIP_MAX) items.push("<li><small>외 " + (row.occs.length - TOOLTIP_MAX) + "건 — 누르면 모두</small></li>");
+    if (row.occs.length > TOOLTIP_MAX) items.push("<li><small>" + tr("tip.more", { n: row.occs.length - TOOLTIP_MAX }) + "</small></li>");
     return head + "<ul>" + items.join("") + "</ul>";
   }
 
@@ -1138,8 +1141,7 @@
     if (best < 0) { focusUnit(p); return; }
     stopTour();
     show(best, { focus: p });
-    $("chrono-note").textContent = p.full + " 에서 " + state.taxon + " 산출이 가장 많은 " + fmtAge(state.frames[best].age) +
-      " 지도(" + fmtNum(d.frames[best]) + "건).";
+    $("chrono-note").textContent = tr("rich", { unit: p.full, taxon: state.taxon, age: fmtAge(state.frames[best].age), n: fmtNum(d.frames[best]) });
   }
 
   function renderDist() {
@@ -1148,8 +1150,8 @@
     strip.hidden = box.hidden;
     strip.innerHTML = "";
     if (box.hidden) return;
-    $("dist-total").textContent = "산출 " + fmtNum(d.total) + "건" + (state.country ? " · " + countryName(state.country) : "") +
-      (d.filtered ? " · 고른 퇴적기원·연대 범위만" : "");
+    $("dist-total").textContent = tr("dist.total", { n: fmtNum(d.total) }) + (state.country ? " · " + countryName(state.country) : "") +
+      (d.filtered ? tr("dist.filtered") : "");
     // 산출이 있는 기 — 층서표 색 아이콘에 수를 붙인다. 누르면 그 기의 가운데 지도로 간다.
     var periods = state.periods.slice().sort(byOldFirst).filter(function (p) { return d.units[p.id]; });
     $("dist-periods").innerHTML = "";
@@ -1160,17 +1162,17 @@
       b.style.background = p.color;
       b.style.color = ink(p.color);
       b.innerHTML = esc(p.ko) + '<span class="cnt">' + fmtNum(d.units[p.id]) + "</span>";
-      b.title = p.full + " · 산출 " + fmtNum(d.units[p.id]) + "건 — 이 기에서 산출이 가장 많은 지도로";
+      b.title = tr("dist.chip", { unit: p.full, n: fmtNum(d.units[p.id]) });
       b.addEventListener("click", function () { goToRichest(p); });
       $("dist-periods").appendChild(b);
     });
     var a = d.app;
-    $("dist-note").textContent = (!periods.length ? (d.exact ? "고른 퇴적기원에 드는 산출이 없다. " : "PBDB 에 절 단위로 매겨진 산출이 없다. ") : "") +
-      (a && a.early_interval ? "처음 " + a.early_interval + " (" + a.firstapp_max_ma + "–" + a.firstapp_min_ma + " Ma) · 마지막 " +
-        a.late_interval + " (" + a.lastapp_max_ma + "–" + a.lastapp_min_ma + " Ma). " : "") +
+    $("dist-note").textContent = (!periods.length ? tr(d.exact ? "dist.noneExact" : "dist.noneStage") : "") +
+      (a && a.early_interval ? tr("dist.app", { e: a.early_interval, emax: a.firstapp_max_ma, emin: a.firstapp_min_ma,
+        l: a.late_interval, lmax: a.lastapp_max_ma, lmin: a.lastapp_min_ma }) : "") +
       (d.exact
-        ? "칩과 막대의 수는 산출 하나하나를 지도와 같은 규칙으로 센 것이고, 고른 퇴적기원과 연대 범위를 따른다."
-        : "산출이 " + fmtNum(OCC_LIMIT) + "건이 넘어 PBDB 가 절 단위로 센 수를 쓴다 — 퇴적기원·연대 범위 선택이 이 수에는 반영되지 않고, 절보다 넓게 매겨진 산출은 빠진다.");
+        ? tr("dist.exact")
+        : tr("dist.coarse", { limit: fmtNum(OCC_LIMIT) }));
     // 시점 막대 밑 — 시점마다 로그 높이의 막대
     var max = 0;
     Object.keys(d.frames).forEach(function (j) { max = Math.max(max, d.frames[j]); });
@@ -1179,7 +1181,7 @@
       var bar = document.createElement("span");
       bar.style.left = ((OLDEST - Math.min(f.age, OLDEST)) / OLDEST * 100) + "%";
       bar.style.height = Math.max(2, Math.round(Math.log(1 + n) / Math.log(1 + max) * 14)) + "px";
-      bar.title = fmtAge(f.age) + " · 산출 " + fmtNum(n) + "건";
+      bar.title = tr("dist.bar", { age: fmtAge(f.age), n: fmtNum(n) });
       bar.addEventListener("click", function () { show(+j); });
       strip.appendChild(bar);
     });
@@ -1205,7 +1207,7 @@
     if ($("play").checked) { $("play").checked = false; $("play").dispatchEvent(new Event("change")); }
     tour.on = true;
     tour.k = 0;
-    $("tour").textContent = "■ 멈추기";
+    $("tour").textContent = tr("tour.stop");
     $("tour").setAttribute("aria-pressed", "true");
     tourStep();
   }
@@ -1214,9 +1216,9 @@
     if (!tour.on) return;
     tour.on = false;
     clearTimeout(tour.timer);
-    $("tour").textContent = "▶ 산출 시대 차례로 보기";
+    $("tour").textContent = tr("tour.start");
     $("tour").setAttribute("aria-pressed", "false");
-    $("tour-status").textContent = finished ? "끝 — 가장 최근 산출 시점까지 보였다." : "";
+    $("tour-status").textContent = finished ? tr("tour.done") : "";
   }
 
   function tourStep() {
@@ -1226,8 +1228,7 @@
     show(j);
     var next = tour.list[tour.k + 1];
     if (next !== undefined) getJSON(taxonUrl(state.taxon, state.frames[next].age)).catch(function () {});
-    $("tour-status").textContent = (tour.k + 1) + " / " + tour.list.length + " · " + fmtAge(state.frames[j].age) +
-      " · 산출 " + fmtNum(state.dist.frames[j]) + "건(절 단위)";
+    $("tour-status").textContent = tr("tour.step", { k: tour.k + 1, total: tour.list.length, age: fmtAge(state.frames[j].age), n: fmtNum(state.dist.frames[j]) });
     Promise.resolve(state.taxonReady).catch(function () {}).then(function () {
       if (!tour.on) return;
       tour.timer = setTimeout(function () { tour.k += 1; tourStep(); }, +$("tour-speed").value);
@@ -1248,7 +1249,7 @@
       drawTaxa();
     });
     $("taxon-clear").hidden = false;
-    $("taxon-status").textContent = name + " — " + fmtAge(f.age) + " 무렵을 PBDB 에 묻는 중…";
+    $("taxon-status").textContent = tr("taxon.asking", { name: name, age: fmtAge(f.age) });
     drawFossils();
     // 결과를 그리고 나서 풀리는 약속을 돌려준다 — 차례로 보기(011)가 이것을 기다린다.
     return getJSON(taxonUrl(name, f.age)).then(function (data) {
@@ -1278,7 +1279,7 @@
       drawTaxa();
     }).catch(function (err) {
       if (seq !== taxonSeq) return;
-      $("taxon-status").textContent = "찾지 못했다: " + (err.message || err);
+      $("taxon-status").textContent = tr("taxon.fail", { err: err.message || err });
     });
   }
 
@@ -1315,7 +1316,7 @@
       old = Math.max(old, Number(row[COLUMNS.max_ma]));
       young = Math.min(young, Number(row[COLUMNS.min_ma]));
     });
-    return { old: old, young: young, label: "산출 범위" };
+    return { old: old, young: young, label: tr("coeval.range") };
   }
 
   // PBDB 절 이름 → 한글판 이름(가운데 나이가 든 우리 절). 없으면 PBDB 이름 그대로.
@@ -1334,7 +1335,7 @@
     if (!GENUS_RANKS[state.taxonRank] || !$("coeval").checked) { note.textContent = ""; return 0; }
     var span = coevalSpan(rows), payload = state.payload;
     if (!span || !payload) {
-      note.textContent = span ? "산지 자료를 읽는 중…" : "이 시점에는 찾은 분류군의 산출이 없어 견줄 시대가 없다.";
+      note.textContent = tr(span ? "coeval.loading" : "coeval.none");
       return 0;
     }
     var col = columns(payload), own = {}, n = 0, inside = $("coeval-rule").value === "inside";
@@ -1352,16 +1353,15 @@
                     fillColor: color, fillOpacity: a };
       (precise ? L.circleMarker([row[col.paleolat], row[col.paleolng]], small)
                : new L.TriangleMarker([row[col.paleolat], row[col.paleolng]], small))
-        .bindTooltip("<b>" + esc(row[col.collection_name] || "이름 없는 산지") + "</b><small>" +
+        .bindTooltip("<b>" + esc(row[col.collection_name] || tr("pop.noname")) + "</b><small>" +
                      esc(row[col.early_interval]) + (row[col.late_interval] ? "–" + esc(row[col.late_interval]) : "") +
-                     " · " + esc(countryName(row[col.cc])) + " · 같은 시대 다른 산지" + (precise ? "" : " · ▲ 모호한 연대") + "</small>",
+                     " · " + esc(countryName(row[col.cc])) + tr("coeval.tip") + (precise ? "" : tr("coeval.vague")) + "</small>",
                      { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { openCollection(e.latlng, row, col); })
         .addTo(taxonLayer);
     });
-    note.textContent = "같은 시대(" + span.label + ", " + span.old + "–" + span.young + " Ma)" +
-      (inside ? " 안에 드는" : "와 겹치는") + " 다른 산지 " + fmtNum(n) + "곳을 작은 점으로 함께 보인다" +
-      (state.country ? " — 국가와 상관없이" : "") + ".";
+    note.textContent = tr("coeval.note", { label: span.label, old: span.old, young: span.young,
+      rel: tr(inside ? "coeval.inside" : "coeval.overlap"), n: fmtNum(n), c: state.country ? tr("coeval.anyCountry") : "" });
     return n;
   }
 
@@ -1395,7 +1395,7 @@
     }), COLUMNS, function (row) { return row[COLUMNS.n_occs]; });
     spanNote(rows.filter(function (row) {
       return inCountry(row) && tooWide(row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma]);
-    }).length, "산출 산지");
+    }).length, tr("what.taxcoll"));
     drawCoeval(visible);            // 먼저 그려 찾은 분류군의 점 밑에 깐다
     rows.forEach(function (row) {
       if (!ok(row)) return;
@@ -1408,11 +1408,10 @@
         .on("click", function (e) { openCollection(e.latlng, row, COLUMNS); })
         .addTo(taxonLayer);
     });
-    $("taxon-status").textContent = state.taxon +
-      (state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "") + " — " +
-      fmtAge(frame().age) + " 무렵 산지 " + fmtNum(shown) + "곳 (산출 " + fmtNum(occs) + "건)" +
-      (state.country ? ", " + countryName(state.country) : "") + "." +
-      (state.taxonLow ? " 산지에 커서를 대면 그 아래 산출이 뜬다." : "");
+    $("taxon-status").textContent = tr("taxon.status", {
+      name: state.taxon, rank: state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "",
+      age: fmtAge(frame().age), n: fmtNum(shown), occ: fmtNum(occs),
+      country: state.country ? ", " + countryName(state.country) : "", hover: state.taxonLow ? tr("taxon.hover") : "" });
     renderLegend();
   }
 
@@ -1435,7 +1434,7 @@
     taxonLayer.clearLayers();
     $("taxon").value = "";
     $("taxon-clear").hidden = true;
-    $("taxon-status").textContent = "두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.";
+    $("taxon-status").textContent = tr("taxon.hint");
     drawFossils();
   }
 
@@ -1452,6 +1451,14 @@
     superclass: "상강", subphylum: "아문", phylum: "문", superphylum: "상문", kingdom: "계",
     "unranked clade": "분기군", informal: "비공식",
   };
+  // 영어판은 PBDB 계급 이름 그대로 — 숫자 계급(taxa/auto)만 이름으로 바꾼다
+  if (EN) {
+    var RANK_NO = { 2: "subspecies", 3: "species", 4: "subgenus", 5: "genus", 6: "subtribe", 7: "tribe", 8: "subfamily",
+      9: "family", 10: "superfamily", 11: "infraorder", 12: "suborder", 13: "order", 14: "superorder", 15: "infraclass",
+      16: "subclass", 17: "class", 18: "superclass", 19: "subphylum", 20: "phylum", 21: "superphylum", 22: "subkingdom",
+      23: "kingdom", 25: "unranked clade", 26: "informal" };
+    Object.keys(RANK_KO).forEach(function (k) { RANK_KO[k] = RANK_NO[k] || k; });
+  }
   var suggest = { seq: 0, items: [], active: -1, timer: null };
 
   function suggestFetch(text) {
@@ -1498,8 +1505,8 @@
       var name = esc(it.name);
       if (re) name = name.replace(re, "<b>$1</b>");
       return '<li role="option" id="sg-' + k + '" data-k="' + k + '"><span class="nm">' + name + "</span>" +
-        '<span class="meta">' + esc(it.rank) + (it.group ? " · " + esc(it.group) : "") + " · 산출 " + fmtNum(it.occs) + "</span></li>";
-    }).join("") || (done ? '<li class="empty-sg">후보가 없다</li>' : '<li class="empty-sg">찾는 중…</li>');
+        '<span class="meta">' + esc(it.rank) + (it.group ? " · " + esc(it.group) : "") + tr("suggest.occ", { n: fmtNum(it.occs) }) + "</span></li>";
+    }).join("") || '<li class="empty-sg">' + tr(done ? "suggest.none" : "suggest.wait") + "</li>";
     list.hidden = false;
     $("taxon").setAttribute("aria-expanded", "true");
   }
@@ -1570,9 +1577,9 @@
       }).slice(0, 12);
       active = -1;
       box.innerHTML = items.map(function (c, k) {
-        return '<li role="option" data-k="' + k + '"><span class="nm-plain">' + esc(c.ko) + ' <small>' + esc(c.en) +
-          "</small></span><span class=\"meta\">" + esc(c.cc) + " · 산지 " + fmtNum(c.collections) + "</span></li>";
-      }).join("") || (q ? '<li class="empty-sg">없다</li>' : "");
+        return '<li role="option" data-k="' + k + '"><span class="nm-plain">' + esc(c.ko) + (c.en !== c.ko ? ' <small>' + esc(c.en) + "</small>" : "") +
+          "</span><span class=\"meta\">" + esc(c.cc) + tr("country.colls", { n: fmtNum(c.collections) }) + "</span></li>";
+      }).join("") || (q ? '<li class="empty-sg">' + tr("country.none") + "</li>" : "");
       box.hidden = !q;
     };
     var pick = function (k) {
@@ -1614,8 +1621,7 @@
   function noteCountry() {
     var c = state.countryBy[state.country];
     $("country-note").textContent = !c ? "" :
-      c.ko + (c.ocean ? " (대양, PBDB 해양 시추 등)" : "") + " — 지금 이 나라(땅)에서 나온 산지만 보인다. 전체 " +
-      fmtNum(c.collections) + "곳.";
+      tr("country.note", { name: c.ko, ocean: c.ocean ? tr("country.ocean") : "", n: fmtNum(c.collections) });
   }
 
   // 국경선: 켰거나 나라를 골랐을 때만 받는다. 나라를 막 골랐으면 그 나라 쪽으로 지도를 옮긴다.
@@ -1634,7 +1640,7 @@
       borderLayer.eachLayer(function (layer) { if (layer.feature.properties.cc === iso) { picked = layer; layer.bringToFront(); } });
       if (focus) focusCountry(picked);
       $("borders-note").textContent = iso && !picked && !state.countryBy[state.country].ocean
-        ? countryName(state.country) + " 땅은 " + fmtAge(want) + " 판 모델에 아직 없다(그보다 젊은 지각)." : "";
+        ? tr("borders.young", { name: countryName(state.country), age: fmtAge(want) }) : "";
     });
   }
 
@@ -1686,9 +1692,9 @@
   function drawClimate(f) {
     var on = $("climate").checked, info = f.climate;
     $("temp-legend").hidden = !on;
-    $("climate-note").textContent = !info ? "이 시점에는 기온 지도가 없다." :
-      (info.source_age === f.age ? "" : "가장 가까운 " + fmtAge(info.source_age) + " 지도. ") +
-      "전 지구 평균 " + info.gmst.toFixed(1) + " ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.";
+    $("climate-note").textContent = !info ? tr("climate.none") :
+      (info.source_age === f.age ? "" : tr("climate.nearest", { age: fmtAge(info.source_age) })) +
+      tr("climate.gmst", { t: info.gmst.toFixed(1) });
     if (!on || !info) { map.removeLayer(climateLayer); map.removeLayer(climateMoll); return; }
     var want = f.age;
     loadGrid(info).then(function (grid) {
@@ -1742,7 +1748,7 @@
     var f = frame(), box = $("temp-readout");
     if (!f || !f.climate || !$("climate").checked || !onGlobe(e.containerPoint)) { box.textContent = ""; return; }
     loadGrid(f.climate).then(function (grid) {
-      box.textContent = "기온 " + tempAt(grid, e.latlng.lat, e.latlng.lng).toFixed(0) + " ℃ · " +
+      box.textContent = tr("readout", { t: tempAt(grid, e.latlng.lat, e.latlng.lng).toFixed(0) }) +
         e.latlng.lat.toFixed(1) + "°, " + e.latlng.lng.toFixed(1) + "°";
     });
   });
@@ -1874,11 +1880,31 @@
     $("sources").innerHTML = list.map(function (s) {
       return "<li>" + esc(s.citation) + ' — <a href="' + esc(s.license_url) + '" target="_blank" rel="noopener">' + esc(s.license) + "</a></li>";
     }).join("");
-    map.attributionControl.addAttribution("PaleoDEM · PaleoCoastlines (Scotese 외) · PBDB — CC BY 4.0");
+    map.attributionControl.addAttribution(tr("attribution"));
+  }
+
+  // 영어판: 자료의 이름 칸(ko)을 영어로 바꿔 끼운다 — 이름을 쓰는 곳(칩·머리말·환경 나무·팝업·범례·국가)을
+  // 고치지 않아도 되게. 환경 용어는 PBDB 원 용어가 영어 이름이다. 국가의 한글 이름은 찾기에 남긴다.
+  function localizeIndex(index) {
+    if (!EN) return;
+    ((index.timescale || {}).units || []).forEach(function (u) { if (u.en) { u.ko = u.en; u.full = u.en; } });
+    (index.environments || []).forEach(function (top) {
+      if (top.en) top.ko = top.en;
+      top.groups.forEach(function (g) {
+        if (g.en) g.ko = g.en;
+        g.terms.forEach(function (term) { if (term.term) term.ko = term.term; });
+      });
+    });
+    (index.countries || []).forEach(function (c) {
+      if (!c.en) return;
+      c.aka = (c.aka || []).concat([c.ko]);
+      c.ko = c.en;
+    });
   }
 
   function start() {
     getJSON(DATA + "index.json").then(function (index) {
+      localizeIndex(index);
       // 슬라이더 왼쪽이 옛날이다.
       state.frames = index.frames.slice().sort(function (a, b) { return b.age - a.age; });
       if (index.rules) {
@@ -1894,7 +1920,7 @@
       }).join(",") + ")";
       initEnvironments(index.environments || []);
       initCountries(index.countries || []);
-      loadLabels();
+      if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다
       bind();
       // 주소를 먼저 읽는다 — 투영을 바꾸면 주소를 다시 쓴다
       var wanted = parseFloat((location.hash.match(/age=([\d.]+)/) || [])[1]);
@@ -1907,6 +1933,13 @@
       show(first < 0 ? 0 : first);
     }).catch(function (err) { console.error(err); });
   }
+
+  // ── 언어(027) ────────────────────────────────────────────────────
+  document.querySelectorAll(".lang [data-lang]").forEach(function (b) {
+    b.setAttribute("aria-pressed", String(b.dataset.lang === I18N.lang));
+    b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
+  });
+  document.documentElement.classList.remove("i18n-pending");   // <head> 가 가려 둔 것을 벗긴다
 
   // ── 패널 접기(026) ────────────────────────────────────────────────
   // 절 제목을 누르면 그 절을 접는다. 좁은 창(760 px 아래)에서는 패널 전체도 막대 하나로 접는다.
@@ -1929,7 +1962,7 @@
   function setPanel(open) {
     app.classList.toggle("panel-closed", !open);
     $("panel-bar").setAttribute("aria-expanded", String(open));
-    $("panel-bar").textContent = open ? "패널 접기 ▾" : "패널 펼치기 ▴";
+    $("panel-bar").textContent = tr(open ? "panel.close" : "panel.open");
   }
   (function initPanel() {
     var saved = loadPanel();

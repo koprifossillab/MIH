@@ -1,0 +1,237 @@
+/* Wegener's Dream 화면 문구 — 한국어·영어(027).
+ *
+ * 언어는 주소의 `lang=en` → 브라우저에 기억한 것(`wegener.lang`) → 한국어 순으로 정한다. 바꾸면 페이지를
+ * 다시 불러온다 — 층서 칩·환경 나무·팝업·안내문을 모두 다시 그리는 것보다 확실하다(시점·투영은 주소에 남는다).
+ *
+ * - JS 가 만드는 문구: `T` 의 [한국어, 영어] 쌍을 `t(key, 값)` 으로 꺼낸다. `{이름}` 자리에 값이 들어간다
+ * - 템플릿 문구: 템플릿이 한국어 원문이다. 영어일 때만 `DOM_EN` 으로 바꾼다 —
+ *   `data-i18n="key"`(글자), `data-i18n-html="key"`(굵은 글씨 등이 든 문장),
+ *   `data-i18n-attr="placeholder:key;title:key;aria-label:key"`(속성)
+ * - 자료의 이름(층서 단위·퇴적 환경·국가)은 index.json 의 `en` 칸을 쓴다 — map.js 의 localizeIndex
+ */
+(function () {
+  "use strict";
+
+  var KEY = "wegener.lang";
+  var fromHash = (location.hash.match(/lang=(ko|en)/) || [])[1];
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) { /* 막힌 저장소 */ }
+  var lang = fromHash || (stored === "en" ? "en" : "ko");
+
+  var T = {
+    // 시점·층서표
+    "span.none": ["제한 없음", "No limit"],
+    "span.le": ["{v} Myr 이하", "≤ {v} Myr"],
+    "span.hidden": ["연대 범위가 {max} Myr 를 넘어 가린 {what} {n}곳.", "{n} {what} hidden (age range over {max} Myr)."],
+    "what.coll": ["산지", "localities"],
+    "what.taxcoll": ["산출 산지", "localities with occurrences"],
+    "relief.note": ["배경: PaleoDEM {grid}, {w} 폭 그림.", "Background: PaleoDEM {grid}, {w}-px image."],
+    "grid.6min": ["0.1° 격자", "0.1° grid"],
+    "grid.1deg": ["1° 격자", "1° grid"],
+    "chip.now": [" · 지금 지도", " · current map"],
+    "chip.taxon": [" · {taxon} 산출 {n}건", " · {n} {taxon} occurrences"],
+    "chrono.noage": ["절로 나뉘지 않았다", "not divided into ages"],
+    "focus.inside": ["{unit} ({base}–{top} Ma) 안의 {age} 지도.", "{age} map within {unit} ({base}–{top} Ma)."],
+    "focus.nearest": ["{unit} ({base}–{top} Ma) 안에는 지도 시점이 없다 — 가장 가까운 {age} 지도를 보인다.",
+                      "No map falls within {unit} ({base}–{top} Ma) — showing the nearest, {age}."],
+    "header.gmst": [" · 전 지구 평균 {t} ℃", " · global mean {t} °C"],
+    "coast.none": ["이 시점 ±10 Myr 안에 해안선 자료가 없다.", "No coastline within ±10 Myr of this time."],
+    "coast.nearest": ["가장 가까운 {age} 해안선을 그었다.", "Showing the nearest coastline, {age}."],
+    // 퇴적 환경 나무
+    "tog.open": ["펼치기", "Expand"],
+    "tog.close": ["접기", "Collapse"],
+    "env.count.occ": ["수: {taxon} 산출 건수(지금 지도)", "Counts: {taxon} occurrences (current map)"],
+    "env.count.coll": ["수: 산지 수(지금 지도)", "Counts: localities (current map)"],
+    // 산지
+    "fossil.taxonOnly": ["분류군 찾기 결과만 보인다", "showing taxon search results only"],
+    "fossil.all": ["{n}곳", "{n}"],
+    "fossil.some": ["{n} / {total}곳", "{n} / {total}"],
+    "fossil.vague": [" (모호한 연대 {n})", " (vague age {n})"],
+    "pop.noname": ["이름 없는 산지", "Unnamed locality"],
+    "pop.age": ["연대", "Age"],
+    "pop.range": ["범위", "range"],
+    "pop.vague": ["▲ 모호한 연대 — 절 단위로 정해지지 않은 기록(세·기·대). 걸친 모든 시점에 보인다",
+                  "▲ Vague age — not resolved to a stage (epoch, period or era). Shown at every time it spans"],
+    "pop.formation": ["지층", "Formation"],
+    "pop.env": ["환경", "Environment"],
+    "pop.noenv": ["기록 없음", "not recorded"],
+    "pop.paleo": ["고좌표", "Paleo-coordinates"],
+    "pop.rotated": ["이 지도 나이({age})로 계산 — PALEOMAP v19o", "Computed for this map's age ({age}) — PALEOMAP v19o"],
+    "pop.pbdb": ["PBDB 제공 — 산지 연대의 중간값에서 계산한 자리", "From PBDB — computed at the midpoint of the locality's age"],
+    "pop.country": ["지금 국가", "Present-day country"],
+    "pop.matched": ["찾은 분류군", "Matched taxa"],
+    "pop.link": ["PBDB 산지 {no}", "PBDB collection {no}"],
+    "pop.loading": ["산출 {n}건 읽는 중…", "Loading {n} occurrences…"],
+    "pop.temp": ["그때 기온", "Temperature then"],
+    "pop.tempsrc": ["{age} 지도, Scotese 2021", "{age} map, Scotese 2021"],
+    "pop.none": ["산출 기록이 없다.", "No occurrences recorded."],
+    "pop.fail": ["PBDB 에 닿지 못했다 — 위 링크로 본다.", "Could not reach PBDB — use the link above."],
+    // 분류군 찾기
+    "tip.count": ["{taxon} 산출 {n}건 — 누르면 목록", "{n} {taxon} occurrences — click for the list"],
+    "tip.more": ["외 {n}건 — 누르면 모두", "{n} more — click for all"],
+    "rich": ["{unit} 에서 {taxon} 산출이 가장 많은 {age} 지도({n}건).", "{age} map — the most {taxon} occurrences in the {unit} ({n})."],
+    "dist.total": ["산출 {n}건", "{n} occurrences"],
+    "dist.filtered": [" · 고른 퇴적기원·연대 범위만", " · selected origins and age range only"],
+    "dist.chip": ["{unit} · 산출 {n}건 — 이 기에서 산출이 가장 많은 지도로", "{unit} · {n} occurrences — go to the richest map in this period"],
+    "dist.noneExact": ["고른 퇴적기원에 드는 산출이 없다. ", "No occurrences in the selected origins. "],
+    "dist.noneStage": ["PBDB 에 절 단위로 매겨진 산출이 없다. ", "No stage-level occurrences in PBDB. "],
+    "dist.app": ["처음 {e} ({emax}–{emin} Ma) · 마지막 {l} ({lmax}–{lmin} Ma). ",
+                 "First {e} ({emax}–{emin} Ma) · last {l} ({lmax}–{lmin} Ma). "],
+    "dist.exact": ["칩과 막대의 수는 산출 하나하나를 지도와 같은 규칙으로 센 것이고, 고른 퇴적기원과 연대 범위를 따른다.",
+                   "Counts on the chips and bars are individual occurrences binned by the map's rules, following the selected origins and age range."],
+    "dist.coarse": ["산출이 {limit}건이 넘어 PBDB 가 절 단위로 센 수를 쓴다 — 퇴적기원·연대 범위 선택이 이 수에는 반영되지 않고, 절보다 넓게 매겨진 산출은 빠진다.",
+                    "Over {limit} occurrences, so PBDB's stage-level counts are used — origin and age-range filters don't apply to them, and occurrences dated more broadly than a stage are left out."],
+    "dist.bar": ["{age} · 산출 {n}건", "{age} · {n} occurrences"],
+    "tour.stop": ["■ 멈추기", "■ Stop"],
+    "tour.start": ["▶ 산출 시대 차례로 보기", "▶ Step through occurrence times"],
+    "tour.done": ["끝 — 가장 최근 산출 시점까지 보였다.", "Done — shown up to the most recent occurrence."],
+    "tour.step": ["{k} / {total} · {age} · 산출 {n}건(절 단위)", "{k} / {total} · {age} · {n} occurrences (stage level)"],
+    "taxon.asking": ["{name} — {age} 무렵을 PBDB 에 묻는 중…", "{name} — asking PBDB about {age}…"],
+    "taxon.fail": ["찾지 못했다: {err}", "Search failed: {err}"],
+    "taxon.status": ["{name}{rank} — {age} 무렵 산지 {n}곳 (산출 {occ}건){country}.{hover}",
+                     "{name}{rank} — {n} localities around {age} ({occ} occurrences){country}.{hover}"],
+    "taxon.hover": [" 산지에 커서를 대면 그 아래 산출이 뜬다.", " Hover over a locality to see its occurrences."],
+    "taxon.hint": ["두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.",
+                   "Type two or more letters for suggestions from PBDB (start or middle of the name). Moving in time asks again."],
+    "coeval.range": ["산출 범위", "occurrence range"],
+    "coeval.loading": ["산지 자료를 읽는 중…", "Loading localities…"],
+    "coeval.none": ["이 시점에는 찾은 분류군의 산출이 없어 견줄 시대가 없다.", "The taxon has no occurrences at this time, so there is no age to compare."],
+    "coeval.tip": [" · 같은 시대 다른 산지", " · coeval locality"],
+    "coeval.vague": [" · ▲ 모호한 연대", " · ▲ vague age"],
+    "coeval.note": ["같은 시대({label}, {old}–{young} Ma){rel} 다른 산지 {n}곳을 작은 점으로 함께 보인다{c}.",
+                    "Also showing {n} other localities {rel} the same age ({label}, {old}–{young} Ma) as small dots{c}."],
+    "coeval.inside": [" 안에 드는", "within"],
+    "coeval.overlap": ["와 겹치는", "overlapping"],
+    "coeval.anyCountry": [" — 국가와 상관없이", " — regardless of country"],
+    "suggest.occ": [" · 산출 {n}", " · {n} occ."],
+    "suggest.none": ["후보가 없다", "No matches"],
+    "suggest.wait": ["찾는 중…", "Searching…"],
+    // 국가
+    "country.colls": [" · 산지 {n}", " · {n} localities"],
+    "country.none": ["없다", "None"],
+    "country.note": ["{name}{ocean} — 지금 이 나라(땅)에서 나온 산지만 보인다. 전체 {n}곳.",
+                     "{name}{ocean} — showing only localities from this country's present-day land. {n} in total."],
+    "country.ocean": [" (대양, PBDB 해양 시추 등)", " (ocean — PBDB marine drilling etc.)"],
+    "borders.young": ["{name} 땅은 {age} 판 모델에 아직 없다(그보다 젊은 지각).",
+                      "{name}'s land is not yet in the {age} plate model (it is younger crust)."],
+    // 기온
+    "climate.none": ["이 시점에는 기온 지도가 없다.", "No temperature map for this time."],
+    "climate.nearest": ["가장 가까운 {age} 지도. ", "Nearest map, {age}. "],
+    "climate.gmst": ["전 지구 평균 {t} ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.", "Global mean {t} °C. HadCM3L simulations nudged to proxy data."],
+    "readout": ["기온 {t} ℃ · ", "{t} °C · "],
+    // 패널·출처
+    "panel.close": ["패널 접기 ▾", "Hide panel ▾"],
+    "panel.open": ["패널 펼치기 ▴", "Show panel ▴"],
+    "attribution": ["PaleoDEM · PaleoCoastlines (Scotese 외) · PBDB — CC BY 4.0", "PaleoDEM · PaleoCoastlines (Scotese et al.) · PBDB — CC BY 4.0"],
+  };
+
+  // 템플릿(map.html)의 영어. 한국어는 템플릿 자신이다.
+  var DOM_EN = {
+    "title": "Wegener's Dream — paleogeographic fossil map",
+    "brand.sub": "Paleogeographic fossil map",
+    "map": "Paleogeographic map",
+    "proj": "Projection",
+    "proj.eq": "Equirectangular",
+    "proj.moll": "Mollweide",
+    "time": "Time",
+    "older": "Older (←)",
+    "younger": "Younger (→)",
+    "slider": "Time",
+    "now": "Now",
+    "play": "Play through",
+    "chrono.pick": "Pick from the timescale",
+    "rank.era": "Era",
+    "rank.period": "Period",
+    "rank.epoch": "Epoch",
+    "rank.age": "Age",
+    "chrono.about": "Names and boundary ages follow the ICS chart v2024/12. Maps are 5 Myr apart, so picking a unit shows the map nearest its middle.",
+    "fossils": "Fossil localities",
+    "colorby": "Point colour",
+    "colorby.env": "Depositional origin",
+    "colorby.age": "Age (period)",
+    "opacity": "Point opacity",
+    "shape.solid": "Dated to a stage",
+    "shape.tri": "Also show vague ages",
+    "span": "Age range",
+    "span.max": "Maximum age range",
+    "span.about": "Shows only records whose age range (max − min) is at most the chosen value. This is separate from the name level (▲): the level is how the age was assigned, the range is how uncertain it is.",
+    "vague.about": "▲ Vague age — records not resolved to a stage, like \"Middle Cambrian\" or \"Late Triassic\" (a PBDB interval name at epoch, period or era level). Drawn as triangles at every time they span, placed for each map's age. A range named by stages (\"Norian–Rhaetian\") is a ● dated record.",
+    "env.count": "Counts: localities (current map)",
+    "fossils.about": "Each point is one PBDB collection. It appears when its age range overlaps the map time ±2.5 Myr, so long-ranging localities appear at every time they span. Click to read its occurrences from PBDB.",
+    "taxon": "Taxon search",
+    "taxon.ph": "Part of a name — e.g. lobit, saur",
+    "taxon.label": "Taxon name",
+    "taxon.go": "Search",
+    "taxon.hint": "Type two or more letters for suggestions from PBDB (start or middle of the name). Moving in time asks again.",
+    "coeval": "Also show other localities of the same age",
+    "coeval.small": "(genus and below)",
+    "coeval.rule": "Same age by",
+    "coeval.overlap": "overlapping age",
+    "coeval.inside": "within that age",
+    "dist": "Occurrence times",
+    "tour": "▶ Step through occurrence times",
+    "tour.speed": "Dwell time",
+    "tour.slow": "Slow",
+    "tour.normal": "Normal",
+    "tour.fast": "Fast",
+    "taxon.clear": "Clear taxon",
+    "country": "Country",
+    "country.ph": "Name or code — e.g. Korea, China, US",
+    "country.label": "Country",
+    "country.about": "Pick one to show only localities from that country's present-day land; taxon search is narrowed to it too.",
+    "country.focus": "Zoom back to this country",
+    "country.clear": "Clear country",
+    "overlay": "Overlays",
+    "climate": "Surface temperature (Scotese 2021)",
+    "climate.opacity": "Temperature layer opacity",
+    "borders": "Borders (today's borders moved to their past position)",
+    "coast": "Coastlines revised with fossils",
+    "grid": "Graticule 30°",
+    "sources": "Sources",
+    "sources.about": "Background, coastlines, borders and fossil positions all use the PALEOMAP plate model. Each locality's present-day position is rotated <b>to the map's age</b> with the same plate model as the coastlines (v19o), so long-ranging localities sit where they were at every time. Only the rare locality with no plate at that age (under 0.1%) uses PBDB's paleo-coordinates (age midpoint) — the popup says so.",
+    "data": "data",
+    "lang": "Language",
+    "empty.title": "No data yet",
+    "empty.run": "Run the pipeline first:",
+  };
+
+  var PARAM = /\{(\w+)\}/g;
+  function t(key, vals) {
+    var pair = T[key];
+    var s = pair ? pair[lang === "en" ? 1 : 0] : key;
+    return vals ? s.replace(PARAM, function (m, k) { return vals[k] !== undefined ? vals[k] : m; }) : s;
+  }
+
+  // 템플릿에 영어를 입힌다. 한국어이면 할 일이 없다.
+  function apply(root) {
+    if (lang !== "en") return;
+    root = root || document;
+    root.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var s = DOM_EN[el.dataset.i18n];
+      if (s !== undefined) el.textContent = s;
+    });
+    root.querySelectorAll("[data-i18n-html]").forEach(function (el) {
+      var s = DOM_EN[el.dataset.i18nHtml];
+      if (s !== undefined) el.innerHTML = s;
+    });
+    root.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
+      el.dataset.i18nAttr.split(";").forEach(function (pair) {
+        var bits = pair.split(":"), s = DOM_EN[bits[1]];
+        if (s !== undefined) el.setAttribute(bits[0], s);
+      });
+    });
+    document.title = DOM_EN.title;
+  }
+
+  // 언어를 바꾼다 — 기억하고, 주소의 lang 을 고쳐 다시 불러온다.
+  function setLang(next) {
+    if (next === lang) return;
+    try { localStorage.setItem(KEY, next); } catch (e) { /* 막힌 저장소 */ }
+    var hash = location.hash.replace(/&?lang=(ko|en)/, "").replace(/^#&/, "#");
+    if (next === "en") hash = (hash && hash !== "#" ? hash + "&" : "#") + "lang=en";
+    location.hash = hash;
+    location.reload();
+  }
+
+  window.WegenerI18n = { lang: lang, t: t, apply: apply, setLang: setLang };
+})();
