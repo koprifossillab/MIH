@@ -289,6 +289,11 @@ def units():
     return out
 
 
+def longest_age():
+    """가장 긴 절의 길이(Myr) — ICS 2024 에서는 노릭절 21.6. 채집지 연대 범위 상한의 근거다(common.py)."""
+    return max(u["base"] - u["top"] for u in units() if u["rank"] == "age")
+
+
 def containing(age_ma, all_units=None):
     """나이가 속한 단위들(대→절). 경계는 젊은 쪽에 넣는다: top < age ≤ base. 0 Ma 는 가장 젊은 것."""
     found = []

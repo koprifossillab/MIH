@@ -59,14 +59,26 @@ def age_key(age_ma):
 # 의 지도 검사 규칙) 층서 단계로 연대가 매겨진 채집지의 중간값이 몰려, 400 Ma 처럼
 # 채집지가 하나도 없는 시점이 생긴다 — devlog 001.
 WINDOW_MA = 2.5         # 시점 ±2.5 Myr — PaleoDEM 간격(5 Myr)의 절반
-MAX_SPAN_MA = 20.0      # 이보다 넓으면 어느 시점의 것이라 말할 수 없다. 가장 긴 절(노리절 등)이 들어오는 값
+
+
+def _longest_age():
+    from .timescale import longest_age
+    return round(longest_age(), 2)
+
+
+# 연대 범위의 상한 = **가장 긴 절의 길이**(ICS 2024 노릭절 21.6 Myr). 절 하나로 매겨진 채집지는 하나도
+# 빠지지 않게 하려는 것이다. 처음에는 20 으로 적고 "노릭절이 들어온다" 고 했는데, 노릭절은 옛 판에서
+# 18.5 였고 2024 판은 21.6 이라 노릭절 채집지 1,567 곳이 통째로 빠져 있었다(devlog 013).
+# 뷰어는 이 값을 index.json 의 rules 로 받는다 — 두 곳에 따로 적지 않는다.
+MAX_SPAN_MA = _longest_age()
+_EPS = 1e-6             # 227.3 − 205.7 = 21.600000000000023
 
 
 def belongs(max_ma, min_ma, age_ma):
     """채집지(max_ma~min_ma)가 이 시점의 지도에 오르는가."""
     if max_ma < min_ma:
         max_ma, min_ma = min_ma, max_ma
-    if max_ma - min_ma > MAX_SPAN_MA:
+    if max_ma - min_ma > MAX_SPAN_MA + _EPS:
         return False
     return max_ma >= age_ma - WINDOW_MA and min_ma <= age_ma + WINDOW_MA
 

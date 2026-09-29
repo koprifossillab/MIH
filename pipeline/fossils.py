@@ -38,7 +38,7 @@ def read_collections(path):
                 continue
             if old < young:
                 old, young = young, old
-            if old - young > MAX_SPAN_MA:
+            if old - young > MAX_SPAN_MA + 1e-6:      # common.belongs 와 같은 허용(21.6 의 부동소수 오차)
                 stats["too_wide"] += 1
                 continue
             plng, plat = number(record.get("paleolng")), number(record.get("paleolat"))

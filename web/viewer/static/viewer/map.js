@@ -10,11 +10,16 @@
   var app = document.getElementById("app");
   var DATA = app.dataset.dataBase.replace(/x$/, "");
   var LABELS_URL = app.dataset.labelsUrl;
+  // 시점 파일은 하루 캐시된다(views.FRAME_MAX_AGE). 다시 가공해도 이름이 같아, 주소에 가공 시각을 붙여
+  // 가공할 때마다 새 주소가 되게 한다 — 안 붙이면 013 에서 고친 노릭절 채집지가 하루 동안 안 보였다.
+  var BUILT = "";
+  function dataUrl(path) { return DATA + path + (BUILT ? "?b=" + encodeURIComponent(BUILT) : ""); }
   var CSRF = app.dataset.csrf;
   var PBDB = "https://paleobiodb.org/data1.2/";
   var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
-  var WINDOW_MA = 2.5;        // pipeline/common.py 와 같은 값
-  var MAX_SPAN_MA = 20;
+  // 채집지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
+  var WINDOW_MA = 2.5;
+  var MAX_SPAN_MA = 21.6;
   var OLDEST = 540;
   var WORLD = [[-90, -180], [90, 180]];
   var UNKNOWN_COLOR = "#f5f5f5";
@@ -146,7 +151,7 @@
   function reliefWidth() { return map.getZoom() >= 3 ? "4096" : "2048"; }
   function reliefUrl(f) {
     var files = f.relief_files || {};
-    return DATA + (files[reliefWidth()] || f.relief);
+    return dataUrl(files[reliefWidth()] || f.relief);
   }
   map.on("zoomend", function () {
     var f = frame();
@@ -304,7 +309,7 @@
       ? "PaleoCoastlines " + fmtAge(f.coastline.age) + "."
       : "가장 가까운 " + fmtAge(f.coastline.age) + " 해안선을 그었다.";
     var want = f.age;
-    getJSON(DATA + f.coastline.file).then(function (geo) {
+    getJSON(dataUrl(f.coastline.file)).then(function (geo) {
       if (frame().age !== want) return;
       coastLayer.clearLayers();
       if ($("coast").checked) coastLayer.addData(geo);
@@ -528,7 +533,7 @@
     fossilLayer.clearLayers();
     if (!f.fossils || !f.fossils.file) return;
     var want = f.age;
-    getJSON(DATA + f.fossils.file).then(function (payload) {
+    getJSON(dataUrl(f.fossils.file)).then(function (payload) {
       if (frame().age !== want) return;
       state.payload = payload;
       drawFossils();
@@ -626,7 +631,7 @@
 
   // ── 분류군 찾기 ─────────────────────────────────────────────────────
   // 채집지 점과 같은 규칙으로 거른다(pipeline/common.py 의 belongs): 연대 범위가 시점
-  // ±2.5 Myr 창과 겹치고, 범위가 20 Myr 이하. PBDB 의 overlap 도 같은 뜻이다.
+  // ±2.5 Myr 창과 겹치고, 범위가 가장 긴 절(21.6 Myr) 이하. PBDB 의 overlap 도 같은 뜻이다.
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
                   early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12 };
   var taxonSeq = 0;
@@ -824,7 +829,7 @@
       // 산출을 채집지로 묶는다 — 한 채집지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
       var byColl = {}, rows = [];
       (data.records || []).forEach(function (r) {
-        if (r.max_ma - r.min_ma > MAX_SPAN_MA) return;
+        if (r.max_ma - r.min_ma > MAX_SPAN_MA + 1e-6) return;     // 227.3 − 205.7 = 21.600000000000023
         if (r.paleolat == null || r.paleolng == null) return;
         var row = byColl[r.collection_no];
         if (!row) {
@@ -1159,7 +1164,7 @@
     borderLayer.clearLayers();
     var want = f.age, show = $("borders").checked;
     if (!f.borders || (!show && !state.country)) return;
-    getJSON(DATA + f.borders).then(function (geo) {
+    getJSON(dataUrl(f.borders)).then(function (geo) {
       if (frame().age !== want) return;
       borderLayer.clearLayers();
       var iso = state.country && countryIso(state.country);
@@ -1205,7 +1210,7 @@
           resolve({ w: c.width, h: c.height, values: values });
         };
         img.onerror = reject;
-        img.src = DATA + info.file;
+        img.src = dataUrl(info.file);
       });
     }
     return state.grids[info.file];
@@ -1371,6 +1376,8 @@
     getJSON(DATA + "index.json").then(function (index) {
       // 슬라이더 왼쪽이 옛날이다.
       state.frames = index.frames.slice().sort(function (a, b) { return b.age - a.age; });
+      if (index.rules) { WINDOW_MA = index.rules.window_ma; MAX_SPAN_MA = index.rules.max_span_ma; }
+      BUILT = index.built_at || "";
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });

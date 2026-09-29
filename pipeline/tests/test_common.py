@@ -4,7 +4,7 @@
 """
 import unittest
 
-from pipeline.common import age_key, belongs, environment_class, parse_dem_name, period
+from pipeline.common import MAX_SPAN_MA, age_key, belongs, environment_class, parse_dem_name, period
 from pipeline.fossils import assign
 
 
@@ -40,8 +40,16 @@ class BinningTest(unittest.TestCase):
         self.assertTrue(belongs(247.5, 247.5, 250))        # 창 끝은 넣는다
         self.assertFalse(belongs(247.4, 247.4, 250))
         self.assertTrue(belongs(270, 251, 260))            # 19 Myr — 범위가 창과 겹친다
-        self.assertFalse(belongs(272, 251, 260))           # 21 Myr — 너무 넓다
+        self.assertFalse(belongs(274, 251, 260))           # 23 Myr — 가장 긴 절보다 넓다
         self.assertTrue(belongs(248, 252, 250))            # 뒤집혀 적힌 것도 받는다
+
+    def test_span_limit_is_longest_stage(self):
+        # 노릭절(227.3–205.7, 21.6 Myr)은 절 하나다 — 절 하나로 매겨진 채집지는 빠지면 안 된다(013).
+        # 부동소수로는 21.600000000000023 이라 허용이 없으면 빠진다.
+        self.assertAlmostEqual(MAX_SPAN_MA, 21.6)
+        self.assertTrue(belongs(227.3, 205.7, 205))
+        self.assertTrue(belongs(227.3, 205.7, 225))
+        self.assertFalse(belongs(227.3, 205.6, 225))       # 21.7 Myr
 
     def test_emsian_reaches_400(self):
         # 에므스절(410.62–393.47, 17 Myr)은 중간값 402 라 옛 규칙으로는 400 Ma 가 비었다

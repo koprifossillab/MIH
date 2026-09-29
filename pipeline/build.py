@@ -11,7 +11,7 @@ import json
 from datetime import datetime, timezone
 
 from . import climate, coastlines, countries, fossils, relief
-from .common import DERIVED, manifest, period
+from .common import DERIVED, MAX_SPAN_MA, WINDOW_MA, manifest, period
 from .environments import classify, tree_for_index
 from .timescale import containing, units
 
@@ -91,6 +91,8 @@ def build(skip_relief=False):
         "schema": SCHEMA,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "frames": sorted(frames, key=lambda f: f["age"]),
+        # 채집지를 시점에 올리는 규칙. 뷰어의 분류군 찾기가 같은 값으로 거른다(두 곳에 적지 않는다).
+        "rules": {"window_ma": WINDOW_MA, "max_span_ma": MAX_SPAN_MA},
         "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
                       "units": scale},
         "environments": tree_for_index(env_counts),
