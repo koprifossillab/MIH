@@ -110,6 +110,8 @@ body {
 
 .swatch { display: flex; align-items: center; gap: 6px; margin: 4px 0; cursor: pointer; }
 .swatch small { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+.proj-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.proj-row label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #333; }
 .dot.m { background: var(--marine); }
 .dot.t { background: var(--land); }
