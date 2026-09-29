@@ -16,7 +16,6 @@ import json
 
 from .common import DERIVED, WINDOW_MA, age_key, environment_class, manifest, source_path
 from .intervals import is_vague, load_types
-from .reconstruct import Reconstructor
 
 FIELDS = ["collection_no", "paleolng", "paleolat", "env", "n_occs", "collection_name",
           "early_interval", "late_interval", "max_ma", "min_ma", "formation", "environment", "cc",
@@ -109,6 +108,8 @@ def build(ages):
     out = DERIVED / "fossils"
     out.mkdir(parents=True, exist_ok=True)
     entries = []
+    # numpy·pygplates 는 여기서만 부른다 — assign 등 규칙은 표준 라이브러리만으로 시험한다(CI)
+    from .reconstruct import Reconstructor
     rebuilder = Reconstructor()
     stats.update(rotated=0, pbdb_fallback=0)
     for age, items in assign(rows, ages).items():

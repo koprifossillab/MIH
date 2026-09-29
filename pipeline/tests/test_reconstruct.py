@@ -1,9 +1,8 @@
 """reconstruct.Reconstructor — 판 모델 원본(PaleoCoastlines 압축본)이 있을 때만 돈다."""
 import unittest
 
-from pipeline.countries import PARTITION, model_path
-
 try:
+    from pipeline.countries import PARTITION, model_path
     from pipeline.reconstruct import Reconstructor
     HAVE_MODEL = model_path(PARTITION).exists()
 except ImportError:                      # pygplates·shapely 가 없는 환경
