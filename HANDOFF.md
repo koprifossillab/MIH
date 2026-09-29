@@ -7,7 +7,8 @@
 **이름**: 09-30 에 `MIH` → **베게너의 꿈 (Wegener's Dream)**. 저장소·URL `/WegenersDream/`, 환경변수 `WEGENER_*`,
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
-**브랜치** `main` = `0.10.1` · **`work/20260930-koprifossillab` = `0.11.0`(이름 바꾸기)이 병합을 기다린다**.
+**저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
+**브랜치** `main` = `0.11.0` (09-30 병합) · 병합을 기다리는 브랜치는 없다.
 다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-koprifossillab`)를 `main` 에서 만든다. 0.9.0 부터 모호한 연대 산지를 세모로(016),
 화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
 `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
