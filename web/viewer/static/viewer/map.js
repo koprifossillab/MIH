@@ -624,11 +624,42 @@
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
                   early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12 };
   var taxonSeq = 0;
+  // 과 이하 — 커서만 대도 산출 목록이 뜨는 계급. 그 위(목·강…)는 채집지 하나에 수십~수백 건이라 요약만.
+  var LOW_RANKS = { family: 1, subfamily: 1, tribe: 1, subtribe: 1, genus: 1, subgenus: 1, species: 1, subspecies: 1 };
+  var TOOLTIP_MAX = 15;
+
+  function lookupRank(name) {
+    return getJSON(PBDB + "taxa/single.json?name=" + encodeURIComponent(name) + "&vocab=pbdb")
+      .then(function (d) { var r = (d.records || [])[0]; return r ? r.taxon_rank || "" : ""; })
+      .catch(function () { return ""; });
+  }
+
+  // 커서를 댔을 때의 내용. 과 이하이면 이 채집지에서 찾은 분류군 아래의 산출을 모두(15 건까지) 적는다.
+  function taxonTip(row) {
+    var head = "<b>" + esc(row[COLUMNS.collection_name] || "이름 없는 채집지") + "</b>";
+    if (!state.taxonLow) {
+      return head + "<small>" + esc(state.taxon) + " 산출 " + row.occs.length + "건 — 누르면 목록</small>";
+    }
+    var items = row.occs.slice(0, TOOLTIP_MAX).map(function (o) {
+      var shown = "<i>" + esc(o.accepted) + "</i>";
+      if (o.identified && o.identified !== o.accepted) shown += " <small>(" + esc(o.identified) + ")</small>";
+      return "<li>" + shown + (o.rank && o.rank !== "species" ? " <small>" + esc(RANK_KO[o.rank] || o.rank) + "</small>" : "") + "</li>";
+    });
+    if (row.occs.length > TOOLTIP_MAX) items.push("<li><small>외 " + (row.occs.length - TOOLTIP_MAX) + "건 — 누르면 모두</small></li>");
+    return head + "<ul>" + items.join("") + "</ul>";
+  }
+
   function searchTaxon(name) {
     var f = frame();
     var seq = ++taxonSeq;
     state.taxon = name;
     state.taxa = null;
+    lookupRank(name).then(function (rank) {
+      if (seq !== taxonSeq) return;
+      state.taxonRank = rank;
+      state.taxonLow = !!LOW_RANKS[rank];
+      drawTaxa();
+    });
     $("taxon-clear").hidden = false;
     $("taxon-status").textContent = name + " — " + fmtAge(f.age) + " 무렵을 PBDB 에 묻는 중…";
     drawFossils();
@@ -650,11 +681,13 @@
             r.early_interval, r.late_interval || "", r.max_ma, r.min_ma, r.formation || "",
             r.environment || "", r.cc || ""];
           row.matched = [];
+          row.occs = [];
           rows.push(row);
         }
         row[COLUMNS.n_occs] += 1;
         var taxon = r.accepted_name || r.identified_name;
         if (row.matched.indexOf(taxon) < 0) row.matched.push(taxon);
+        row.occs.push({ accepted: taxon, identified: r.identified_name, rank: r.accepted_rank || r.identified_rank });
       });
       state.taxa = rows;
       drawTaxa();
@@ -675,13 +708,16 @@
       occs += row[COLUMNS.n_occs];
       marker([row[COLUMNS.paleolat], row[COLUMNS.paleolng]],
              pointColor(row[COLUMNS.environment], row[COLUMNS.max_ma], row[COLUMNS.min_ma]), true)
-        .bindTooltip(esc(row.matched.slice(0, 3).join(", ") + (row.matched.length > 3 ? " …" : "")) +
-                     " · " + esc(row[COLUMNS.collection_name]))
+        .bindTooltip(function () { return taxonTip(row); },
+                     { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { openCollection(e.latlng, row, COLUMNS); })
         .addTo(taxonLayer);
     });
-    $("taxon-status").textContent = state.taxon + " — " + fmtAge(frame().age) + " 무렵 채집지 " +
-      fmtNum(shown) + "곳 (산출 " + fmtNum(occs) + "건)" + (state.country ? ", " + countryName(state.country) : "") + ".";
+    $("taxon-status").textContent = state.taxon +
+      (state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "") + " — " +
+      fmtAge(frame().age) + " 무렵 채집지 " + fmtNum(shown) + "곳 (산출 " + fmtNum(occs) + "건)" +
+      (state.country ? ", " + countryName(state.country) : "") + "." +
+      (state.taxonLow ? " 채집지에 커서를 대면 그 아래 산출이 뜬다." : "");
     renderLegend();
   }
 
@@ -692,6 +728,8 @@
     taxonSeq += 1;
     state.taxon = "";
     state.taxa = null;
+    state.taxonRank = "";
+    state.taxonLow = false;
     taxonLayer.clearLayers();
     $("taxon").value = "";
     $("taxon-clear").hidden = true;
