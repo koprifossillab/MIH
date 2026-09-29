@@ -103,7 +103,7 @@ sources/*.json ──fetch──▶ data/sources/ ──build──▶ data/deri
 devlog 하나, 판 번호는 몇 단계를 묶어 따로 적는다("0.5.0 을 적는다 (004~006)").
 
 메시지는 **한국어 평서문으로 무엇을 했는지**를 쓰고 devlog 를 붙인다 — 028 까지는 번호만(`(005)`), 그 뒤로는
-글쓴이와 번호(`(jikhanjung 029)`, "devlog" 절):
+글쓴이와 번호(`(koprifossillab 029)`, "devlog" 절):
 
 ```
 국가를 고르면 그 나라 범위로 지도를 당기고, "이 나라로 다시 가기" 를 단다 (005)
@@ -123,10 +123,11 @@ Scotese 2021 지표 기온 지도를 받아 시점마다 기온 격자 PNG 로 �
 `날짜 · \`브랜치\`` 를 적고, 절에 번호를 붙인다. **무엇을 했는지보다 왜 그렇게 했고 무엇을
 버렸는지**를 쓴다. 무엇을 했는지는 `git log` 가 안다.
 
-**파일 이름은 글쓴이마다 번호를 센다**(2026-09-30 부터, EarthThruTime3D 와 같은 꼴). `author` 는 GitHub 계정 이름
-소문자(`jikhanjung`, `wetherilli` …), `title` 은 영어 snake_case. 번호는 **그 글쓴이의** 다음 번호다 — jikhanjung 은
-021~028 에 이어 029 부터, 다른 사람은 001 부터. **001~020 은 옛 이름(`YYYYMMDD_NNN_주제.md`) 그대로** 두고 번호만으로
-가리킨다("devlog 017"). 새 꼴은 링크나 "jikhanjung 029" 로 가리킨다.
+**파일 이름은 글쓴이마다 번호를 센다**(2026-09-30 부터, EarthThruTime3D 와 같은 꼴). `author` 는 **작업하는 Linux
+계정의 GitHub 계정 이름** 소문자다 — paleoadmin → `koprifossillab`, jikhanjung → `jikhanjung`, sclee → `wetherilli`,
+jschoi → `tupandactyl`(`whoami` 로 본다). `title` 은 영어 snake_case. 번호는 **그 글쓴이의** 다음 번호다 —
+koprifossillab 은 001~028 에 이어 029 부터, 다른 사람은 001 부터. **001~020 은 옛 이름(`YYYYMMDD_NNN_주제.md`)
+그대로** 두고 번호만으로 가리킨다("devlog 017"). 새 꼴은 링크나 "koprifossillab 029" 로 가리킨다.
 **새 파일은 [devlog/README.md](devlog/README.md) 색인에 한 줄 더한다.**
 
 **계획이 아닌 검토는 `docs/`** 에 둔다 — "이렇게 하겠다" 가 정해진 것은 devlog 의 P 문서이고, "할까 말까·

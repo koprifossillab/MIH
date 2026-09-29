@@ -8,11 +8,20 @@
 
 - 한 작업: `devlog/YYYYMMDD_{author}_{nnn}_{title}.md`
 - 계획: `devlog/YYYYMMDD_{author}_P{nn}_{title}.md`
-- `author` 는 GitHub 계정 이름(소문자 — `jikhanjung`, `wetherilli` …), `title` 은 영어 snake_case
-- 번호는 **그 글쓴이의 다음 번호**다(저장소의 다음 번호가 아니다). jikhanjung 은 021~028 에 이어 **029** 부터,
+- `author` 는 GitHub 계정 이름(소문자). 이 서버의 Linux 계정마다 GitHub 계정이 하나다:
+
+  | Linux 계정 | GitHub 계정(`author`) |
+  |---|---|
+  | paleoadmin | `koprifossillab` |
+  | jikhanjung | `jikhanjung` |
+  | sclee | `wetherilli` |
+  | jschoi | `tupandactyl` |
+
+- `title` 은 영어 snake_case
+- 번호는 **그 글쓴이의 다음 번호**다(저장소의 다음 번호가 아니다). koprifossillab 은 001~028 에 이어 **029** 부터,
   다른 사람은 001 부터
-- **001~020 은 옛 이름(`YYYYMMDD_NNN_주제.md`) 그대로** 둔다. 가리킬 때는 번호만("devlog 017")
-- 새 꼴의 devlog 는 링크나 "jikhanjung 029" 로 가리킨다. 커밋 메시지 끝도 `(jikhanjung 029)`
+- **001~020 은 옛 이름(`YYYYMMDD_NNN_주제.md`) 그대로** 둔다 — koprifossillab 의 것이다. 가리킬 때는 번호만("devlog 017")
+- 새 꼴의 devlog 는 링크나 "koprifossillab 029" 로 가리킨다. 커밋 메시지 끝도 `(koprifossillab 029)`
 
 ## 목록
 
@@ -38,11 +47,11 @@
 | 018 | 2026-09-29 | [연대 범위 길이로 거르는 막대](20260929_018_%EC%97%B0%EB%8C%80%EB%B2%94%EC%9C%84_%EA%B1%B0%EB%A5%B4%EA%B8%B0.md) |
 | 019 | 2026-09-29 | [점 테두리를 모두 흰색으로](20260929_019_%EC%A0%90_%ED%85%8C%EB%91%90%EB%A6%AC_%ED%9D%B0%EC%83%89.md) |
 | 020 | 2026-09-30 | [이름을 "베게너의 꿈 (Wegener's Dream)" 으로](20260930_020_%EC%9D%B4%EB%A6%84_%EB%B2%A0%EA%B2%8C%EB%84%88%EC%9D%98%EA%BF%88.md) |
-| jikhanjung 021 | 2026-09-30 | [시점을 옮길 때 산지 점이 깜박이지 않게](20260930_jikhanjung_021_frame_switch_flicker.md) |
-| jikhanjung 022 | 2026-09-30 | [CI 의 파이프라인 규칙 시험을 표준 라이브러리만으로 다시 돌게](20260930_jikhanjung_022_ci_rule_tests_deps.md) |
-| jikhanjung 023 | 2026-09-30 | [머리말에 판 번호를](20260930_jikhanjung_023_header_version.md) |
-| jikhanjung 024 | 2026-09-30 | [몰바이데 투영을 고를 수 있게](20260930_jikhanjung_024_mollweide_projection.md) |
-| jikhanjung 025 | 2026-09-30 | [몰바이데에서 끌면 지구가 돈다](20260930_jikhanjung_025_mollweide_rotation.md) |
-| jikhanjung 026 | 2026-09-30 | [패널을 접는다](20260930_jikhanjung_026_panel_collapse.md) |
-| jikhanjung 027 | 2026-09-30 | [영어판](20260930_jikhanjung_027_english_version.md) |
-| jikhanjung 028 | 2026-09-30 | [몰바이데에서 정거원통 테두리 해안선을 지운다](20260930_jikhanjung_028_mollweide_edge_coastlines.md) |
+| koprifossillab 021 | 2026-09-30 | [시점을 옮길 때 산지 점이 깜박이지 않게](20260930_koprifossillab_021_frame_switch_flicker.md) |
+| koprifossillab 022 | 2026-09-30 | [CI 의 파이프라인 규칙 시험을 표준 라이브러리만으로 다시 돌게](20260930_koprifossillab_022_ci_rule_tests_deps.md) |
+| koprifossillab 023 | 2026-09-30 | [머리말에 판 번호를](20260930_koprifossillab_023_header_version.md) |
+| koprifossillab 024 | 2026-09-30 | [몰바이데 투영을 고를 수 있게](20260930_koprifossillab_024_mollweide_projection.md) |
+| koprifossillab 025 | 2026-09-30 | [몰바이데에서 끌면 지구가 돈다](20260930_koprifossillab_025_mollweide_rotation.md) |
+| koprifossillab 026 | 2026-09-30 | [패널을 접는다](20260930_koprifossillab_026_panel_collapse.md) |
+| koprifossillab 027 | 2026-09-30 | [영어판](20260930_koprifossillab_027_english_version.md) |
+| koprifossillab 028 | 2026-09-30 | [몰바이데에서 정거원통 테두리 해안선을 지운다](20260930_koprifossillab_028_mollweide_edge_coastlines.md) |
