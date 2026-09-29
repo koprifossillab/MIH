@@ -5,8 +5,9 @@
   첫 판은 이 셋을 어느 쪽으로도 밀지 않았다(EarthThruTime3D 의 지도 검사 규칙)
 - **환경군의 순서는 퇴적상 순서다** — 해양기원은 해안→심해, 육상기원은 상류→하류. 미상은 끝.
   환경군 안의 원 용어도 같은 방향으로 두고, `… indet.` 는 끝에 둔다
-- **색도 그 순서를 따른다** — 해양기원은 옅은 하늘색→짙은 남색, 육상기원은 주황→붉은색.
-  `[미상]` 환경군은 그 갈래의 가운데 색이다. 미상 갈래는 흰색
+- **색도 그 순서를 따른다** — 해양기원은 민트→에메랄드→짙은 청록(열대 바다), 육상기원은 주황→붉은색.
+  `[미상]` 환경군은 그 갈래의 가운데 색이다. 미상 갈래는 흰색. 해양기원을 푸른 계열로 두었다가
+  배경의 바다색에 묻혀 청록 계열로 바꿨다(devlog 007)
 
 뷰어는 index.json 의 `environments` 로 이 나무를 받아 선택지와 점 색을 그린다. 화석 JSON 에는
 원 용어가 그대로 들어 있어, 나무를 고쳐도 화석을 다시 가공하지 않아도 된다(목록만 다시 만든다).
@@ -14,39 +15,39 @@
 
 # (id, 이름, 영문, 색, [(id, 이름, 영문, 색, [원 용어 …])])
 TREE = [
-    ("m", "해양기원", "Marine", "#3d8bff", [
-        ("m-coastal", "해안·연안 [미상]", "Coastal / marginal marine indet.", "#a8dcff", [
+    ("m", "해양기원", "Marine", "#1fd1a1", [
+        ("m-coastal", "해안·연안 [미상]", "Coastal / marginal marine indet.", "#a6f7d6", [
             "coastal indet.", "marginal marine indet.", "paralic indet.",
         ]),
-        ("m-lagoon", "석호", "Lagoonal", "#86ccff", [
+        ("m-lagoon", "석호", "Lagoonal", "#84f2cb", [
             "lagoonal",
         ]),
-        ("m-clastic-shore", "쇄설성 전빈·외빈", "Siliciclastic foreshore–shoreface", "#66baff", [
+        ("m-clastic-shore", "쇄설성 전빈·외빈", "Siliciclastic foreshore–shoreface", "#62ebbd", [
             "foreshore", "shoreface", "transition zone/lower shoreface",
         ]),
-        ("m-delta", "삼각주 전면부·전삼각주", "Delta front–prodelta", "#4aa6ff", [
+        ("m-delta", "삼각주 전면부·전삼각주", "Delta front–prodelta", "#44e0ae", [
             "delta front", "prodelta",
         ]),
-        ("m-carb-shallow", "탄산염 조간대·천해성 조하대", "Carbonate peritidal–shallow subtidal", "#3190f7", [
+        ("m-carb-shallow", "탄산염 조간대·천해성 조하대", "Carbonate peritidal–shallow subtidal", "#2ad3a0", [
             "peritidal", "lagoonal/restricted shallow subtidal", "open shallow subtidal", "sand shoal",
             "shallow subtidal indet.", "carbonate indet.",
         ]),
-        ("m-reef", "생물초", "Reefs and buildups", "#2278e6", [
+        ("m-reef", "생물초", "Reefs and buildups", "#14c292", [
             "reef, buildup or bioherm", "perireef or subreef", "intrashelf/intraplatform reef",
             "platform/shelf-margin reef", "slope/ramp reef", "basin reef",
         ]),
-        ("m-clastic-offshore", "쇄설성 외해", "Siliciclastic offshore", "#1a62d0", [
+        ("m-clastic-offshore", "쇄설성 외해", "Siliciclastic offshore", "#0fad85", [
             "offshore",
         ]),
-        ("m-carb-deep", "탄산염 심조하대·외해", "Carbonate deep subtidal–offshore", "#174db5", [
+        ("m-carb-deep", "탄산염 심조하대·외해", "Carbonate deep subtidal–offshore", "#0c9577", [
             "deep subtidal ramp", "deep subtidal shelf", "deep subtidal indet.",
             "offshore ramp", "offshore shelf", "offshore indet.",
         ]),
-        ("m-deep", "경사면·분지·심해", "Slope, basin and deep water", "#16378f", [
+        ("m-deep", "경사면·분지·심해", "Slope, basin and deep water", "#0a7a66", [
             "slope", "submarine fan", "basinal (carbonate)", "basinal (siliceous)",
             "basinal (siliciclastic)", "deep-water indet.",
         ]),
-        ("m-indet", "해양 [미상]", "Marine indet.", "#3d8bff", [
+        ("m-indet", "해양 [미상]", "Marine indet.", "#1fd1a1", [
             "marine indet.",
         ]),
     ]),
