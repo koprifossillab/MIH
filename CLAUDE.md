@@ -37,6 +37,10 @@
   (연구자가 정한 것 — devlog 002). 판을 올릴 때 경계는 2024 이후 판과, 이름은 한글판과 대조한다
 - 퇴적 환경 나무는 `pipeline/environments.py`. 원 용어의 한글은 이 저장소의 풀이다
 - 둘 다 index.json 으로 뷰어에 간다. **map.js 에 층서 이름·경계·환경 목록을 다시 적지 않는다**
+- 환경 이름은 연구자가 화면에서 고친다(`viewer/labels.py`). 고친 것은 `<STATE_DIR>/labels.json`
+  의 덮어쓰기이고 environments.py 의 기본 이름은 그대로다. **덮어쓰기를 기본 이름으로 옮길 때는
+  labels.json 을 보고 environments.py 를 고친 뒤 그 칸을 labels.json 에서 지운다** — 둘 다 두면
+  기본 이름을 고쳐도 화면에 안 보인다
 
 ## 자료의 흐름
 

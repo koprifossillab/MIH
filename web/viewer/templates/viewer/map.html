@@ -10,6 +10,8 @@
 <body>
 <div id="app"
      data-data-base="{% url 'viewer:data' 'x' %}"
+     data-labels-url="{% url 'viewer:labels' %}"
+     data-csrf="{{ csrf_token }}"
      data-version="{{ version }}">
 
   <header class="bar">
@@ -56,7 +58,13 @@
       </section>
 
       <section>
-        <h2>화석 채집지 <small id="fossil-count"></small></h2>
+        <h2 class="with-tool">화석 채집지 <small id="fossil-count"></small>
+          <button type="button" id="edit-toggle" class="tool" hidden aria-pressed="false">✎ 명칭 고치기</button></h2>
+        <div class="editbar" id="editbar" hidden>
+          <p class="note">이름 옆 ✎ 를 눌러 고친다. 비우고 저장하면 기본 이름으로 돌아간다. 고친 이름은 서버에 저장되어 모두에게 보인다.</p>
+          <label class="keyrow" id="key-row" hidden>편집 열쇠 <input type="password" id="editor-key" autocomplete="off"></label>
+          <p class="note" id="edit-status" aria-live="polite"></p>
+        </div>
         <div class="envtree" id="envtree"></div>
         <p class="note">점 하나가 PBDB 채집지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고 20 Myr 이하인 것이 오른다 — 범위가 넓은 채집지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>

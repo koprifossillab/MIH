@@ -23,6 +23,9 @@
 }
 
 * { box-sizing: border-box; }
+/* `hidden` 이 display 를 준 규칙(flex·inline-block)에 지지 않게 한다. 펼침 단추만은 자리를 지키며
+   숨는다(.env .tog[hidden] — 줄이 가지런하게). */
+[hidden]:not(.tog) { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg);
@@ -104,7 +107,29 @@ body {
 .env .tog[hidden] { display: inline-block; visibility: hidden; }
 .env .kids { margin-left: 13px; padding-left: 12px; border-left: 1px solid var(--line); }
 .env.group > .row, .env.term > .row { font-size: 13px; }
-.env.term .en { color: var(--muted); font-size: 11px; }
+/* 원 용어는 한글 이름 옆에 반투명하게 */
+.env .orig { opacity: .5; font-size: 11px; font-weight: 400; }
+.env .name.custom { text-decoration: underline dotted; text-underline-offset: 3px; }
+.env .pen {
+  display: none; flex: none; border: 0; background: none; color: var(--accent);
+  cursor: pointer; padding: 0 2px; font-size: 13px;
+}
+#app.editing .env .pen { display: inline-block; }
+.env .editor { display: flex; gap: 4px; flex: 1; min-width: 0; }
+.env .editor input {
+  flex: 1; min-width: 0; padding: 2px 6px; border: 1px solid var(--accent); border-radius: 4px;
+  background: var(--bg); color: var(--ink); font: inherit;
+}
+.env .editor button, .panel .tool {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  border-radius: 4px; padding: 1px 8px; cursor: pointer; font: inherit; font-size: 12px;
+}
+.panel h2.with-tool { display: flex; align-items: baseline; gap: 6px; }
+.panel h2 .tool { margin-left: auto; font-weight: 400; }
+.panel h2 .tool[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.editbar { background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 6px; padding: 4px 8px; margin-bottom: 6px; }
+.keyrow { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+.keyrow input { flex: 1; min-width: 0; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink); }
 .env.zero > .row label { color: var(--muted); }
 .env.top > .row { font-weight: 600; }
 

@@ -20,6 +20,11 @@ INDEX = {
     }],
     "pbdb": {"receipt": {"retrieved_at": "2026-09-29T00:00:00+00:00"}},
     "sources": [],
+    "environments": [
+        {"id": "m", "ko": "바다 환경", "en": "Marine", "groups": [
+            {"id": "m-reef", "ko": "초(礁)·생물초", "en": "Reefs", "terms": [
+                {"term": "basin reef", "ko": "분지 초", "total": 1}]}]},
+    ],
 }
 
 
@@ -80,6 +85,48 @@ class HealthTest(DataDirMixin, SimpleTestCase):
     def test_no_data_is_503(self):
         (self.dir / "index.json").unlink()
         self.assertEqual(self.client.get("/healthz").status_code, 503)
+
+
+class LabelsTest(DataDirMixin, SimpleTestCase):
+    def setUp(self):
+        super().setUp()
+        override = override_settings(STATE_DIR=self.dir / "state", EDITOR_KEYS={"화석"}, DEBUG=False)
+        override.enable()
+        self.addCleanup(override.disable)
+
+    def post(self, **body):
+        return self.client.post("/labels", data=json.dumps(body), content_type="application/json")
+
+    def test_get_says_key_is_needed(self):
+        body = self.client.get("/labels").json()
+        self.assertEqual(body["env"], {})
+        self.assertTrue(body["editable"])
+        self.assertTrue(body["needs_key"])
+
+    def test_rename_and_reset(self):
+        response = self.post(kind="env", id="m-reef", name="  초   환경 ", key="화석")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["env"], {"m-reef": "초 환경"})       # 빈칸을 하나로
+        self.assertEqual(self.client.get("/labels").json()["env"], {"m-reef": "초 환경"})
+        self.post(kind="env", id="term:basin reef", name="분지 안 초", key="화석")
+        self.assertEqual(self.post(kind="env", id="m-reef", name="", key="화석").json()["env"],
+                         {"term:basin reef": "분지 안 초"})                      # 비우면 기본으로
+
+    def test_refusals(self):
+        self.assertEqual(self.post(kind="env", id="m-reef", name="x", key="틀림").status_code, 403)
+        self.assertEqual(self.post(kind="env", id="no-such", name="x", key="화석").status_code, 400)
+        self.assertEqual(self.post(kind="time", id="m-reef", name="x", key="화석").status_code, 400)
+        self.assertEqual(self.post(kind="env", id="m-reef", name="가" * 61, key="화석").status_code, 400)
+        self.assertFalse((self.dir / "state" / "labels.json").exists())
+
+    @override_settings(EDITOR_KEYS=set())
+    def test_closed_in_production_without_key(self):
+        self.assertFalse(self.client.get("/labels").json()["editable"])
+        self.assertEqual(self.post(kind="env", id="m-reef", name="x").status_code, 403)
+
+    @override_settings(EDITOR_KEYS=set(), DEBUG=True)
+    def test_open_in_development_without_key(self):
+        self.assertEqual(self.post(kind="env", id="m", name="바다").status_code, 200)
 
 
 @override_settings(URL_PREFIX="MIH/")

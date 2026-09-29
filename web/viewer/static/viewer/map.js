@@ -9,6 +9,8 @@
 
   var app = document.getElementById("app");
   var DATA = app.dataset.dataBase.replace(/x$/, "");
+  var LABELS_URL = app.dataset.labelsUrl;
+  var CSRF = app.dataset.csrf;
   var PBDB = "https://paleobiodb.org/data1.2/";
   var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
   var WINDOW_MA = 2.5;        // pipeline/common.py 와 같은 값
@@ -25,6 +27,7 @@
     tree: [], termTop: {}, termGroup: {},   // 퇴적 환경 나무
     enabled: {},                            // 켠 원 용어(UNLISTED 포함)
     payload: null,
+    labels: { env: {} }, editable: false, needsKey: false, editing: false,
   };
   var cache = {};
 
@@ -258,7 +261,7 @@
     var box = $("envtree");
     box.innerHTML = "";
     tree.forEach(function (top) {
-      var topEl = node("top", top.id, '<i class="dot ' + top.id + '"></i> ' + esc(top.ko), top.en);
+      var topEl = node("top", top.id, top.id, top.ko, top.en, '<i class="dot ' + top.id + '"></i>');
       // 환경군은 펼쳐 둔다 — 접어 두면 작은 ▸ 단추를 찾지 못해 없는 것처럼 보였다.
       // 원 용어(셋째 단계)는 많아서 접어 둔다.
       var groupsEl = document.createElement("div");
@@ -266,12 +269,12 @@
       top.groups.forEach(function (g) {
         var terms = g.id === "o-unlisted" ? [UNLISTED] : g.terms.map(function (t) { return t.term; });
         terms.forEach(function (t) { state.termTop[t] = top.id; state.termGroup[t] = g.id; state.enabled[t] = true; });
-        var gEl = node("group", g.id, esc(g.ko), g.en);
+        var gEl = node("group", g.id, g.id, g.ko, g.en, "");
         var termsEl = document.createElement("div");
         termsEl.className = "kids";
         termsEl.hidden = true;
         g.terms.forEach(function (t) {
-          termsEl.appendChild(node("term", t.term, esc(t.ko) + (t.term ? ' <small class="en">' + esc(t.term) + "</small>" : ""), t.term));
+          termsEl.appendChild(node("term", t.term, "term:" + t.term, t.ko, t.term, ""));
         });
         if (termsEl.children.length > 1) wireToggle(gEl, termsEl);
         gEl.appendChild(termsEl);
@@ -290,17 +293,120 @@
       syncChecks();
       drawFossils();
     });
+    box.addEventListener("click", function (e) {
+      var pen = e.target.closest(".pen");
+      if (pen) startEdit(pen.closest(".row"));
+    });
     syncChecks();
+    applyLabels();
   }
 
-  function node(level, id, html, title) {
+  // 한 칸: [펼침] [체크 · 한글 이름 · 원 용어(반투명)] [✎] [수]. 이름은 덮어쓰기 표를 거쳐 적는다.
+  function node(level, id, labelId, ko, original, prefix) {
     var el = document.createElement("div");
     el.className = "env " + level;
     el.dataset.id = id;
     el.innerHTML = '<div class="row"><button type="button" class="tog" aria-label="펼치기" hidden>▸</button>' +
-      '<label title="' + esc(title || "") + '"><input type="checkbox" data-level="' + level + '" data-id="' + esc(id) + '"> ' +
-      html + '</label><small class="n" data-count="' + level + ":" + esc(id) + '"></small></div>';
+      '<label><input type="checkbox" data-level="' + level + '" data-id="' + esc(id) + '"> ' + prefix +
+      ' <span class="name" data-label="' + esc(labelId) + '" data-default="' + esc(ko) + '">' + esc(ko) + "</span>" +
+      (original ? ' <span class="orig">' + esc(original) + "</span>" : "") + "</label>" +
+      '<button type="button" class="pen" title="이름 고치기" aria-label="' + esc(ko) + ' 이름 고치기">✎</button>' +
+      '<small class="n" data-count="' + level + ":" + esc(id) + '"></small></div>';
     return el;
+  }
+
+  // ── 명칭 고치기 ─────────────────────────────────────────────────────
+  // 기본 이름은 index.json(파이프라인), 고친 이름은 서버의 덮어쓰기 표(/labels)에 있다.
+  function labelFor(id, fallback) {
+    var name = state.labels.env[id];
+    return name || fallback;
+  }
+
+  function applyLabels() {
+    document.querySelectorAll("#envtree .name[data-label]").forEach(function (span) {
+      var custom = state.labels.env[span.dataset.label];
+      span.textContent = custom || span.dataset.default;
+      span.classList.toggle("custom", !!custom);
+      span.title = custom ? "고친 이름 · 기본: " + span.dataset.default : "";
+    });
+  }
+
+  function loadLabels() {
+    return fetch(LABELS_URL, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (data) {
+      state.labels = { env: data.env || {} };
+      state.editable = !!data.editable;
+      state.needsKey = !!data.needs_key;
+      $("edit-toggle").hidden = !state.editable;
+      $("key-row").hidden = !state.needsKey;
+      applyLabels();
+    }).catch(function () { /* 덮어쓰기가 없으면 기본 이름으로 그린다 */ });
+  }
+
+  function setEditing(on) {
+    state.editing = on;
+    app.classList.toggle("editing", on);
+    $("editbar").hidden = !on;
+    $("edit-toggle").setAttribute("aria-pressed", String(on));
+    $("edit-toggle").textContent = on ? "✓ 고치기 마침" : "✎ 명칭 고치기";
+    if (on) {
+      // 원 용어까지 고칠 수 있게 모두 펼친다.
+      document.querySelectorAll("#envtree .kids[hidden]").forEach(function (k) {
+        k.hidden = false;
+        var tog = k.parentNode.querySelector(":scope > .row > .tog");
+        if (tog) { tog.textContent = "▾"; tog.setAttribute("aria-expanded", "true"); }
+      });
+    } else {
+      document.querySelectorAll("#envtree .editor").forEach(function (ed) { ed.cancel(); });
+    }
+  }
+
+  function startEdit(row) {
+    if (row.querySelector(".editor")) return;
+    var span = row.querySelector(".name");
+    var label = row.querySelector("label");
+    var form = document.createElement("form");
+    form.className = "editor";
+    form.innerHTML = '<input type="text" maxlength="60" aria-label="새 이름">' +
+      '<button type="submit">저장</button><button type="button" class="cancel">취소</button>';
+    var input = form.querySelector("input");
+    input.value = span.textContent;
+    input.placeholder = "기본: " + span.dataset.default;
+    label.hidden = true;
+    row.querySelector(".pen").hidden = true;
+    label.after(form);
+    input.focus();
+    input.select();
+    form.cancel = function () { form.remove(); label.hidden = false; row.querySelector(".pen").hidden = false; };
+    form.querySelector(".cancel").addEventListener("click", form.cancel);
+    input.addEventListener("keydown", function (e) { if (e.key === "Escape") form.cancel(); });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var name = input.value.trim();
+      if (name === span.dataset.default) name = "";          // 기본과 같으면 덮어쓰기를 지운다
+      saveLabel(span.dataset.label, name).then(function () { form.cancel(); });
+    });
+  }
+
+  function saveLabel(id, name) {
+    var status = $("edit-status");
+    status.textContent = "저장하는 중…";
+    return fetch(LABELS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
+      body: JSON.stringify({ kind: "env", id: id, name: name, key: $("editor-key").value }),
+    }).then(function (r) {
+      return r.json().then(function (data) {
+        if (!r.ok) throw new Error(data.error || r.status);
+        return data;
+      });
+    }).then(function (data) {
+      state.labels = { env: data.env || {} };
+      applyLabels();
+      status.textContent = name ? "저장했다." : "기본 이름으로 돌렸다.";
+    }).catch(function (err) {
+      status.textContent = "저장하지 못했다: " + (err.message || err);
+      throw err;
+    });
   }
 
   function wireToggle(el, kids) {
@@ -392,7 +498,11 @@
     var env = row[col.environment];
     var group = state.termGroup[termKey(env)];
     var groupName = "";
-    state.tree.forEach(function (top) { top.groups.forEach(function (g) { if (g.id === group) groupName = top.ko + " › " + g.ko; }); });
+    state.tree.forEach(function (top) {
+      top.groups.forEach(function (g) {
+        if (g.id === group) groupName = labelFor(top.id, top.ko) + " › " + labelFor(g.id, g.ko);
+      });
+    });
     var html = "<h3>" + esc(row[col.collection_name] || "이름 없는 채집지") + "</h3><dl>" +
       "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma)</dd>" +
       (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
@@ -610,6 +720,7 @@
       if (name) searchTaxon(name); else clearTaxon();
     });
     $("taxon-clear").addEventListener("click", clearTaxon);
+    $("edit-toggle").addEventListener("click", function () { setEditing(!state.editing); });
     bindSuggest();
   }
 
@@ -628,6 +739,7 @@
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
       initEnvironments(index.environments || []);
+      loadLabels();
       bind();
       var wanted = parseFloat((location.hash.match(/age=([\d.]+)/) || [])[1]);
       var first = state.frames.findIndex(function (f) { return f.age === wanted; });

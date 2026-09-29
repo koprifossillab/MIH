@@ -39,8 +39,14 @@ URL_PREFIX = env("MIH_URL_PREFIX", "")
 if URL_PREFIX and not URL_PREFIX.endswith("/"):
     URL_PREFIX += "/"
 
-# 파이프라인이 만든 자료(index.json·relief·coastlines·fossils). 운영은 /srv/MIH/data.
+# 파이프라인이 만든 자료(index.json·relief·coastlines·fossils). 운영은 /srv/MIH/data (읽기 전용).
 DATA_DIR = Path(env("MIH_DATA_DIR", str(REPO_DIR / "data" / "derived")))
+# 뷰어가 쓰는 자리 — 화면에서 고친 명칭(labels.json)과 비밀키. 운영은 /srv/MIH/state (쓰기).
+STATE_DIR = Path(env("MIH_STATE_DIR", str(REPO_DIR / "data" / "state")))
+
+# 명칭 고치기를 여는 낱말(쉼표로 여럿). phyloserver 의 UPDATES_EDITOR_KEY 와 같은 갈래다 —
+# 계정 없이 이 한 마디로 연다. 비워 두면 개발(DEBUG)에서만 열쇠 없이 열리고 운영에서는 닫힌다.
+EDITOR_KEYS = {k.strip() for k in env("MIH_EDITOR_KEY").split(",") if k.strip()}
 
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
@@ -51,6 +57,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",      # 명칭 고치기(POST)
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
