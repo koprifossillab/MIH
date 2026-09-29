@@ -1908,5 +1908,53 @@
     }).catch(function (err) { console.error(err); });
   }
 
+  // ── 패널 접기(026) ────────────────────────────────────────────────
+  // 절 제목을 누르면 그 절을 접는다. 좁은 창(760 px 아래)에서는 패널 전체도 막대 하나로 접는다.
+  // 접은 상태는 브라우저에 기억한다(없거나 막혀 있으면 기본값). 기본은 넓은 창이면 모두 펼침,
+  // 좁은 창이면 시점만 펼침 — 좁은 창에서 패널이 지도 아래로 가 스크롤이 길었다(TODOs).
+  var PANEL_KEY = "wegener.panel";
+  var narrow = window.matchMedia ? window.matchMedia("(max-width: 760px)") : { matches: false };
+  function loadPanel() {
+    try { return JSON.parse(localStorage.getItem(PANEL_KEY)) || null; } catch (e) { return null; }
+  }
+  function savePanel() {
+    var closed = [];
+    document.querySelectorAll(".panel section[data-sec].collapsed").forEach(function (sec) { closed.push(sec.dataset.sec); });
+    try { localStorage.setItem(PANEL_KEY, JSON.stringify({ collapsed: closed, panelClosed: app.classList.contains("panel-closed") })); } catch (e) { /* 막힌 저장소 */ }
+  }
+  function setSection(sec, open) {
+    sec.classList.toggle("collapsed", !open);
+    sec.querySelector("h2").setAttribute("aria-expanded", String(open));
+  }
+  function setPanel(open) {
+    app.classList.toggle("panel-closed", !open);
+    $("panel-bar").setAttribute("aria-expanded", String(open));
+    $("panel-bar").textContent = open ? "패널 접기 ▾" : "패널 펼치기 ▴";
+  }
+  (function initPanel() {
+    var saved = loadPanel();
+    document.querySelectorAll(".panel section[data-sec]").forEach(function (sec) {
+      var h2 = sec.querySelector("h2");
+      h2.setAttribute("role", "button");
+      h2.tabIndex = 0;
+      var open = saved ? saved.collapsed.indexOf(sec.dataset.sec) < 0 : (!narrow.matches || sec.dataset.sec === "time");
+      setSection(sec, open);
+      function toggle(e) {
+        if (e.target.closest("button, input, select, a")) return;   // 제목 안의 단추(명칭 고치기)는 접지 않는다
+        setSection(sec, sec.classList.contains("collapsed"));
+        savePanel();
+      }
+      h2.addEventListener("click", toggle);
+      h2.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); }
+      });
+    });
+    setPanel(!(saved && saved.panelClosed));
+    $("panel-bar").addEventListener("click", function () {
+      setPanel(app.classList.contains("panel-closed"));
+      savePanel();
+    });
+  })();
+
   start();
 })();

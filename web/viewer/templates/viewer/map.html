@@ -30,12 +30,13 @@
     <div id="map" aria-label="고지리 지도"></div>
 
     <aside class="panel" id="panel">
+      <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel" aria-expanded="true">패널 접기 ▾</button>
       <section class="proj-row" id="proj-row" role="radiogroup" aria-label="투영" hidden>
         <h2>투영</h2>
         <label><input type="radio" name="proj" value="eq" checked> 정거원통</label>
         <label><input type="radio" name="proj" value="moll"> 몰바이데</label>
       </section>
-      <section>
+      <section data-sec="time">
         <h2>시점</h2>
         <div class="timeline">
           <button type="button" id="older" title="더 옛날 (←)" aria-label="더 옛날">◀</button>
@@ -63,8 +64,8 @@
         <p class="note">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
       </section>
 
-      <section>
-        <h2 class="with-tool">화석 산지 <small id="fossil-count"></small>
+      <section data-sec="fossils">
+        <h2 class="with-tool"><span class="title">화석 산지</span> <small id="fossil-count"></small>
           <button type="button" id="edit-toggle" class="tool" hidden aria-pressed="false">✎ 명칭 고치기</button></h2>
         <div class="editbar" id="editbar" hidden>
           <p class="note">이름 옆 ✎ 를 눌러 고친다. 비우고 저장하면 기본 이름으로 돌아간다. 고친 이름은 서버에 저장되어 모두에게 보인다.</p>
@@ -91,7 +92,7 @@
         <p class="note">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
 
-      <section>
+      <section data-sec="taxon">
         <h2>분류군 찾기</h2>
         <form id="taxon-form" class="taxon" autocomplete="off">
           <div class="combo">
@@ -127,7 +128,7 @@
         <button type="button" id="taxon-clear" class="link" hidden>분류군 지우기</button>
       </section>
 
-      <section>
+      <section data-sec="country">
         <h2>국가</h2>
         <div class="taxon">
           <div class="combo">
@@ -143,7 +144,7 @@
         </div>
       </section>
 
-      <section>
+      <section data-sec="overlay">
         <h2>겹쳐 보기</h2>
         <label class="swatch"><input type="checkbox" id="climate"> <i class="line temp"></i> 지표 기온 (Scotese 2021)</label>
         <div class="temp-legend" id="temp-legend" hidden>
@@ -160,7 +161,7 @@
         <p class="note" id="relief-note"></p>
       </section>
 
-      <section class="sources">
+      <section class="sources" data-sec="sources">
         <h2>자료</h2>
         <ul id="sources"></ul>
         <p class="note">배경·해안선·국경·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 산지의 지금 좌표를 <b>지도 시점의 나이로</b> 해안선과 같은 판 모델(v19o)로 돌린 것이라, 범위가 넓은 산지도 시점마다 그때 자리에 그려진다. 그 나이에 판이 없는 드문 산지(0.1% 미만)만 PBDB 고좌표(연대 중간값)를 쓴다 — 팝업에 적는다.</p>
