@@ -5,7 +5,8 @@
 
 ## 0.11.0 — 2026-09-30 · `work/20260930-koprifossillab`
 
-- **이름을 바꿨다: MIH → 베게너의 꿈 (Wegener's Dream)** — 화면 제목·머리말·README (020)
+- **이름을 바꿨다: MIH → Wegener's Dream (베게너의 꿈)** — 화면 제목·머리말·README. 머리말은 영문을 굵게,
+  한국어를 옆에 작게 (020)
 - 기술 이름도 함께: 저장소·URL `/WegenersDream/`·`/srv/WegenersDream`, 환경변수 `MIH_*` → `WEGENER_*`,
   파이썬 패키지 `mihweb` → `wegenerweb`, 이미지 `koprifossillab/wegenersdream`, nginx 조각
   `WegenersDream-subpath.conf`. **운영 `.env` 와 로컬 실행의 환경변수 이름을 바꿔야 한다** (020)
