@@ -65,6 +65,12 @@
           <label class="keyrow" id="key-row" hidden>편집 열쇠 <input type="password" id="editor-key" autocomplete="off"></label>
           <p class="note" id="edit-status" aria-live="polite"></p>
         </div>
+        <div class="colorby" role="radiogroup" aria-label="점 색">
+          <span>점 색</span>
+          <label><input type="radio" name="color-by" value="env" checked> 퇴적기원</label>
+          <label><input type="radio" name="color-by" value="age"> 시대(기)</label>
+        </div>
+        <div class="legend" id="legend" aria-live="polite"></div>
         <div class="envtree" id="envtree"></div>
         <p class="note">점 하나가 PBDB 채집지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고 20 Myr 이하인 것이 오른다 — 범위가 넓은 채집지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
@@ -84,7 +90,22 @@
       </section>
 
       <section>
+        <h2>국가</h2>
+        <div class="taxon">
+          <div class="combo">
+            <input type="search" id="country" placeholder="한글·영문 이름 또는 코드 — 예: 한국, China, US" autocomplete="off"
+                   role="combobox" aria-autocomplete="list" aria-controls="country-list" aria-label="국가">
+            <ul id="country-list" class="suggest" role="listbox" hidden></ul>
+          </div>
+        </div>
+        <p class="note" id="country-note">고르면 지금 그 나라 땅에서 나온 채집지만 보이고, 분류군 찾기도 그 나라로 좁힌다.</p>
+        <button type="button" id="country-clear" class="link" hidden>국가 지우기</button>
+      </section>
+
+      <section>
         <h2>겹쳐 보기</h2>
+        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> 국경선 (지금 국경을 그때 자리로 돌린 것)</label>
+        <p class="note" id="borders-note"></p>
         <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> 화석으로 고친 해안선</label>
         <p class="note" id="coast-note"></p>
         <label class="swatch"><input type="checkbox" id="grid"> 경위선 30°</label>

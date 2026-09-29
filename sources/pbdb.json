@@ -9,8 +9,9 @@
   },
   "role": "화석 점 — 시점마다 그 무렵(±2.5 Myr) 채집지",
   "query": {
-    "url": "https://paleobiodb.org/data1.2/colls/list.csv?all_records&show=paleoloc,geo,crmod&pgm=scotese&vocab=pbdb",
+    "url": "https://paleobiodb.org/data1.2/colls/list.csv?all_records&show=loc,paleoloc,geo,crmod&pgm=scotese&vocab=pbdb",
     "path": "data/sources/pbdb/collections.csv",
+    "fields": "loc 는 국가 코드(cc, ISO 3166-1 alpha-2)·주 를 준다 — 국가로 거르기(devlog 003)",
     "note": "살아 있는 데이터베이스라 같은 요청도 나중에는 더 많이 돌려준다. 그래서 크기·SHA-256 을 미리 고정하지 않고, 받은 날 받은 것의 값을 data/sources/pbdb/receipt.json 에 적는다. pgm=scotese 가 요점이다 — 기본값(gplates, Wright et al. 2013)은 배경과 판 모델이 달라 점이 어긋난다."
   }
 }

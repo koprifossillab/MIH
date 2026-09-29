@@ -10,7 +10,7 @@
 import json
 from datetime import datetime, timezone
 
-from . import coastlines, fossils, relief
+from . import coastlines, countries, fossils, relief
 from .common import DERIVED, manifest, period
 from .environments import classify, tree_for_index
 from .timescale import containing, units
@@ -32,15 +32,32 @@ def cite(name):
             "license": spec["license"]["name"], "license_url": spec["license"]["url"]}
 
 
-def build():
+def previous_reliefs():
+    """지난 목록의 배경 항목 — 배경은 그대로 두고 나머지만 다시 만들 때(--no-relief)."""
+    index = json.loads((DERIVED / "index.json").read_text(encoding="utf-8"))
+    out = []
+    for f in index["frames"]:
+        files = f.get("relief_files") or {"2048": f["relief"]}
+        missing = [p for p in files.values() if not (DERIVED / p).is_file()]
+        if missing:
+            raise SystemExit(f"배경 그림이 없다({missing[0]}) — --no-relief 없이 돌린다")
+        out.append({"age": f["age"], "label": f["label"], "file": f["relief"], "files": files,
+                    "grid": f.get("grid", "1deg"), "land_fraction": f["land_fraction"]})
+    return out
+
+
+def build(skip_relief=False):
     DERIVED.mkdir(parents=True, exist_ok=True)
-    print("배경(PaleoDEM)")
-    reliefs = relief.build()
+    print("배경(PaleoDEM)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
+    reliefs = previous_reliefs() if skip_relief else relief.build()
     print("해안선(PaleoCoastlines)")
     coasts = coastlines.build()
     print("화석(PBDB)")
     fossil_entries, fossil_meta = fossils.build([e["age"] for e in reliefs])
     by_age = {e["age"]: e for e in fossil_entries}
+    print("국경(Natural Earth → PALEOMAP)")
+    border_entries, country_names = countries.build([e["age"] for e in reliefs])
+    borders = {e["age"]: e["file"] for e in border_entries}
 
     scale = units()
     frames = []
@@ -58,6 +75,7 @@ def build():
             "grid": entry["grid"],
             "land_fraction": entry["land_fraction"],
             "coastline": {"age": coast["age"], "file": coast["file"]} if coast else None,
+            "borders": borders.get(age),
             "fossils": {"file": found.get("file"), "count": found.get("count", 0),
                         "by_env": found.get("by_env", {})},
         })
@@ -73,8 +91,9 @@ def build():
         "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
                       "units": scale},
         "environments": tree_for_index(env_counts),
+        "countries": countries.country_list(country_names),
         "pbdb": fossil_meta,
-        "sources": [cite("paleodem"), cite("paleocoastlines"), cite("pbdb")],
+        "sources": [cite("paleodem"), cite("paleocoastlines"), cite("pbdb"), cite("countries")],
     }
     (DERIVED / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n",
                                         encoding="utf-8")

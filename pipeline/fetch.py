@@ -134,10 +134,31 @@ def fetch_pbdb(refresh=False):
     print(f"  {rows} 채집지")
 
 
+def fetch_receipted(name, refresh=False):
+    """고정할 값이 없는 파일(판이 오르는 것) — 받고, 받은 날의 크기·SHA-256 을 receipt 에 적는다."""
+    spec = manifest(name)["download"]
+    target = source_path(spec["path"])
+    receipt = target.parent / "receipt.json"
+    if target.exists() and receipt.exists() and not refresh:
+        print(f"있음  {spec['path']}")
+    else:
+        print(f"받기  {manifest(name)['title']}")
+        download(spec["url"], target).replace(target)
+        receipt.write_text(json.dumps({
+            "url": spec["url"],
+            "retrieved_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "bytes": target.stat().st_size, "sha256": sha256(target),
+        }, indent=2) + "\n", encoding="utf-8")
+    out = source_path(spec["unzip"])
+    if not out.exists() or refresh:
+        print(f"  풀었다: {unzip(target, out)} 파일")
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     fetch_pinned("paleodem")
     fetch_pinned("paleocoastlines")
+    fetch_receipted("countries")
     fetch_pbdb(refresh="--refresh-pbdb" in argv)
 
 

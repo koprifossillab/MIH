@@ -17,16 +17,20 @@
   var MAX_SPAN_MA = 20;
   var OLDEST = 540;
   var WORLD = [[-90, -180], [90, 180]];
-  var COLORS = { m: "#ffd23f", t: "#e4572e", o: "#f5f5f5" };
+  var UNKNOWN_COLOR = "#f5f5f5";
   var UNLISTED = "__unlisted__";
 
   var $ = function (id) { return document.getElementById(id); };
   var state = {
     frames: [], i: 0, taxon: "", playing: null,
     units: {}, kids: {}, focus: null,       // 층서표: 고른 단위(없으면 지금 지도의 절)
+    periods: [],                            // 기 단위 — 시대 색에 쓴다
     tree: [], termTop: {}, termGroup: {},   // 퇴적 환경 나무
+    groupColor: {}, topColor: {},
     enabled: {},                            // 켠 원 용어(UNLISTED 포함)
     payload: null,
+    colorBy: "env",                         // 점 색: env(퇴적기원) · age(기 단위 시대)
+    countries: [], countryBy: {}, country: null,   // 국가로 거르기
     labels: { env: {} }, editable: false, needsKey: false, editing: false,
   };
   var cache = {};
@@ -49,6 +53,33 @@
 
   function fmtAge(age) { return (age % 1 ? age.toFixed(1) : String(age)) + " Ma"; }
   function fmtNum(n) { return Number(n).toLocaleString("ko-KR"); }
+
+  // ── 점 색 ───────────────────────────────────────────────────────────
+  // 퇴적기원: 환경군의 색(해양기원 하늘색→남색, 육상기원 주황→빨강, 미상 흰색).
+  // 시대: 채집지 연대 중간값이 든 기(Period)의 층서표 색.
+  function envColor(environment) {
+    return state.groupColor[state.termGroup[termKey(environment)]] || UNKNOWN_COLOR;
+  }
+  function periodOf(maxMa, minMa) {
+    var mid = (Number(maxMa) + Number(minMa)) / 2;
+    for (var k = 0; k < state.periods.length; k++) {
+      var p = state.periods[k];
+      if (mid > p.top && mid <= p.base) return p;
+    }
+    return mid === 0 ? state.periods[0] : null;
+  }
+  function pointColor(environment, maxMa, minMa) {
+    if (state.colorBy === "age") {
+      var p = periodOf(maxMa, minMa);
+      return p ? p.color : UNKNOWN_COLOR;
+    }
+    return envColor(environment);
+  }
+  // 채집지를 보일지 — 켠 환경, 고른 나라.
+  function passes(environment, cc) {
+    if (!state.enabled[termKey(environment)]) return false;
+    return !state.country || cc === state.country;
+  }
 
   // 배경색 위 글자색 — 층서표 색은 밝은 것과 짙은 것이 섞여 있다.
   function ink(hex) {
@@ -82,6 +113,15 @@
     style: { color: "#ff3da8", weight: 1.2, opacity: 0.9, fill: false },
     interactive: false, renderer: L.svg(),
   }).addTo(map);
+  // 국경선: 현재 국경을 그때 자리로 돌린 것. 반투명하게, 고른 나라만 또렷하게.
+  var borderLayer = L.geoJSON(null, {
+    style: function (feature) {
+      var picked = state.country && countryIso(state.country) === feature.properties.cc;
+      return picked ? { color: "#ffd400", weight: 2.2, opacity: 0.95, fill: false }
+                    : { color: "#ffffff", weight: 0.7, opacity: 0.4, fill: false };
+    },
+    interactive: false, renderer: L.svg(),
+  }).addTo(map);
   map.createPane("fossils").style.zIndex = 450;
   var renderer = L.canvas({ padding: 0.3, pane: "fossils" });
   var fossilLayer = L.layerGroup().addTo(map);
@@ -89,7 +129,7 @@
   var gridLayer = L.layerGroup();
   for (var lon = -180; lon <= 180; lon += 30) gridLayer.addLayer(L.polyline([[-90, lon], [90, lon]], { color: "#fff", weight: 0.5, opacity: 0.35, interactive: false }));
   for (var lat = -60; lat <= 60; lat += 30) gridLayer.addLayer(L.polyline([[lat, -180], [lat, 180]], { color: "#fff", weight: lat === 0 ? 1 : 0.5, opacity: 0.35, interactive: false }));
-  window.MIH = { map: map, fossils: fossilLayer, taxa: taxonLayer, state: state };   // 콘솔에서 들여다보기용
+  window.MIH = { map: map, fossils: fossilLayer, taxa: taxonLayer, borders: borderLayer, state: state };   // 콘솔에서 들여다보기용
 
   // 배경 해상도: EPSG:4326 에서 세계 폭은 512·2^zoom 픽셀이다. zoom 2 까지는 2048,
   // 그보다 확대하면 4096 을 부른다(6 분 격자가 3601 칸이라 그 이상은 얻을 것이 없다).
@@ -135,6 +175,8 @@
       (state.kids[u.parent] = state.kids[u.parent] || []).push(u);
     });
     Object.keys(state.kids).forEach(function (k) { state.kids[k].sort(byOldFirst); });
+    state.periods = ts.units.filter(function (u) { return u.rank === "period"; })
+      .sort(function (a, b) { return a.top - b.top; });
     // 시점 막대 밑의 기·세 띠 — 막대와 같게 왼쪽이 540 Ma 다.
     var rows = { period: $("strip-period"), epoch: $("strip-epoch") };
     ts.units.forEach(function (u) {
@@ -231,6 +273,7 @@
     relief.setUrl(reliefUrl(f));
     noteRelief(f);
     drawCoast(f);
+    drawBorders(f, false);
     loadFossils(f);
     if (state.taxon) searchTaxon(state.taxon);
     [state.i - 1, state.i + 1].forEach(function (j) {
@@ -261,7 +304,8 @@
     var box = $("envtree");
     box.innerHTML = "";
     tree.forEach(function (top) {
-      var topEl = node("top", top.id, top.id, top.ko, top.en, '<i class="dot ' + top.id + '"></i>');
+      state.topColor[top.id] = top.color || UNKNOWN_COLOR;
+      var topEl = node("top", top.id, top.id, top.ko, top.en, swatch(top.color));
       // 환경군은 펼쳐 둔다 — 접어 두면 작은 ▸ 단추를 찾지 못해 없는 것처럼 보였다.
       // 원 용어(셋째 단계)는 많아서 접어 둔다.
       var groupsEl = document.createElement("div");
@@ -269,7 +313,8 @@
       top.groups.forEach(function (g) {
         var terms = g.id === "o-unlisted" ? [UNLISTED] : g.terms.map(function (t) { return t.term; });
         terms.forEach(function (t) { state.termTop[t] = top.id; state.termGroup[t] = g.id; state.enabled[t] = true; });
-        var gEl = node("group", g.id, g.id, g.ko, g.en, "");
+        state.groupColor[g.id] = g.color || UNKNOWN_COLOR;
+        var gEl = node("group", g.id, g.id, g.ko, g.en, swatch(g.color));
         var termsEl = document.createElement("div");
         termsEl.className = "kids";
         termsEl.hidden = true;
@@ -291,7 +336,7 @@
       var on = input.checked;
       termsUnder(input.dataset.level, input.dataset.id).forEach(function (t) { state.enabled[t] = on; });
       syncChecks();
-      drawFossils();
+      redraw();
     });
     box.addEventListener("click", function (e) {
       var pen = e.target.closest(".pen");
@@ -299,6 +344,11 @@
     });
     syncChecks();
     applyLabels();
+  }
+
+  // 환경 칸의 색 견본 — 퇴적기원 색일 때만 보인다(시대 색일 때는 범례가 따로 뜬다).
+  function swatch(color) {
+    return '<i class="dot env-dot" style="background:' + esc(color || UNKNOWN_COLOR) + '"></i>';
   }
 
   // 한 칸: [펼침] [체크 · 한글 이름 · 원 용어(반투명)] [✎] [수]. 이름은 덮어쓰기 표를 거쳐 적는다.
@@ -470,25 +520,40 @@
     });
   }
 
+  // 점 하나. 테두리를 흰색으로 두어 푸른 바다 위 푸른 점, 짙은 땅 위 붉은 점도 보이게 한다.
+  function marker(latlng, color, big) {
+    return L.circleMarker(latlng, {
+      renderer: renderer, radius: big ? 4.6 : 3.4, weight: big ? 1.4 : 0.8,
+      color: big ? "#111" : "#ffffff", opacity: 0.9, fillColor: color, fillOpacity: 0.95,
+    });
+  }
+
+  function columns(payload) {
+    var col = {};
+    payload.fields.forEach(function (name, k) { col[name] = k; });
+    return col;
+  }
+
+  // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 채집지 점은 찾기를 지우면 돌아온다.
   function drawFossils() {
     var payload = state.payload;
     fossilLayer.clearLayers();
     if (!payload) return;
-    var col = {};
-    payload.fields.forEach(function (name, k) { col[name] = k; });
-    var dim = !!state.taxon, shown = 0;
+    var col = columns(payload);
+    var inCountry = state.country
+      ? payload.rows.filter(function (row) { return row[col.cc] === state.country; }) : payload.rows;
+    syncCounts(inCountry, col);
+    if (state.taxon) { $("fossil-count").textContent = "분류군 찾기 결과만 보인다"; return; }
+    var shown = 0;
     payload.rows.forEach(function (row) {
-      if (!state.enabled[termKey(row[col.environment])]) return;
+      if (!passes(row[col.environment], row[col.cc])) return;
       shown += 1;
-      var env = row[col.env];
-      L.circleMarker([row[col.paleolat], row[col.paleolng]], {
-        renderer: renderer, radius: 3.2, weight: 0.6, color: "#222",
-        fillColor: COLORS[env], fillOpacity: dim ? 0.25 : 0.9, opacity: dim ? 0.3 : 1,
-      }).on("click", function (e) { openCollection(e.latlng, row, col); })
+      marker([row[col.paleolat], row[col.paleolng]], pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]))
+        .on("click", function (e) { openCollection(e.latlng, row, col); })
         .addTo(fossilLayer);
     });
-    syncCounts(payload.rows, col);
     $("fossil-count").textContent = fmtNum(shown) + (shown === payload.rows.length ? "곳" : " / " + fmtNum(payload.rows.length) + "곳");
+    renderLegend();
   }
 
   // ── 채집지 팝업 ─────────────────────────────────────────────────────
@@ -508,6 +573,8 @@
       (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
       "<dt>환경</dt><dd>" + esc(env || "기록 없음") + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
       "<dt>고좌표</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°</dd>" +
+      (row[col.cc] ? "<dt>지금 국가</dt><dd>" + esc(countryName(row[col.cc])) + "</dd>" : "") +
+      (row.matched ? "<dt>찾은 분류군</dt><dd><i>" + row.matched.map(esc).join("</i>, <i>") + "</i></dd>" : "") +
       '</dl><a href="' + PBDB_COLL_PAGE + no + '" target="_blank" rel="noopener">PBDB 채집지 ' + no + "</a>" +
       '<div class="muted taxa-box">산출 ' + row[col.n_occs] + "건 읽는 중…</div>";
     // 내용을 문자열이 아니라 요소로 준다. 문자열이면 popup.update() 가 처음 문자열로 다시
@@ -532,46 +599,76 @@
   // 채집지 점과 같은 규칙으로 거른다(pipeline/common.py 의 belongs): 연대 범위가 시점
   // ±2.5 Myr 창과 겹치고, 범위가 20 Myr 이하. PBDB 의 overlap 도 같은 뜻이다.
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
-                  early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11 };
+                  early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12 };
   var taxonSeq = 0;
   function searchTaxon(name) {
     var f = frame();
     var seq = ++taxonSeq;
     state.taxon = name;
+    state.taxa = null;
     $("taxon-clear").hidden = false;
     $("taxon-status").textContent = name + " — " + fmtAge(f.age) + " 무렵을 PBDB 에 묻는 중…";
+    drawFossils();
     var url = PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) +
       "&max_ma=" + (f.age + WINDOW_MA) + "&min_ma=" + Math.max(0, f.age - WINDOW_MA) +
-      "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class&vocab=pbdb&limit=20000";
+      (state.country ? "&cc=" + encodeURIComponent(state.country) : "") +
+      "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class,env,loc&vocab=pbdb&limit=20000";
     getJSON(url).then(function (data) {
       if (seq !== taxonSeq) return;
-      taxonLayer.clearLayers();
       if (data.errors) throw new Error(data.errors.join(" "));
-      var shown = 0;
+      // 산출을 채집지로 묶는다 — 한 채집지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
+      var byColl = {}, rows = [];
       (data.records || []).forEach(function (r) {
         if (r.max_ma - r.min_ma > MAX_SPAN_MA) return;
         if (r.paleolat == null || r.paleolng == null) return;
-        shown += 1;
-        L.circleMarker([r.paleolat, r.paleolng], {
-          renderer: renderer, radius: 4.5, weight: 1.5, color: "#003d2b", fillColor: "#2ee6a6", fillOpacity: 0.95,
-        }).bindTooltip(esc(r.accepted_name || r.identified_name) + " · " + esc(r.collection_name))
-          .on("click", function (e) {
-            openCollection(e.latlng, [r.collection_no, r.paleolng, r.paleolat, "o", "?", r.collection_name,
-              r.early_interval, r.late_interval || "", r.max_ma, r.min_ma, "", ""], COLUMNS);
-          })
-          .addTo(taxonLayer);
+        var row = byColl[r.collection_no];
+        if (!row) {
+          row = byColl[r.collection_no] = [r.collection_no, r.paleolng, r.paleolat, "", 0, r.collection_name,
+            r.early_interval, r.late_interval || "", r.max_ma, r.min_ma, r.formation || "",
+            r.environment || "", r.cc || ""];
+          row.matched = [];
+          rows.push(row);
+        }
+        row[COLUMNS.n_occs] += 1;
+        var taxon = r.accepted_name || r.identified_name;
+        if (row.matched.indexOf(taxon) < 0) row.matched.push(taxon);
       });
-      $("taxon-status").textContent = name + " — " + fmtAge(f.age) + " 무렵 산출 " + fmtNum(shown) + "건.";
-      drawFossils();
+      state.taxa = rows;
+      drawTaxa();
     }).catch(function (err) {
       if (seq !== taxonSeq) return;
       $("taxon-status").textContent = "찾지 못했다: " + (err.message || err);
     });
   }
 
+  function drawTaxa() {
+    taxonLayer.clearLayers();
+    var rows = state.taxa;
+    if (!state.taxon || !rows) return;
+    var shown = 0, occs = 0;
+    rows.forEach(function (row) {
+      if (!passes(row[COLUMNS.environment], row[COLUMNS.cc])) return;
+      shown += 1;
+      occs += row[COLUMNS.n_occs];
+      marker([row[COLUMNS.paleolat], row[COLUMNS.paleolng]],
+             pointColor(row[COLUMNS.environment], row[COLUMNS.max_ma], row[COLUMNS.min_ma]), true)
+        .bindTooltip(esc(row.matched.slice(0, 3).join(", ") + (row.matched.length > 3 ? " …" : "")) +
+                     " · " + esc(row[COLUMNS.collection_name]))
+        .on("click", function (e) { openCollection(e.latlng, row, COLUMNS); })
+        .addTo(taxonLayer);
+    });
+    $("taxon-status").textContent = state.taxon + " — " + fmtAge(frame().age) + " 무렵 채집지 " +
+      fmtNum(shown) + "곳 (산출 " + fmtNum(occs) + "건)" + (state.country ? ", " + countryName(state.country) : "") + ".";
+    renderLegend();
+  }
+
+  // 점을 다시 그린다 — 색·환경·나라를 바꿨을 때. PBDB 에 다시 묻지 않는다.
+  function redraw() { drawFossils(); drawTaxa(); }
+
   function clearTaxon() {
     taxonSeq += 1;
     state.taxon = "";
+    state.taxa = null;
     taxonLayer.clearLayers();
     $("taxon").value = "";
     $("taxon-clear").hidden = true;
@@ -690,6 +787,109 @@
     input.addEventListener("blur", function () { setTimeout(closeSuggest, 150); });
   }
 
+  // ── 국가 ────────────────────────────────────────────────────────────
+  // 목록은 index.json 의 countries(PBDB 채집지에 나오는 국가 코드 + Natural Earth 한글 이름).
+  // PBDB 는 영국을 UK, 대양을 O1~O7 로 적는다 — 국경선 파일은 ISO(GB)다.
+  function countryIso(cc) { var c = state.countryBy[cc]; return c ? c.iso : cc; }
+  function countryName(cc) { var c = state.countryBy[cc]; return c ? c.ko : cc; }
+
+  function initCountries(list) {
+    state.countries = list;
+    list.forEach(function (c) { state.countryBy[c.cc] = c; });
+    var input = $("country"), box = $("country-list"), active = -1, items = [];
+    var norm = function (s) { return String(s || "").toLowerCase().replace(/\s+/g, ""); };
+    var render = function () {
+      var q = norm(input.value);
+      items = !q ? [] : state.countries.filter(function (c) {
+        return norm(c.ko).indexOf(q) >= 0 || norm(c.en).indexOf(q) >= 0 || norm(c.cc) === q || norm(c.iso) === q ||
+          (c.aka || []).some(function (a) { return norm(a).indexOf(q) >= 0; });
+      }).slice(0, 12);
+      active = -1;
+      box.innerHTML = items.map(function (c, k) {
+        return '<li role="option" data-k="' + k + '"><span class="nm-plain">' + esc(c.ko) + ' <small>' + esc(c.en) +
+          "</small></span><span class=\"meta\">" + esc(c.cc) + " · 채집지 " + fmtNum(c.collections) + "</span></li>";
+      }).join("") || (q ? '<li class="empty-sg">없다</li>' : "");
+      box.hidden = !q;
+    };
+    var pick = function (k) {
+      var c = items[k];
+      if (!c) return;
+      box.hidden = true;
+      setCountry(c.cc);
+    };
+    input.addEventListener("input", render);
+    input.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        active = (active + (e.key === "ArrowDown" ? 1 : -1) + items.length) % Math.max(items.length, 1);
+        box.querySelectorAll("li").forEach(function (li, k) { li.classList.toggle("active", k === active); });
+        e.preventDefault();
+      } else if (e.key === "Enter") { pick(active >= 0 ? active : 0); e.preventDefault(); }
+      else if (e.key === "Escape") { box.hidden = true; }
+    });
+    box.addEventListener("mousedown", function (e) {
+      var li = e.target.closest("li[data-k]");
+      if (li) { e.preventDefault(); pick(+li.dataset.k); }
+    });
+    input.addEventListener("blur", function () { setTimeout(function () { box.hidden = true; }, 150); });
+    $("country-clear").addEventListener("click", function () { setCountry(null); });
+  }
+
+  function setCountry(cc) {
+    state.country = cc;
+    $("country").value = cc ? countryName(cc) : "";
+    $("country-clear").hidden = !cc;
+    noteCountry();
+    drawBorders(frame(), true);
+    if (state.taxon) searchTaxon(state.taxon); else redraw();
+  }
+
+  function noteCountry() {
+    var c = state.countryBy[state.country];
+    $("country-note").textContent = !c ? "" :
+      c.ko + (c.ocean ? " (대양, PBDB 해양 시추 등)" : "") + " — 지금 이 나라(땅)에서 나온 채집지만 보인다. 전체 " +
+      fmtNum(c.collections) + "곳.";
+  }
+
+  // 국경선: 켰거나 나라를 골랐을 때만 받는다. 나라를 막 골랐으면 그 나라 쪽으로 지도를 옮긴다.
+  function drawBorders(f, focus) {
+    borderLayer.clearLayers();
+    var want = f.age, show = $("borders").checked;
+    if (!f.borders || (!show && !state.country)) return;
+    getJSON(DATA + f.borders).then(function (geo) {
+      if (frame().age !== want) return;
+      borderLayer.clearLayers();
+      var iso = state.country && countryIso(state.country);
+      var picked = null;
+      borderLayer.addData(show ? geo : { type: "FeatureCollection", features: geo.features.filter(function (ft) {
+        return ft.properties.cc === iso;
+      }) });
+      borderLayer.eachLayer(function (layer) { if (layer.feature.properties.cc === iso) { picked = layer; layer.bringToFront(); } });
+      if (focus && picked) map.fitBounds(picked.getBounds(), { maxZoom: 4, padding: [30, 30] });
+      $("borders-note").textContent = iso && !picked && !state.countryBy[state.country].ocean
+        ? countryName(state.country) + " 땅은 " + fmtAge(want) + " 판 모델에 아직 없다(그보다 젊은 지각)." : "";
+    });
+  }
+
+  // ── 범례(시대 색) ───────────────────────────────────────────────────
+  // 퇴적기원 색은 환경 나무의 색 견본이 범례를 겸한다. 시대 색일 때는 지금 보이는 점의 기를 적는다.
+  function renderLegend() {
+    var box = $("legend");
+    app.classList.toggle("color-age", state.colorBy === "age");
+    if (state.colorBy !== "age") { box.innerHTML = ""; return; }
+    var seen = {};
+    var add = function (maxMa, minMa) { var p = periodOf(maxMa, minMa); if (p) seen[p.id] = p; };
+    if (state.taxon && state.taxa) {
+      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
+    } else if (state.payload) {
+      var col = columns(state.payload);
+      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc])) add(row[col.max_ma], row[col.min_ma]); });
+    }
+    box.innerHTML = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst).map(function (p) {
+      return '<span class="leg"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
+    }).join("");
+  }
+
   // ── 조작 ────────────────────────────────────────────────────────────
   function bind() {
     $("slider").addEventListener("input", function () { show(+this.value); });
@@ -710,6 +910,10 @@
       }
     });
     $("coast").addEventListener("change", function () { drawCoast(frame()); });
+    $("borders").addEventListener("change", function () { drawBorders(frame(), false); });
+    document.querySelectorAll('input[name="color-by"]').forEach(function (radio) {
+      radio.addEventListener("change", function () { if (radio.checked) { state.colorBy = radio.value; redraw(); } });
+    });
     $("grid").addEventListener("change", function () {
       if (this.checked) gridLayer.addTo(map); else map.removeLayer(gridLayer);
     });
@@ -739,6 +943,7 @@
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
       initEnvironments(index.environments || []);
+      initCountries(index.countries || []);
       loadLabels();
       bind();
       var wanted = parseFloat((location.hash.match(/age=([\d.]+)/) || [])[1]);

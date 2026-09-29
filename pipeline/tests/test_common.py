@@ -64,7 +64,8 @@ class EnvironmentTest(unittest.TestCase):
     def test_classes(self):
         self.assertEqual(environment_class("offshore shelf"), "m")
         self.assertEqual(environment_class('"floodplain"'), "t")
-        self.assertEqual(environment_class("estuary/bay"), "o")    # 해안선 바로 위 — 밀지 않는다
+        self.assertEqual(environment_class("estuary/bay"), "t")    # 연구자의 판단(devlog 003)
+        self.assertEqual(environment_class("lagoonal"), "m")
         self.assertEqual(environment_class(""), "o")
 
 

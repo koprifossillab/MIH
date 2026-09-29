@@ -107,6 +107,17 @@ body {
 .env .tog[hidden] { display: inline-block; visibility: hidden; }
 .env .kids { margin-left: 13px; padding-left: 12px; border-left: 1px solid var(--line); }
 .env.group > .row, .env.term > .row { font-size: 13px; }
+.line.border { border-top: 1px solid var(--ink); opacity: .6; }
+.colorby { display: flex; gap: 10px; align-items: center; font-size: 13px; margin: 2px 0 6px; }
+.colorby > span { color: var(--muted); font-size: 12px; }
+.colorby label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-bottom: 4px; }
+.legend:empty { display: none; }
+.legend .leg { display: inline-flex; align-items: center; gap: 4px; }
+.dot.env-dot { border-color: rgba(0, 0, 0, .35); }
+#app.color-age .env-dot { opacity: .2; }
+.suggest .nm-plain small { color: var(--muted); }
+
 /* 원 용어는 한글 이름 옆에 반투명하게 */
 .env .orig { opacity: .5; font-size: 11px; font-weight: 400; }
 .env .name.custom { text-decoration: underline dotted; text-underline-offset: 3px; }

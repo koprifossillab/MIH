@@ -8,7 +8,7 @@
     "url": "https://creativecommons.org/licenses/by/4.0/",
     "note": "Zenodo 기록과 압축본의 Data/Readme.md 가 CC-BY 4.0 이라 적는다."
   },
-  "role": "해안선 — 0~535 Ma 의 81 시점. 좌표가 이미 PALEOMAP 복원 좌표라 회전하지 않는다",
+  "role": "해안선 — 0~535 Ma 의 81 시점. 좌표가 이미 PALEOMAP 복원 좌표라 회전하지 않는다. 압축본 안의 회전 파일·판 나눔 다각형(paleomap_model_v19o_r1c)으로 국경선을 돌린다",
   "evidence": "PaleoDEM 해안선을 PBDB 해양 화석이 가리키는 최대 해침선까지 옮긴 것이다. 그래서 같은 PBDB 화석으로 이 해안선을 '검증'하면 순환 논리가 된다.",
   "archive": {
     "url": "https://zenodo.org/api/records/4297693/files/PaleoCoastlines_v7.1.zip/content",
@@ -16,7 +16,7 @@
     "bytes": 88660667,
     "sha256": "4d039888bce4548f8126e0ad70a4ecb21472daad7671a4560c06a6bcd7734ddd",
     "unzip": "data/sources/paleocoastlines/unzipped",
-    "members": ["Data/CS/*"]
+    "members": ["Data/CS/*", "Data/paleomap_model_v19o_r1c/*"]
   },
   "pinned_from": "크기·SHA-256 은 jikhanjung/EarthThruTime3D 의 sources/paleogeography/paleocoastlines2021.json 과 같다(2026-09-13 에 받은 것)."
 }

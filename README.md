@@ -8,6 +8,7 @@
 | 배경(고도·음영) | PALEOMAP PaleoDEM, Scotese & Wright 2018 | CC BY 4.0 |
 | 해안선 | PaleoCoastlines v7.1, Kocsis & Scotese 2021 | CC BY 4.0 |
 | 화석 점 | Paleobiology Database 채집지, PALEOMAP 고좌표(`pgm=scotese`) | CC BY 4.0 |
+| 국경선 | Natural Earth 1:50m 현재 국경을 PALEOMAP 판으로 돌린 것 | 퍼블릭 도메인 |
 
 세 자료가 모두 **PALEOMAP 판 모델 틀**이라 서로 맞는다. PBDB 기본 모델(`gplates`)을
 쓰면 점이 배경과 수 도씩 어긋난다 — [devlog 001](devlog/20260929_001_시작.md).

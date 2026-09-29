@@ -15,7 +15,7 @@ import json
 from .common import DERIVED, MAX_SPAN_MA, WINDOW_MA, age_key, environment_class, manifest, source_path
 
 FIELDS = ["collection_no", "paleolng", "paleolat", "env", "n_occs", "collection_name",
-          "early_interval", "late_interval", "max_ma", "min_ma", "formation", "environment"]
+          "early_interval", "late_interval", "max_ma", "min_ma", "formation", "environment", "cc"]
 
 
 def number(value):
@@ -56,6 +56,7 @@ def read_collections(path):
                 old, young,
                 (record.get("formation") or "").strip(),
                 environment,
+                (record.get("cc") or "").strip(),       # PBDB 국가 코드(GB 는 UK, 대양은 O1~O7)
             ]))
     return rows, stats
 
