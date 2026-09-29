@@ -5,7 +5,6 @@
 
 ## 배포
 
-- [ ] **`work/20260929-koprifossillab`(0.5.0)을 `main` 에 병합할지 정한다** — 사람이 정한다
 - [ ] **paleoserver 에 올린다** — 이 장비에서는 SSH(22)가 막혀 있어 서버에서 사람이 돌린다.
       clone → `python -m pipeline all`(PBDB·Zenodo 를 받고 6 분쯤) → `/srv/MIH/data` 로 →
       이미지 굽기 → `/srv/MIH/docker-compose.yml` 로 띄우기 → nginx `include snippets/MIH-subpath.conf;`
