@@ -149,26 +149,39 @@
   // 반지름 1: x ∈ [−2√2, 2√2], y ∈ [−√2, √2]. pipeline/relief.py 의 mollweide_lookup 과 같은 식이어야
   // 배경 그림과 점·선이 맞는다. 변환 계수는 EPSG:4326 과 같은 배율이 되게 골랐다 — 확대 z 에서 세계가
   // 512·2^z × 256·2^z 픽셀이라 배경 해상도(reliefWidth)와 전 지구 맞추기가 두 투영에서 같다.
+  // 가운데 경선(lon0)을 둔다 — 몰바이데에서 가로로 끌면 지구가 돈다(025). 배경 그림은 lon0 = 0 으로 구워
+  // 두고 캔버스에서 행마다 돌려 그린다(ReliefOverlay).
   var SQRT2 = Math.SQRT2, DEG = Math.PI / 180;
+  function wrap180(v) { return ((v + 180) % 360 + 360) % 360 - 180; }   // [−180, 180)
+  // 위도 → 보조각 θ(2θ + sin 2θ = π sin φ, 뉴턴법). 돌려도 위도는 그대로라 위도마다 한 번만 푼다 —
+  // 끄는 동안 산지 점 1 만 개를 프레임마다 다시 투영한다(025).
+  var thetaMemo = {}, thetaCount = 0;
+  function mollTheta(lat) {
+    var hit = thetaMemo[lat];
+    if (hit !== undefined) return hit;
+    var phi = Math.max(-90, Math.min(90, lat)) * DEG, theta = phi;
+    if (Math.abs(phi) < Math.PI / 2 - 1e-9) {
+      for (var k = 0; k < 30; k++) {
+        var d = (2 * theta + Math.sin(2 * theta) - Math.PI * Math.sin(phi)) / (2 + 2 * Math.cos(2 * theta));
+        theta -= d;
+        if (Math.abs(d) < 1e-10) break;
+      }
+    }
+    if (++thetaCount > 200000) { thetaMemo = {}; thetaCount = 0; }
+    return (thetaMemo[lat] = theta);
+  }
   var Mollweide = {
     bounds: L.bounds([-2 * SQRT2, -SQRT2], [2 * SQRT2, SQRT2]),
+    lon0: 0,
     project: function (latlng) {
-      var phi = Math.max(-90, Math.min(90, latlng.lat)) * DEG, lam = latlng.lng * DEG, theta = phi;
-      if (Math.abs(phi) < Math.PI / 2 - 1e-9) {
-        // 2θ + sin 2θ = π sin φ 를 뉴턴법으로
-        for (var k = 0; k < 30; k++) {
-          var d = (2 * theta + Math.sin(2 * theta) - Math.PI * Math.sin(phi)) / (2 + 2 * Math.cos(2 * theta));
-          theta -= d;
-          if (Math.abs(d) < 1e-10) break;
-        }
-      }
+      var lam = wrap180(latlng.lng - this.lon0) * DEG, theta = mollTheta(latlng.lat);
       return L.point(2 * SQRT2 / Math.PI * lam * Math.cos(theta), SQRT2 * Math.sin(theta));
     },
     unproject: function (point) {
       var theta = Math.asin(Math.max(-1, Math.min(1, point.y / SQRT2))), c = Math.cos(theta);
       var lat = Math.asin(Math.max(-1, Math.min(1, (2 * theta + Math.sin(2 * theta)) / Math.PI))) / DEG;
       var lng = c > 1e-12 ? Math.PI * point.x / (2 * SQRT2 * c) / DEG : 0;
-      return L.latLng(lat, lng);
+      return L.latLng(lat, Math.abs(lng) <= 180 ? wrap180(lng + this.lon0) : lng + this.lon0);   // 타원 밖은 감지 않는다
     },
   };
   var MOLL = L.extend({}, L.CRS.Earth, {
@@ -207,6 +220,97 @@
     },
   });
 
+  // 선을 가운데 경선의 반대편(이음매)에서 끊는다. 끊는 자리는 이음매 위의 점을 보간해 양쪽 가장자리에 붙인다.
+  // 자료가 ±180° 를 따라 긋는 선분(판을 자른 자국)은 버린다 — 돌리면 바다 한가운데 경선으로 보인다.
+  // 좌표는 GeoJSON 순서([경도, 위도]). 이음매 위의 점은 lon0 ± (180 − ε) 로 두어 어느 쪽 가장자리인지 정한다.
+  var SEAM_EPS = 1e-7;
+  function splitLine(coords, lon0) {
+    var out = [], cur = [];
+    for (var i = 0; i < coords.length; i++) {
+      var p = coords[i];
+      if (i > 0) {
+        var a = coords[i - 1];
+        if (Math.abs(Math.abs(a[0]) - 180) < 1e-9 && a[0] === p[0]) {
+          if (cur.length > 1) out.push(cur);
+          cur = [];
+        } else {
+          var ra = wrap180(a[0] - lon0), d = p[0] - a[0], rb = ra + d;
+          if (rb >= 180 || rb < -180) {
+            var edge = rb >= 180 ? 180 : -180, t = (edge - ra) / d, lat = a[1] + t * (p[1] - a[1]);
+            cur.push([lon0 + edge - Math.sign(edge) * SEAM_EPS, lat]);
+            if (cur.length > 1) out.push(cur);
+            cur = [[lon0 - edge + Math.sign(edge) * SEAM_EPS, lat]];
+          }
+        }
+      }
+      cur.push(p);
+    }
+    if (cur.length > 1) out.push(cur);
+    return out;
+  }
+  // 정거원통이거나 가운데 경선이 0 이면 그대로. 아니면 선마다 끊은 MultiLineString 으로.
+  function seamGeo(geo) {
+    var lon0 = state.proj === "moll" ? Mollweide.lon0 : 0;
+    if (!lon0) return geo;
+    function cut(ft) {
+      var g = ft.geometry, lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates
+        : g.type === "Polygon" ? g.coordinates : g.type === "MultiPolygon" ? [].concat.apply([], g.coordinates) : null;
+      if (!lines) return ft;
+      var parts = [];
+      lines.forEach(function (line) { parts.push.apply(parts, splitLine(line, lon0)); });
+      return { type: "Feature", properties: ft.properties, geometry: { type: "MultiLineString", coordinates: parts } };
+    }
+    return geo.type === "FeatureCollection" ? { type: "FeatureCollection", features: geo.features.map(cut) } : cut(geo);
+  }
+
+  // 배경 그림(과 몰바이데 기온 층) — 캔버스에 그린다. 몰바이데 그림은 한 행이 한 위도라, 가운데 경선을 돌리는 것은 행마다 타원 안
+  // 구간(폭 = 전체 폭 × cos θ)을 그 폭의 (−lon0/360) 만큼 돌려 옮기는 것과 같다. 다시 굽지 않는다.
+  // 새 그림은 다 받은 뒤에 바꿔 그린다 — 받는 동안 옛 그림을 둔다(021 과 같은 뜻).
+  var ReliefOverlay = PlaneOverlay.extend({
+    _initImage: function () {
+      var c = this._image = L.DomUtil.create("canvas", "leaflet-image-layer" +
+        (this._zoomAnimated ? " leaflet-zoom-animated" : "") + (this.options.className ? " " + this.options.className : ""));
+      c.onselectstart = L.Util.falseFn;
+      c.onmousemove = L.Util.falseFn;
+      if (this._url) this._load(this._url);
+    },
+    setUrl: function (url) {
+      this._url = url;
+      if (this._image) this._load(url);
+      return this;
+    },
+    // 이미 그려 둔 그림(캔버스)을 바로 쓴다 — 기온 층
+    setSource: function (src) {
+      this._url = null;
+      this._src = src;
+      this.paint();
+      return this;
+    },
+    _load: function (url) {
+      var self = this, img = new Image();
+      img.onload = function () { if (self._url === url) { self._src = img; self.paint(); } };
+      img.src = url;
+    },
+    paint: function () {
+      var img = this._src, c = this._image;
+      if (!img || !c) return;
+      var W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+      if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+      var ctx = c.getContext("2d"), lon0 = state.proj === "moll" ? Mollweide.lon0 : 0;
+      ctx.clearRect(0, 0, W, H);
+      if (!lon0) { ctx.drawImage(img, 0, 0); return; }
+      for (var r = 0; r < H; r++) {
+        var y = SQRT2 - (r + 0.5) / H * 2 * SQRT2, half = W / 2 * Math.sqrt(Math.max(0, 1 - y * y / 2));
+        if (half < 0.5) continue;
+        var span = 2 * half, x0 = W / 2 - half, sh = ((-lon0 / 360 * span) % span + span) % span;
+        // 원본 구간의 양 끝(타원 가장자리)은 반쯤 투명하다 — 이음매에서 맞닿으면 틈이 보여 1 px 안쪽을 읽는다
+        var sx0 = x0 + 1, sspan = Math.max(1, span - 2), k = sspan / span;
+        if (span - sh > 0.01) ctx.drawImage(img, sx0, r, (span - sh) * k, 1, x0 + sh, r, span - sh, 1);
+        if (sh > 0.01) ctx.drawImage(img, sx0 + (span - sh) * k, r, sh * k, 1, x0, r, sh, 1);
+      }
+    },
+  });
+
   // ── 지도 ────────────────────────────────────────────────────────────
   var map = L.map("map", {
     crs: L.CRS.EPSG4326,
@@ -222,7 +326,9 @@
     if (!size.x || !size.y) return map.getMinZoom();
     return Math.max(map.getMinZoom(), Math.floor(Math.log(Math.min(size.x / 512, size.y / 256)) / Math.LN2));
   }
-  function fitWorld() { map.setView([0, 0], worldZoom()); }
+  // 지구 전체의 가운데 — 몰바이데에서는 가운데 경선(lon0) 위다. [0, 0] 으로 두면 돌린 만큼 옆으로 밀린다.
+  function worldCenter() { return L.latLng(0, state.proj === "moll" ? Mollweide.lon0 : 0); }
+  function fitWorld() { map.setView(worldCenter(), worldZoom()); }
   fitWorld();
   if (window.ResizeObserver) {
     var wasEmpty = true;
@@ -237,12 +343,13 @@
   // 겹 순서: 배경(380) < 기온(390) < 해안선·국경(400) < 화석(450)
   map.createPane("base").style.zIndex = 380;
   map.createPane("climate").style.zIndex = 390;
-  var relief = new PlaneOverlay("", WORLD, { interactive: false, className: "relief", pane: "base" }).addTo(map);
+  var relief = new ReliefOverlay("", WORLD, { interactive: false, className: "relief", pane: "base" }).addTo(map);
   // 기온 격자는 1° 칸의 가운데가 정수 경위도다(361×181). 그림 가장자리를 반 칸 밖에 둬야 칸이 제자리에 앉는다.
   var climateLayer = L.imageOverlay("", [[-90.5, -180.5], [90.5, 180.5]],
     { interactive: false, className: "climate", pane: "climate", opacity: 0.55 });
-  // 몰바이데의 기온 층 — 격자가 작아(361×181) 브라우저에서 타원으로 옮겨 그린다(drawClimate).
-  var climateMoll = new PlaneOverlay("", WORLD,
+  // 몰바이데의 기온 층 — 격자가 작아(361×181) 브라우저에서 타원으로 옮겨 그린다(drawClimate). 가운데 경선을
+  // 돌릴 때는 배경처럼 행을 옮겨 그린다(025).
+  var climateMoll = new ReliefOverlay("", WORLD,
     { interactive: false, className: "climate", pane: "climate", opacity: 0.55 });
   // 해안선은 SVG 로, 화석은 그 위 전용 창의 캔버스로 그린다. 둘 다 캔버스로 두면 나중에
   // 생긴 해안선 캔버스가 화석 캔버스를 덮어 점을 눌러도 아무 일이 없다.
@@ -266,9 +373,19 @@
   var gridLayer = L.layerGroup();
   // 2° 마다 점을 찍는다 — 몰바이데에서 경선이 곡선이다.
   function steps(a, b) { var out = []; for (var v = a; v <= b; v += 2) out.push(v); return out; }
-  for (var lon = -180; lon <= 180; lon += 30) gridLayer.addLayer(L.polyline(steps(-90, 90).map(function (la) { return [la, lon]; }), { color: "#fff", weight: 0.5, opacity: 0.35, interactive: false }));
-  for (var lat = -60; lat <= 60; lat += 30) gridLayer.addLayer(L.polyline(steps(-180, 180).map(function (lo) { return [lat, lo]; }), { color: "#fff", weight: lat === 0 ? 1 : 0.5, opacity: 0.35, interactive: false }));
-  window.Wegener = { map: map, fossils: fossilLayer, taxa: taxonLayer, borders: borderLayer, state: state };   // 콘솔에서 들여다보기용
+  // 위선은 가운데 경선의 반대편(이음매)에서 시작해 이음매에서 끝난다(025).
+  function drawGrid() {
+    var lon0 = state.proj === "moll" ? Mollweide.lon0 : 0, style = { color: "#fff", weight: 0.5, opacity: 0.35, interactive: false };
+    gridLayer.clearLayers();
+    for (var lon = -180; lon < 180; lon += 30) gridLayer.addLayer(L.polyline(steps(-90, 90).map(function (la) { return [la, lon]; }), style));
+    gridLayer.addLayer(L.polyline(steps(-90, 90).map(function (la) { return [la, lon0 + 180 - SEAM_EPS]; }), style));   // 오른쪽 가장자리
+    for (var lat = -60; lat <= 60; lat += 30) {
+      var pts = steps(-180, 180).map(function (lo) { return [lat, lon0 + Math.max(-180 + SEAM_EPS, Math.min(180 - SEAM_EPS, lo))]; });
+      gridLayer.addLayer(L.polyline(pts, L.extend({}, style, { weight: lat === 0 ? 1 : 0.5 })));
+    }
+  }
+  drawGrid();
+  window.Wegener = { map: map, fossils: fossilLayer, taxa: taxonLayer, borders: borderLayer, state: state, relief: relief };   // 콘솔에서 들여다보기용
 
   // 배경 해상도: EPSG:4326 에서 세계 폭은 512·2^zoom 픽셀이다. zoom 2 까지는 2048,
   // 그보다 확대하면 4096 을 부른다(6 분 격자가 3601 칸이라 그 이상은 얻을 것이 없다).
@@ -288,17 +405,89 @@
     state.proj = proj;
     map.options.crs = proj === "moll" ? MOLL : L.CRS.EPSG4326;
     map.setMaxBounds(proj === "moll" ? null : EQ_MAX_BOUNDS);   // 몰바이데는 위경도 사각형으로 가둘 수 없다
+    // 몰바이데에서는 Leaflet 의 끌기를 끄고 spin 이 받는다 — 가로는 돌리기, 세로는 옮기기(025)
+    if (proj === "moll") map.dragging.disable(); else map.dragging.enable();
+    map.getContainer().classList.toggle("moll", proj === "moll");
     document.querySelectorAll('input[name="proj"]').forEach(function (r) { r.checked = r.value === proj; });
-    map._resetView(L.latLng(0, 0), worldZoom(), true);
+    map._resetView(worldCenter(), worldZoom(), true);
     var f = frame();
     if (!f) return;
     relief.setUrl(reliefUrl(f));
+    redrawLines(f);
     drawClimate(f);
     writeHash(f);
   }
   function writeHash(f) {
-    try { history.replaceState(null, "", "#age=" + f.age + (state.proj === "moll" ? "&proj=moll" : "")); } catch (e) { /* 미리보기 등 */ }
+    var lon0 = Math.round(Mollweide.lon0 * 10) / 10;
+    try {
+      history.replaceState(null, "", "#age=" + f.age + (state.proj === "moll" ? "&proj=moll" + (lon0 ? "&lon=" + lon0 : "") : ""));
+    } catch (e) { /* 미리보기 등 */ }
   }
+  // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
+  function redrawLines(f) {
+    drawGrid();
+    if (!f) return;
+    drawCoast(f);
+    drawBorders(f, false);
+  }
+
+  // 가운데 경선을 돌린다(025). 층들은 viewreset 에서 새 lon0 로 다시 투영되고, 이음매에서 끊는 선·배경·기온은
+  // 여기서 다시 그린다. 화면의 가운데(투영 평면의 자리)는 그대로다.
+  // map.fire("viewreset") 는 쓰지 않는다 — 곧 새로 그을 국경 SVG 까지 다시 투영해 두 배로 든다(끌기가 끊겼다).
+  // 산지·분류군 점의 캔버스만 다시 투영하고, 선은 새로 그을 때 투영된다.
+  function rotateTo(lon0) {
+    Mollweide.lon0 = wrap180(lon0);
+    renderer._reset();
+    relief.paint();
+    if (map.hasLayer(climateMoll)) climateMoll.paint();
+    redrawLines(frame());
+  }
+
+  // 몰바이데에서 끌기: 가로로 움직인 만큼 가운데 경선을 돌리고(적도에서 손가락 밑의 땅이 따라오게),
+  // 세로는 지도를 옮긴다. 움직임은 한 프레임에 한 번만 반영한다. 끈 뒤에 오는 click 은 삼킨다 — 점을 누른 것으로
+  // 보고 팝업을 열지 않게.
+  var spin = null, spinPending = { dx: 0, dy: 0, frame: 0 }, pointers = {};
+  function applySpin() {
+    spinPending.frame = 0;
+    var dx = spinPending.dx, dy = spinPending.dy;
+    spinPending.dx = spinPending.dy = 0;
+    if (state.proj !== "moll") return;
+    if (dx) rotateTo(Mollweide.lon0 - dx * 360 / (512 * Math.pow(2, map.getZoom())));
+    if (dy) map.panBy([0, -dy], { animate: false });
+  }
+  (function bindSpin() {
+    var box = map.getContainer();
+    box.addEventListener("pointerdown", function (e) {
+      pointers[e.pointerId] = true;
+      if (Object.keys(pointers).length > 1) { spin = null; return; }   // 두 손가락은 Leaflet 의 확대에 맡긴다
+      if (state.proj !== "moll" || e.button !== 0 || e.target.closest(".leaflet-control")) return;
+      spin = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+    });
+    window.addEventListener("pointermove", function (e) {
+      if (!spin || e.pointerId !== spin.id) return;
+      var dx = e.clientX - spin.x, dy = e.clientY - spin.y;
+      if (!spin.moved) {
+        if (Math.abs(dx) + Math.abs(dy) < 4) return;
+        spin.moved = true;
+        box.classList.add("spinning");
+      }
+      spin.x = e.clientX; spin.y = e.clientY;
+      spinPending.dx += dx; spinPending.dy += dy;
+      if (!spinPending.frame) spinPending.frame = requestAnimationFrame(applySpin);
+    });
+    function end(e) {
+      delete pointers[e.pointerId];
+      if (!spin || e.pointerId !== spin.id) return;
+      if (spin.moved) {
+        box.classList.remove("spinning");
+        box.addEventListener("click", function (ev) { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
+        setTimeout(function () { var f = frame(); if (f) writeHash(f); }, 0);
+      }
+      spin = null;
+    }
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+  })();
   map.on("zoomend", function () {
     var f = frame();
     if (!f) return;
@@ -462,7 +651,7 @@
     getJSON(dataUrl(f.coastline.file)).then(function (geo) {
       if (frame().age !== want) return;
       coastLayer.clearLayers();
-      if ($("coast").checked) coastLayer.addData(geo);
+      if ($("coast").checked) coastLayer.addData(seamGeo(geo));
     }).catch(function () { if (frame().age === want) coastLayer.clearLayers(); });
   }
 
@@ -1407,7 +1596,7 @@
       if (li) { e.preventDefault(); pick(+li.dataset.k); }
     });
     input.addEventListener("blur", function () { setTimeout(function () { box.hidden = true; }, 150); });
-    $("country-clear").addEventListener("click", function () { setCountry(null); map.flyTo([0, 0], worldZoom(), { duration: 0.6 }); });
+    $("country-clear").addEventListener("click", function () { setCountry(null); map.flyTo(worldCenter(), worldZoom(), { duration: 0.6 }); });
     // 시점을 옮기면 나라가 움직인다 — 그 시점의 자리로 다시 당긴다.
     $("country-focus").addEventListener("click", function () { drawBorders(frame(), true); });
   }
@@ -1439,9 +1628,9 @@
       borderLayer.clearLayers();
       var iso = state.country && countryIso(state.country);
       var picked = null;
-      borderLayer.addData(show ? geo : { type: "FeatureCollection", features: geo.features.filter(function (ft) {
+      borderLayer.addData(seamGeo(show ? geo : { type: "FeatureCollection", features: geo.features.filter(function (ft) {
         return ft.properties.cc === iso;
-      }) });
+      }) }));
       borderLayer.eachLayer(function (layer) { if (layer.feature.properties.cc === iso) { picked = layer; layer.bringToFront(); } });
       if (focus) focusCountry(picked);
       $("borders-note").textContent = iso && !picked && !state.countryBy[state.country].ocean
@@ -1506,7 +1695,7 @@
       if (frame().age !== want || !$("climate").checked) return;
       if (state.proj === "moll") {
         map.removeLayer(climateLayer);
-        climateMoll.setUrl(mollClimate(grid));
+        climateMoll.setSource(mollClimate(grid, info.file));
         if (!map.hasLayer(climateMoll)) climateMoll.addTo(map);
         return;
       }
@@ -1525,8 +1714,11 @@
   }
 
   // 기온 격자를 몰바이데 타원에 옮겨 그린 그림(720×360, 타원 밖은 투명). 칸마다 가장 가까운 격자값.
-  function mollClimate(grid) {
-    var w = 720, h = 360, c = document.createElement("canvas");
+  // 가운데 경선 0 으로 그린다 — 돌리기는 ReliefOverlay.paint 가 한다. 시점마다 한 번만 만든다.
+  var mollClimateCache = {};
+  function mollClimate(grid, key) {
+    if (mollClimateCache[key]) return mollClimateCache[key];
+    var w = 720, h = 360, c = document.createElement("canvas"), flat = { lon0: 0 };
     c.width = w; c.height = h;
     var ctx = c.getContext("2d"), out = ctx.createImageData(w, h);
     for (var r = 0; r < h; r++) {
@@ -1534,12 +1726,12 @@
       for (var q = 0; q < w; q++) {
         var x = (q + 0.5) / w * 4 * SQRT2 - 2 * SQRT2;
         if (x * x / 8 + y * y / 2 > 1) continue;
-        var ll = Mollweide.unproject(L.point(x, y)), rgb = tempColor(tempAt(grid, ll.lat, ll.lng)), k = (r * w + q) * 4;
+        var ll = Mollweide.unproject.call(flat, L.point(x, y)), rgb = tempColor(tempAt(grid, ll.lat, ll.lng)), k = (r * w + q) * 4;
         out.data[k] = rgb[0]; out.data[k + 1] = rgb[1]; out.data[k + 2] = rgb[2]; out.data[k + 3] = 255;
       }
     }
     ctx.putImageData(out, 0, 0);
-    return c.toDataURL();
+    return (mollClimateCache[key] = c);
   }
 
   // 커서 자리의 기온 — 기온 층을 켰을 때만.
@@ -1706,6 +1898,8 @@
       bind();
       // 주소를 먼저 읽는다 — 투영을 바꾸면 주소를 다시 쓴다
       var wanted = parseFloat((location.hash.match(/age=([\d.]+)/) || [])[1]);
+      var lonWanted = parseFloat((location.hash.match(/lon=(-?[\d.]+)/) || [])[1]);
+      if (isFinite(lonWanted)) Mollweide.lon0 = wrap180(lonWanted);
       $("proj-row").hidden = !hasMollweide();
       if (hasMollweide() && /proj=moll/.test(location.hash)) setProjection("moll");
       var first = state.frames.findIndex(function (f) { return f.age === wanted; });
