@@ -99,6 +99,8 @@ def fetch_pinned(name):
                 temp.unlink(missing_ok=True)
                 raise
             temp.replace(target)
+        if "unzip" not in archive:
+            continue
         out = source_path(archive["unzip"])
         if not out.exists():
             count = unzip(target, out, archive.get("members"))
@@ -158,6 +160,7 @@ def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     fetch_pinned("paleodem")
     fetch_pinned("paleocoastlines")
+    fetch_pinned("paleotemp")
     fetch_receipted("countries")
     fetch_pbdb(refresh="--refresh-pbdb" in argv)
 

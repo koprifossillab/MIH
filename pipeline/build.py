@@ -10,7 +10,7 @@
 import json
 from datetime import datetime, timezone
 
-from . import coastlines, countries, fossils, relief
+from . import climate, coastlines, countries, fossils, relief
 from .common import DERIVED, manifest, period
 from .environments import classify, tree_for_index
 from .timescale import containing, units
@@ -58,6 +58,8 @@ def build(skip_relief=False):
     print("국경(Natural Earth → PALEOMAP)")
     border_entries, country_names = countries.build([e["age"] for e in reliefs])
     borders = {e["age"]: e["file"] for e in border_entries}
+    print("고기후(Scotese 2021 지표 기온)")
+    temps = climate.build([e["age"] for e in reliefs])
 
     scale = units()
     frames = []
@@ -76,6 +78,7 @@ def build(skip_relief=False):
             "land_fraction": entry["land_fraction"],
             "coastline": {"age": coast["age"], "file": coast["file"]} if coast else None,
             "borders": borders.get(age),
+            "climate": temps.get(age),
             "fossils": {"file": found.get("file"), "count": found.get("count", 0),
                         "by_env": found.get("by_env", {})},
         })
@@ -93,7 +96,7 @@ def build(skip_relief=False):
         "environments": tree_for_index(env_counts),
         "countries": countries.country_list(country_names),
         "pbdb": fossil_meta,
-        "sources": [cite("paleodem"), cite("paleocoastlines"), cite("pbdb"), cite("countries")],
+        "sources": [cite("paleodem"), cite("paleocoastlines"), cite("paleotemp"), cite("pbdb"), cite("countries")],
     }
     (DERIVED / "index.json").write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n",
                                         encoding="utf-8")
