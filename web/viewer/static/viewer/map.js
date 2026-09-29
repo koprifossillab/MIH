@@ -56,6 +56,7 @@
     colorBy: "env",                         // 점 색: env(퇴적기원) · age(기 단위 시대)
     opacity: 0.6,                           // 점 불투명도 — 겹친 점과 밑그림이 함께 보이게
     showWide: true,                         // 모호한 연대(절 단위로 정해지지 않은) 산지를 보일지(016)
+    maxSpan: Infinity,                      // 연대 범위(max_ma − min_ma)가 이 이하인 산지만(018)
     taxonRank: "", taxonLow: false,         // 찾은 분류군의 계급 — 과 이하이면 커서만 대도 산출 목록
     grids: {},                              // 기온 격자(파일 → {w, h, data, offset})
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
@@ -105,11 +106,30 @@
     }
     return envColor(environment);
   }
-  // 산지를 보일지 — 켠 환경, 고른 나라, 그리고 모호한 연대를 보이기로 했는지.
-  function passes(environment, cc, precise) {
+  // 산지를 보일지 — 켠 환경, 고른 나라, 그리고 연대 거르기(ageOk).
+  function passes(environment, cc, precise, maxMa, minMa) {
     if (!state.enabled[termKey(environment)]) return false;
-    if (!precise && !state.showWide) return false;
+    if (!ageOk(precise, maxMa, minMa)) return false;
     return !state.country || cc === state.country;
+  }
+
+  // 연대로 거르기 — 두 가지를 따로 본다. 모호한 연대(시대 이름의 등급, 016)를 보이기로 했는지, 그리고
+  // 연대 범위의 길이가 고른 값 이하인지(018). 등급은 "어떻게 매겼나", 길이는 "시간이 얼마나 불확실한가" 다.
+  var SPAN_STEPS = [1, 2, 3, 5, 8, 10, 15, 20, 30, 50, Infinity];
+  function ageOk(precise, maxMa, minMa) {
+    if (!precise && !state.showWide) return false;
+    return !(Number(maxMa) - Number(minMa) > state.maxSpan + 1e-6);
+  }
+  // 범위 길이 때문에만 가려진 것 — 모호한 연대를 끈 것과 따로 센다
+  function tooWide(precise, maxMa, minMa) {
+    return (precise || state.showWide) && !ageOk(precise, maxMa, minMa);
+  }
+  function fmtSpan(v) { return v === Infinity ? "제한 없음" : v + " Myr 이하"; }
+  // 범위가 길어 가린 수를 적는다. what: "산지" · "산출 산지"
+  function spanNote(hidden, what) {
+    $("span-value").textContent = fmtSpan(state.maxSpan);
+    $("span-note").textContent = state.maxSpan === Infinity ? "" :
+      "연대 범위가 " + state.maxSpan + " Myr 를 넘어 가린 " + what + " " + fmtNum(hidden) + "곳.";
   }
 
   // 연대가 절 단위로 정해졌는가(pipeline/intervals.is_vague 의 반대). PBDB 시대 이름 둘 가운데 하나라도
@@ -608,13 +628,18 @@
     if (!payload) return;
     var col = columns(payload);
     if (state.taxon) { $("fossil-count").textContent = "분류군 찾기 결과만 보인다"; return; }   // 수는 drawTaxa 가 적는다
-    var inCountry = state.country
-      ? payload.rows.filter(function (row) { return row[col.cc] === state.country; }) : payload.rows;
+    // 환경 칸의 수 — 나라와 연대 거르기는 따르고 환경은 따르지 않는다(018 부터 연대 거르기도 따른다)
+    var inCountry = payload.rows.filter(function (row) {
+      return (!state.country || row[col.cc] === state.country) && ageOk(rowPrecise(row, col), row[col.max_ma], row[col.min_ma]);
+    });
     syncCounts(inCountry, col);
+    spanNote(payload.rows.filter(function (row) {
+      return (!state.country || row[col.cc] === state.country) && tooWide(rowPrecise(row, col), row[col.max_ma], row[col.min_ma]);
+    }).length, "산지");
     var shown = 0, wide = 0;
     payload.rows.forEach(function (row) {
       var precise = rowPrecise(row, col);
-      if (!passes(row[col.environment], row[col.cc], precise)) return;
+      if (!passes(row[col.environment], row[col.cc], precise, row[col.max_ma], row[col.min_ma])) return;
       shown += 1;
       if (!precise) wide += 1;
       marker([row[col.paleolat], row[col.paleolng]], pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]),
@@ -640,7 +665,8 @@
       });
     });
     var html = "<h3>" + esc(row[col.collection_name] || "이름 없는 산지") + "</h3><dl>" +
-      "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma)" +
+      "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma, 범위 " +
+        +(row[col.max_ma] - row[col.min_ma]).toFixed(1) + " Myr)" +
         (rowPrecise(row, col) ? "" : '<br><small class="wide-note">▲ 모호한 연대 — 절 단위로 정해지지 않은 기록(세·기·대). 걸친 모든 시점에 보인다</small>') + "</dd>" +
       (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
       "<dt>환경</dt><dd>" + esc(env || "기록 없음") + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
@@ -776,7 +802,7 @@
       base.occs.forEach(function (o) {
         if (!state.enabled[termKey(o.env)]) return;
         var precise = isPrecise(o.early, o.late);
-        if (!precise && !state.showWide) return;
+        if (!ageOk(precise, o.old, o.young)) return;
         total += 1;
         if (precise) addUnits((o.old + o.young) / 2, 1);
         else Object.keys(state.units).forEach(function (id) {
@@ -798,7 +824,7 @@
       });
     }
     state.dist = { key: base.key, stages: base.stages, app: base.app, units: units, frames: frames, total: total,
-                   exact: !!base.occs, filtered: !!base.occs && !allEnvEnabled() };
+                   exact: !!base.occs, filtered: !!base.occs && (!allEnvEnabled() || state.maxSpan !== Infinity) };
     renderDist();
     renderChrono();
   }
@@ -830,7 +856,7 @@
     strip.innerHTML = "";
     if (box.hidden) return;
     $("dist-total").textContent = "산출 " + fmtNum(d.total) + "건" + (state.country ? " · " + countryName(state.country) : "") +
-      (d.filtered ? " · 고른 퇴적기원만" : "");
+      (d.filtered ? " · 고른 퇴적기원·연대 범위만" : "");
     // 산출이 있는 기 — 층서표 색 아이콘에 수를 붙인다. 누르면 그 기의 가운데 지도로 간다.
     var periods = state.periods.slice().sort(byOldFirst).filter(function (p) { return d.units[p.id]; });
     $("dist-periods").innerHTML = "";
@@ -850,8 +876,8 @@
       (a && a.early_interval ? "처음 " + a.early_interval + " (" + a.firstapp_max_ma + "–" + a.firstapp_min_ma + " Ma) · 마지막 " +
         a.late_interval + " (" + a.lastapp_max_ma + "–" + a.lastapp_min_ma + " Ma). " : "") +
       (d.exact
-        ? "칩과 막대의 수는 산출 하나하나를 지도와 같은 규칙으로 센 것이고, 고른 퇴적기원을 따른다."
-        : "산출이 " + fmtNum(OCC_LIMIT) + "건이 넘어 PBDB 가 절 단위로 센 수를 쓴다 — 퇴적기원 선택이 이 수에는 반영되지 않고, 절보다 넓게 매겨진 산출은 빠진다.");
+        ? "칩과 막대의 수는 산출 하나하나를 지도와 같은 규칙으로 센 것이고, 고른 퇴적기원과 연대 범위를 따른다."
+        : "산출이 " + fmtNum(OCC_LIMIT) + "건이 넘어 PBDB 가 절 단위로 센 수를 쓴다 — 퇴적기원·연대 범위 선택이 이 수에는 반영되지 않고, 절보다 넓게 매겨진 산출은 빠진다.");
     // 시점 막대 밑 — 시점마다 로그 높이의 막대
     var max = 0;
     Object.keys(d.frames).forEach(function (j) { max = Math.max(max, d.frames[j]); });
@@ -1023,7 +1049,7 @@
     payload.rows.forEach(function (row) {
       var precise = rowPrecise(row, col);
       if (own[row[col.collection_no]] || !state.enabled[termKey(row[col.environment])]) return;
-      if (!precise && !state.showWide) return;
+      if (!ageOk(precise, row[col.max_ma], row[col.min_ma])) return;
       var old = row[col.max_ma], young = row[col.min_ma];
       // 겹침: 연대 범위가 구간에 걸치면 / 안: 연대 범위 전체가 구간 안에 들면
       if (inside ? (old > span.old + 1e-6 || young < span.young - 1e-6) : (old < span.young || young > span.old)) return;
@@ -1065,12 +1091,18 @@
     if (!state.taxon || !rows) return;
     placeTaxa(rows);
     var shown = 0, occs = 0, visible = [];
-    var ok = function (row) { return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise]); };
+    var ok = function (row) {
+      return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma]);
+    };
+    var inCountry = function (row) { return !state.country || row[COLUMNS.cc] === state.country; };
     rows.forEach(function (row) { if (ok(row)) visible.push(row); });
-    // 환경 칸의 수 = 이 지도에서 찾은 분류군의 산출 건수(나라·모호한 연대는 거르되 환경은 거르지 않고 센다)
+    // 환경 칸의 수 = 이 지도에서 찾은 분류군의 산출 건수(나라·연대 거르기는 따르되 환경은 거르지 않고 센다)
     syncCounts(rows.filter(function (row) {
-      return (!state.country || row[COLUMNS.cc] === state.country) && (row[COLUMNS.precise] || state.showWide);
+      return inCountry(row) && ageOk(row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma]);
     }), COLUMNS, function (row) { return row[COLUMNS.n_occs]; });
+    spanNote(rows.filter(function (row) {
+      return inCountry(row) && tooWide(row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma]);
+    }).length, "산출 산지");
     drawCoeval(visible);            // 먼저 그려 찾은 분류군의 점 밑에 깐다
     rows.forEach(function (row) {
       if (!ok(row)) return;
@@ -1436,10 +1468,10 @@
     var seen = {};
     var add = function (maxMa, minMa) { var p = periodOf(maxMa, minMa); if (p) seen[p.id] = p; };
     if (state.taxon && state.taxa) {
-      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
+      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
     } else if (state.payload) {
       var col = columns(state.payload);
-      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col))) add(row[col.max_ma], row[col.min_ma]); });
+      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col), row[col.max_ma], row[col.min_ma])) add(row[col.max_ma], row[col.min_ma]); });
     }
     box.innerHTML = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst).map(function (p) {
       return '<span class="leg"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
@@ -1461,6 +1493,15 @@
     $("coeval").addEventListener("change", drawTaxa);
     $("show-wide").addEventListener("change", function () {
       state.showWide = this.checked;
+      if (state.taxon) computeDist();
+      redraw();
+    });
+    // 연대 범위 막대 — 칸 번호를 SPAN_STEPS 의 값으로(018)
+    $("max-span").max = SPAN_STEPS.length - 1;
+    $("max-span").value = SPAN_STEPS.length - 1;
+    $("max-span").addEventListener("input", function () {
+      state.maxSpan = SPAN_STEPS[+this.value];
+      $("span-value").textContent = fmtSpan(state.maxSpan);
       if (state.taxon) computeDist();
       redraw();
     });

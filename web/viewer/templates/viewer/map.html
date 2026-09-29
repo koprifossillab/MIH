@@ -76,6 +76,9 @@
           <span><i class="shape solid"></i> 절 단위로 정해진 기록</span>
           <label><input type="checkbox" id="show-wide" checked> <i class="shape tri"></i> 모호한 연대 기록도 보기</label>
         </div>
+        <label class="opacity">연대 범위 <input type="range" id="max-span" min="0" max="10" step="1" value="10" aria-label="연대 범위 상한"> <output id="span-value">제한 없음</output></label>
+        <p class="note" id="span-note" aria-live="polite"></p>
+        <p class="note">연대 범위(max − min)가 고른 값 이하인 기록만 보인다. 시대 이름의 등급(▲)과 따로 본다 — 등급은 어떻게 매겼는지, 범위는 시간이 얼마나 불확실한지다.</p>
         <p class="note">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
         <div class="legend" id="legend" aria-live="polite"></div>
         <p class="note env-count-note" id="env-count-note">수: 산지 수(지금 지도)</p>
