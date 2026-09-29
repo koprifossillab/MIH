@@ -32,9 +32,17 @@
 값은 `pipeline/common.py` 한 곳이 정하고, 뷰어(분류군 찾기)는 `index.json` 의 `rules` 로 받는다
 (0.7.0 부터 — 그 전에는 map.js 에 따로 적혀 있었다). **map.js 에 숫자를 다시 적지 않는다.**
 
-- 연대 범위(min_ma~max_ma)가 시점 ±2.5 Myr 창과 **겹친다** (`WINDOW_MA`). 한 채집지가 여러 시점에 오른다
-- 연대 범위가 **가장 긴 절의 길이** 이하 (`MAX_SPAN_MA` — `timescale.py` 에서 계산, ICS 2024 노릭절 21.6).
-  절 하나로 매겨진 채집지는 빠지지 않는다. 20 으로 적었다가 노릭절 채집지가 통째로 빠졌다(devlog 013)
+- 연대 범위(min_ma~max_ma)가 시점 ±2.5 Myr 창과 **겹친다** (`WINDOW_MA`). 한 산지가 걸친 모든 시점에 오른다.
+  연대 범위의 **상한은 없다**(0.9.0 — 그 전의 `MAX_SPAN_MA` 는 지웠다, devlog 013·015)
+- **모호한 연대**: 산지의 PBDB 시대 이름(`early_interval`·`late_interval`) 가운데 하나라도 등급이
+  세·기·대 …(`epoch, subepoch, period, era, eon, bin`)이면 모호하다 — "Middle Cambrian", "Late Triassic".
+  규칙은 `pipeline/intervals.py` 한 곳이고 등급은 PBDB `intervals/list`(`data/sources/pbdb/intervals.json`).
+  **범위의 길이로 가르지 않는다** — "Norian–Rhaetian" 처럼 절 이름 둘로 정해진 범위는 정해진 기록이다
+  (연구자, devlog 016). 뷰어는 속이 찬 **세모**로 그리고(고리는 안 보였다), `rules.vague_intervals` 로 PBDB 에
+  바로 물은 결과도 같은 규칙으로 가른다
+- **좌표는 시점마다 계산한다**: 산지의 지금 좌표를 지도 나이로 PALEOMAP v19o(해안선·국경과 같은 모델)로
+  돌린다(`pipeline/reconstruct.py`, devlog 017). 그 나이에 판이 없을 때만 PBDB 고좌표(연대 중간값)이고
+  `rotated = 0`. 분류군 찾기 결과는 같은 산지이면 산지 파일의 좌표로 옮긴다. PBDB 가 고좌표를 못 준 산지는 뺀다
 - **중간값 규칙으로 돌아가지 않는다** — 층서 단계로 매긴 연대의 중간값이 몰려 빈 시점이 생긴다(devlog 001)
 - 퇴적기원(해양·육상·미상)은 `pipeline/environments.py` 가 정한다. 해안·석호는 해양기원, 하구·만은
   육상기원이다(연구자의 판단, devlog 003) — 첫 판의 "어느 쪽으로도 밀지 않는다" 는 버렸다
