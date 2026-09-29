@@ -290,7 +290,7 @@
     drawBorders(f, false);
     drawClimate(f);
     loadFossils(f);
-    if (state.taxon) searchTaxon(state.taxon);
+    state.taxonReady = state.taxon ? searchTaxon(state.taxon) : null;
     [state.i - 1, state.i + 1].forEach(function (j) {
       if (state.frames[j]) { var img = new Image(); img.src = reliefUrl(state.frames[j]); }
     });
@@ -734,6 +734,55 @@
     });
   }
 
+  function taxonUrl(name, age) {
+    return PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) +
+      "&max_ma=" + (age + WINDOW_MA) + "&min_ma=" + Math.max(0, age - WINDOW_MA) +
+      (state.country ? "&cc=" + encodeURIComponent(state.country) : "") +
+      "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class,env,loc&vocab=pbdb&limit=20000";
+  }
+
+  // ── 산출 시대 차례로 보기 ───────────────────────────────────────────
+  // 가장 오래된 산출이 있는 시점부터 최근으로, 산출이 있는 시점만 넘긴다(분포 010 의 frames).
+  // 시점마다 PBDB 답을 기다려 그린 뒤 머문다 — 고정 간격으로 넘기면 느린 답이 다음 시점에 섞인다.
+  // 다음 시점의 질의는 미리 보내 둔다(getJSON 이 캐시에 담는다).
+  var tour = { on: false, list: [], k: 0, timer: null };
+
+  function startTour() {
+    if (!state.dist || !state.taxon) return;
+    tour.list = Object.keys(state.dist.frames).map(Number).sort(function (a, b) { return a - b; });
+    if (!tour.list.length) return;
+    if ($("play").checked) { $("play").checked = false; $("play").dispatchEvent(new Event("change")); }
+    tour.on = true;
+    tour.k = 0;
+    $("tour").textContent = "■ 멈추기";
+    $("tour").setAttribute("aria-pressed", "true");
+    tourStep();
+  }
+
+  function stopTour(finished) {
+    if (!tour.on) return;
+    tour.on = false;
+    clearTimeout(tour.timer);
+    $("tour").textContent = "▶ 산출 시대 차례로 보기";
+    $("tour").setAttribute("aria-pressed", "false");
+    $("tour-status").textContent = finished ? "끝 — 가장 최근 산출 시점까지 보였다." : "";
+  }
+
+  function tourStep() {
+    if (!tour.on) return;
+    if (tour.k >= tour.list.length) { stopTour(true); return; }
+    var j = tour.list[tour.k];
+    show(j);
+    var next = tour.list[tour.k + 1];
+    if (next !== undefined) getJSON(taxonUrl(state.taxon, state.frames[next].age)).catch(function () {});
+    $("tour-status").textContent = (tour.k + 1) + " / " + tour.list.length + " · " + fmtAge(state.frames[j].age) +
+      " · 산출 " + fmtNum(state.dist.frames[j]) + "건(절 단위)";
+    Promise.resolve(state.taxonReady).catch(function () {}).then(function () {
+      if (!tour.on) return;
+      tour.timer = setTimeout(function () { tour.k += 1; tourStep(); }, +$("tour-speed").value);
+    });
+  }
+
   function searchTaxon(name) {
     var f = frame();
     var seq = ++taxonSeq;
@@ -750,11 +799,8 @@
     $("taxon-clear").hidden = false;
     $("taxon-status").textContent = name + " — " + fmtAge(f.age) + " 무렵을 PBDB 에 묻는 중…";
     drawFossils();
-    var url = PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) +
-      "&max_ma=" + (f.age + WINDOW_MA) + "&min_ma=" + Math.max(0, f.age - WINDOW_MA) +
-      (state.country ? "&cc=" + encodeURIComponent(state.country) : "") +
-      "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class,env,loc&vocab=pbdb&limit=20000";
-    getJSON(url).then(function (data) {
+    // 결과를 그리고 나서 풀리는 약속을 돌려준다 — 차례로 보기(011)가 이것을 기다린다.
+    return getJSON(taxonUrl(name, f.age)).then(function (data) {
       if (seq !== taxonSeq) return;
       if (data.errors) throw new Error(data.errors.join(" "));
       // 산출을 채집지로 묶는다 — 한 채집지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
@@ -812,6 +858,7 @@
   function redraw() { drawFossils(); drawTaxa(); }
 
   function clearTaxon() {
+    stopTour();
     taxonSeq += 1;
     state.taxon = "";
     state.taxa = null;
@@ -905,6 +952,7 @@
     if (!it) return;
     $("taxon").value = it.name;
     closeSuggest();
+    stopTour();
     searchTaxon(it.name);
   }
 
@@ -1160,14 +1208,16 @@
 
   // ── 조작 ────────────────────────────────────────────────────────────
   function bind() {
-    $("slider").addEventListener("input", function () { show(+this.value); });
-    $("older").addEventListener("click", function () { show(state.i - 1); });
-    $("younger").addEventListener("click", function () { show(state.i + 1); });
+    // 손으로 시점을 옮기면 차례로 보기를 멈춘다.
+    $("slider").addEventListener("input", function () { stopTour(); show(+this.value); });
+    $("older").addEventListener("click", function () { stopTour(); show(state.i - 1); });
+    $("younger").addEventListener("click", function () { stopTour(); show(state.i + 1); });
     document.addEventListener("keydown", function (e) {
       if (e.target.tagName === "INPUT" && e.target.type !== "range" && e.target.type !== "checkbox") return;
-      if (e.key === "ArrowLeft") { show(state.i - 1); e.preventDefault(); }
-      if (e.key === "ArrowRight") { show(state.i + 1); e.preventDefault(); }
+      if (e.key === "ArrowLeft") { stopTour(); show(state.i - 1); e.preventDefault(); }
+      if (e.key === "ArrowRight") { stopTour(); show(state.i + 1); e.preventDefault(); }
     });
+    $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
     $("play").addEventListener("change", function () {
       clearInterval(state.playing);
       state.playing = null;
@@ -1197,6 +1247,7 @@
     });
     $("taxon-form").addEventListener("submit", function (e) {
       e.preventDefault();
+      stopTour();
       closeSuggest();
       var name = $("taxon").value.trim();
       if (name) searchTaxon(name); else clearTaxon();

@@ -91,6 +91,15 @@
         <div class="dist" id="taxon-dist" hidden>
           <h3>산출 시대 <small id="dist-total"></small></h3>
           <div class="chips" id="dist-periods"></div>
+          <div class="tour">
+            <button type="button" id="tour" class="tool" aria-pressed="false">▶ 산출 시대 차례로 보기</button>
+            <select id="tour-speed" aria-label="머무는 시간">
+              <option value="2500">느리게</option>
+              <option value="1400" selected>보통</option>
+              <option value="700">빠르게</option>
+            </select>
+          </div>
+          <p class="note" id="tour-status" aria-live="polite"></p>
           <p class="note" id="dist-note"></p>
         </div>
         <button type="button" id="taxon-clear" class="link" hidden>분류군 지우기</button>
