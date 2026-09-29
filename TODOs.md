@@ -5,13 +5,9 @@
 
 ## 배포
 
-- [ ] **paleoserver 에 올린다** — 이 장비에서는 SSH(22)가 막혀 있어 서버에서 사람이 돌린다.
-      clone → `python -m pipeline all`(PBDB·Zenodo 를 받고 6 분쯤) → `/srv/WegenersDream/data` 로 →
-      이미지 굽기 → `/srv/WegenersDream/docker-compose.yml` 로 띄우기 → nginx `include snippets/WegenersDream-subpath.conf;`
-      → `deploy/host/smoke.sh`. 포트 8095 가 비었는지 먼저 본다
-- [ ] 가공 장비에 pygplates 가 필요하다(`requirements-pipeline.txt`)
 - [ ] 운영 `.env` 에 `WEGENER_EDITOR_KEY` 를 정한다(없으면 명칭 고치기가 닫힌다)
-- [ ] 첫 화면(`/srv/paleolab/index.html`)에 Wegener's Dream 카드 — GSM 의 `paleolab_code_card.sh` 를 본뜬다
+- [ ] PBDB 를 주기적으로 다시 받는 cron — 서버 `.venv` 로 `fetch --refresh-pbdb` → `build --no-relief` → 임시 폴더에서
+      `/srv/WegenersDream/data` 로 바꿔 끼운다. 주기부터 정한다
 - [ ] Docker Hub 비밀값(`DOCKERHUB_USERNAME`·`DOCKERHUB_TOKEN`)을 저장소에 넣어야 CI 가 태그에서 이미지를 민다
 
 ## 자료
@@ -22,7 +18,6 @@
       판 경계 산지인지 해안선 다각형화 탓인지 본다
 - [ ] `D:\Claude\MIH-backup\20260929\`(PBDB 사본·가공물, 85 MB)을 작업 장비 밖(NAS 또는 paleoserver)으로 옮긴다 —
       지금은 저장소와 같은 디스크다. 배포 때 가공물 zip 을 그대로 `/srv/WegenersDream/data` 에 풀면 6 분 가공을 건너뛴다
-- [ ] PBDB 를 언제 다시 받을지(지금은 2026-09-29) — 운영에서 주기를 정한다
 
 ## 화면
 

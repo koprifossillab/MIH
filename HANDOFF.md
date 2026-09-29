@@ -8,12 +8,16 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.11.0` (09-30 병합) · 병합을 기다리는 브랜치는 없다.
+**브랜치** `main` = `0.11.2` (09-30, PR #1~#3) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합한다.
 다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-koprifossillab`)를 `main` 에서 만든다. 0.9.0 부터 모호한 연대 산지를 세모로(016),
 화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
 `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
 화석 파일에 `precise`·`rotated` 칸이 있어야 한다.
-**아직 어디에도 배포하지 않았다** — 연구소 서버(paleoserver)에 올리는 일은 TODOs 첫 줄이다.
+**배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.11.2`, 컨테이너
+`wegenersdream-web-1`, `127.0.0.1:8095`, nginx `snippets/WegenersDream-subpath.conf`, 첫 화면 카드). 이미지는 그 서버에서
+구웠고 Docker Hub 에는 없다(git 태그도 없다). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
+`python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 의
+`WEGENER_EDITOR_KEY` 는 비어 있어 명칭 고치기가 닫혀 있다.
 
 **git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(작업 장비) — 이날의 PBDB 사본·`data/state`(16 MB)와
 가공물 전체(69 MB), 되살리는 법은 그 안의 README. PBDB 사본은 다시 받을 수 없어 둔 것이다. 같은 디스크라
@@ -83,10 +87,10 @@ CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이
 셸 스크립트는 실행 비트(`git update-index --chmod=+x`)를 붙여 커밋했다. PowerShell 에서 파일을
 `Get-Content`/`Set-Content` 로 고치면 한글이 깨진다(한 번 깨뜨렸다) — 편집기로 고친다.
 
-### 3.5 git 이름·이메일은 임시다
+### 3.5 git 이름·이메일은 장비 계정의 것을 쓴다
 
-지금 커밋은 `koprifossillab <koprifossillab@gmail.com>` 으로 올라간다. 연구자가 나중에 자기 계정으로
-바꿀 예정이다 — DiaRUGA CLAUDE.md "새 작업자 붙이기" 를 따른다.
+저장소에 `user.name`·`user.email` 을 따로 두지 않는다 — 각 Linux 계정의 전역 git 설정을 그대로 쓴다(09-30 연구자).
+paleoserver `paleoadmin` 은 `Jikhan Jung <honestjung@gmail.com>`, 09-30 까지 작업 장비의 커밋은 `koprifossillab`.
 
 ## 4. 어디까지 왔나
 
