@@ -1,0 +1,29 @@
+{
+  "id": "paleotemp",
+  "title": "Global Mean Surface Temperatures for 100 Phanerozoic Time Intervals (Scotese 2021)",
+  "citation": "Scotese, C. R., Song, H., Mills, B. J. W., & van der Meer, D. G. (2021). Phanerozoic paleotemperatures: The earth's changing climate during the last 540 million years. Earth-Science Reviews, 215, 103503. Maps: Valdes, Scotese & Lunt (2021) HadCM3L runs nudged to proxy data. Data: https://zenodo.org/records/8238875",
+  "record": "https://zenodo.org/records/8238875",
+  "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "role": "고기후 — 지표 기온(℃) 1° 격자 100 장. 0~450 Ma 5 Myr 간격, 그 뒤 540 Ma 까지 10 Myr 간격. PALEOMAP 틀(배경과 같다)",
+  "archives": [
+    {
+      "id": "readme",
+      "url": "https://zenodo.org/records/8238875/files/readme.md?download=1",
+      "path": "data/sources/paleotemp/readme.md",
+      "bytes": 1785,
+      "sha256": "188658e9f2190163f73f71aacfc77ebfa371fa2b9c63ade1298f3e71fc1c27bb"
+    },
+    {
+      "id": "nc",
+      "url": "https://zenodo.org/records/8238875/files/gmst_scotese02a_v21321_nc.zip?download=1",
+      "path": "data/sources/paleotemp/gmst_scotese02a_v21321_nc.zip",
+      "bytes": 21931257,
+      "sha256": "922500d0e2afb4bf255844596ae98f0e19273f2a31f082f05480af5048b9b7c0",
+      "unzip": "data/sources/paleotemp/nc"
+    }
+  ],
+  "pinned_from": "크기·SHA-256 은 jikhanjung/EarthThruTime3D 의 sources/paleotemp.json 과 같다(2026-09-13 에 받은 것). 파일 이름은 <나이>_tas_scotese02a_v21321.nc, 위도 90..-90, 경도 -180..180."
+}
