@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.13.0` (09-30, PR #1~#6) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `0.15.1` (09-30, PR #1~#9) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-<계정>`)를 `main` 에서 만든다 — 여러 날 걸칠 기능 하나는
 `feature/<이름>`(연구자, 024). 0.9.0 부터 모호한 연대 산지를 세모로(016),
@@ -16,7 +16,7 @@
 `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
 화석 파일에 `precise`·`rotated` 칸이 있어야 한다. 0.12.0 의 몰바이데(024)는 배경을 다시 구워야 한다 —
 `build`(배경 포함, 7 분 남짓). `relief_files` 에 `moll-*` 가 없으면 투영 고르기가 숨는다.
-**배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.13.0`, 컨테이너
+**배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.15.1`, 컨테이너
 `wegenersdream-web-1`, `127.0.0.1:8095`, nginx `snippets/WegenersDream-subpath.conf`, 첫 화면 카드). 이미지는 그 서버에서
 구웠고 Docker Hub 에는 없다 — CI 의 Docker Hub 올리기는 저장소 변수 `DOCKERHUB_PUSH=true` 일 때만 돈다(지금 꺼짐). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
 `python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 에
@@ -113,3 +113,5 @@ paleoserver `paleoadmin` 은 `Jikhan Jung <honestjung@gmail.com>`, 09-30 까지 
 | 0.11.x | 이름 Wegener's Dream, paleoserver 배포, 깜박임 고침·CI, 머리말 판 번호 | 020~023 |
 | 0.12.0 | 몰바이데 투영(배경은 파이프라인이 굽는다) | 024 |
 | 0.13.0 | 몰바이데에서 끌면 가운데 경선이 돈다(배경은 행마다 옮겨 그린다) | 025 |
+| 0.14.0 | 패널의 절 접기, 좁은 창에서 패널 통째로 접기 | 026 |
+| 0.15.x | 영어판(문구는 `i18n.js`), 몰바이데 테두리 해안선 고침 | 027·028 |
