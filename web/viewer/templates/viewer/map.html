@@ -88,6 +88,14 @@
           <button type="submit">찾기</button>
         </form>
         <p class="note" id="taxon-status">두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.</p>
+        <div class="coeval" id="coeval-row" hidden>
+          <label class="swatch"><input type="checkbox" id="coeval"> 같은 시대의 다른 산지 기록도 보기 <small>(속 이하)</small></label>
+          <select id="coeval-rule" aria-label="같은 시대의 기준">
+            <option value="overlap" selected>연대가 겹치는 것</option>
+            <option value="inside">그 시대 안에 드는 것</option>
+          </select>
+        </div>
+        <p class="note" id="coeval-note"></p>
         <div class="dist" id="taxon-dist" hidden>
           <h3>산출 시대 <small id="dist-total"></small></h3>
           <div class="chips" id="dist-periods"></div>
