@@ -8,14 +8,17 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.11.2` (09-30, PR #1~#3) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합한다.
-다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-koprifossillab`)를 `main` 에서 만든다. 0.9.0 부터 모호한 연대 산지를 세모로(016),
+**브랜치** `main` = `0.12.0` (09-30, PR #1~#5) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
+다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-<계정>`)를 `main` 에서 만든다 — 여러 날 걸칠 기능 하나는
+`feature/<이름>`(연구자, 024). 0.9.0 부터 모호한 연대 산지를 세모로(016),
 화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
 `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
-화석 파일에 `precise`·`rotated` 칸이 있어야 한다.
-**배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.11.2`, 컨테이너
+화석 파일에 `precise`·`rotated` 칸이 있어야 한다. 0.12.0 의 몰바이데(024)는 배경을 다시 구워야 한다 —
+`build`(배경 포함, 7 분 남짓). `relief_files` 에 `moll-*` 가 없으면 투영 고르기가 숨는다.
+**배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.12.0`, 컨테이너
 `wegenersdream-web-1`, `127.0.0.1:8095`, nginx `snippets/WegenersDream-subpath.conf`, 첫 화면 카드). 이미지는 그 서버에서
-구웠고 Docker Hub 에는 없다(git 태그도 없다). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
+구웠고 Docker Hub 에는 없다 — CI 의 Docker Hub 올리기는 저장소 변수 `DOCKERHUB_PUSH=true` 일 때만 돈다(지금 꺼짐). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
 `python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 에
 `WEGENER_EDITOR_KEY` 를 넣어 명칭 고치기가 열쇠로 열린다(비밀키는 비워 두어 `state/secret_key` 를 쓴다).
 
@@ -106,3 +109,6 @@ paleoserver `paleoadmin` 은 `Jikhan Jung <honestjung@gmail.com>`, 09-30 까지 
 | 0.7.0 | 같은 시대 다른 산지(속 이하), 노릭절 채집지 누락·가공 캐시 고침 | 012·013 |
 | 0.8.0 | "산지" 로 이름 바꿈, 퇴적기원별 산출 건수, 넓은 연대 고리(015 — 0.9.0 에서 바로잡음) | 014·015 |
 | 0.9.0 | 모호한 연대(PBDB 시대 이름 등급) 세모, 화석 좌표 시점별 v19o 계산 | 016·017 |
+| 0.10.x | 연대 범위 막대, 점 테두리 흰색 | 018·019 |
+| 0.11.x | 이름 Wegener's Dream, paleoserver 배포, 깜박임 고침·CI, 머리말 판 번호 | 020~023 |
+| 0.12.0 | 몰바이데 투영(배경은 파이프라인이 굽는다) | 024 |
