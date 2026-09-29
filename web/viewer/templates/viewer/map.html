@@ -1,0 +1,87 @@
+{% load static %}<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIH — 고지리 화석 지도</title>
+<link rel="stylesheet" href="{% static 'viewer/vendor/leaflet/leaflet.css' %}">
+<link rel="stylesheet" href="{% static 'viewer/map.css' %}?v={{ version }}">
+</head>
+<body>
+<div id="app"
+     data-data-base="{% url 'viewer:data' 'x' %}"
+     data-version="{{ version }}">
+
+  <header class="bar">
+    <div class="brand">
+      <strong>MIH</strong>
+      <span class="sub">고지리 화석 지도</span>
+    </div>
+    <div class="now" aria-live="polite">
+      <span id="now-age" class="age">—</span>
+      <span id="now-period" class="period"></span>
+      <span id="now-label" class="label"></span>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div id="map" aria-label="고지리 지도"></div>
+
+    <aside class="panel" id="panel">
+      <section>
+        <h2>시점</h2>
+        <div class="timeline">
+          <button type="button" id="older" title="더 옛날 (←)" aria-label="더 옛날">◀</button>
+          <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점">
+          <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근">▶</button>
+        </div>
+        <div class="ticks"><span>540 Ma</span><span>현재</span></div>
+        <label class="play"><input type="checkbox" id="play"> 차례로 보기</label>
+      </section>
+
+      <section>
+        <h2>화석 채집지 <small id="fossil-count"></small></h2>
+        <label class="swatch"><input type="checkbox" data-env="m" checked> <i class="dot m"></i> 바다 환경 <small id="count-m"></small></label>
+        <label class="swatch"><input type="checkbox" data-env="t" checked> <i class="dot t"></i> 뭍 환경 <small id="count-t"></small></label>
+        <label class="swatch"><input type="checkbox" data-env="o" checked> <i class="dot o"></i> 해안·기타·미상 <small id="count-o"></small></label>
+        <p class="note">점 하나가 PBDB 채집지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고 20 Myr 이하인 것이 오른다 — 범위가 넓은 채집지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
+      </section>
+
+      <section>
+        <h2>분류군 찾기</h2>
+        <form id="taxon-form" class="taxon">
+          <input type="search" id="taxon" placeholder="예: Trilobita, Dinosauria" autocomplete="off" aria-label="분류군 이름">
+          <button type="submit">찾기</button>
+        </form>
+        <p class="note" id="taxon-status">PBDB 에 바로 묻는다. 시점을 옮기면 다시 묻는다.</p>
+        <button type="button" id="taxon-clear" class="link" hidden>분류군 지우기</button>
+      </section>
+
+      <section>
+        <h2>겹쳐 보기</h2>
+        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> 화석으로 고친 해안선</label>
+        <p class="note" id="coast-note"></p>
+        <label class="swatch"><input type="checkbox" id="grid"> 경위선 30°</label>
+      </section>
+
+      <section class="sources">
+        <h2>자료</h2>
+        <ul id="sources"></ul>
+        <p class="note">배경·해안선·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 PBDB 가 채집지 연대의 중간값에서 계산한 것이라, 범위가 넓은 채집지는 지도 시점과 다른 때의 위치다(대개 1° 안).</p>
+        <p class="note">MIH {{ version }}{% if built_at %} · 자료 {{ built_at|slice:":10" }}{% endif %}</p>
+      </section>
+    </aside>
+  </main>
+
+  {% if not has_data %}
+  <div class="empty" role="alert">
+    <h2>자료가 아직 없다</h2>
+    <p>파이프라인을 먼저 돌린다: <code>python -m pipeline all</code></p>
+  </div>
+  {% endif %}
+</div>
+
+<script src="{% static 'viewer/vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'viewer/map.js' %}?v={{ version }}"></script>
+</body>
+</html>

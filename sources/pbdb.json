@@ -1,0 +1,16 @@
+{
+  "id": "pbdb",
+  "title": "Paleobiology Database — 채집지(collection) 전체, PALEOMAP 고좌표 포함",
+  "citation": "Paleobiology Database (https://paleobiodb.org), data service v1.2. 채집지마다 원 문헌이 데이터베이스에 있다.",
+  "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "note": "PBDB 는 2013-12-19 부터 자료를 CC BY 4.0 으로 낸다. PBDB 와 원 문헌을 밝힌다."
+  },
+  "role": "화석 점 — 시점마다 그 무렵(±2.5 Myr) 채집지",
+  "query": {
+    "url": "https://paleobiodb.org/data1.2/colls/list.csv?all_records&show=paleoloc,geo,crmod&pgm=scotese&vocab=pbdb",
+    "path": "data/sources/pbdb/collections.csv",
+    "note": "살아 있는 데이터베이스라 같은 요청도 나중에는 더 많이 돌려준다. 그래서 크기·SHA-256 을 미리 고정하지 않고, 받은 날 받은 것의 값을 data/sources/pbdb/receipt.json 에 적는다. pgm=scotese 가 요점이다 — 기본값(gplates, Wright et al. 2013)은 배경과 판 모델이 달라 점이 어긋난다."
+  }
+}

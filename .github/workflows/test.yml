@@ -1,0 +1,65 @@
+# 시험과 이미지 굽기. GSM 의 test.yml 을 본떴다.
+#
+# 배포는 여기서 안 한다. deploy/host/deploy.sh 는 사람이 부른다.
+# PBDB·Zenodo 를 타는 시험은 없다 — CI 가 남의 서버를 두드리지 않는다.
+name: 시험
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 뷰어·파이프라인 시험
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - run: pip install -r requirements-web.txt
+
+      - name: 뷰어 시험
+        run: python web/manage.py test viewer --verbosity 2
+        env:
+          MIH_SECRET_KEY: ci-only-not-a-secret
+
+      # 규칙 시험은 표준 라이브러리만 쓴다 — 파이프라인 의존성을 깔지 않는다.
+      - name: 파이프라인 규칙 시험
+        run: python -m unittest discover -s pipeline/tests -t . -v
+
+      - name: collectstatic
+        run: python web/manage.py collectstatic --noinput
+        env:
+          MIH_SECRET_KEY: ci-only-not-a-secret
+
+  build:
+    name: 이미지 굽기
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Docker Hub 로그인
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/Dockerfile.web
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          tags: koprifossillab/mih:${{ github.ref_type == 'tag' && github.ref_name || 'ci' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

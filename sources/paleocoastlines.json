@@ -1,0 +1,22 @@
+{
+  "id": "paleocoastlines",
+  "title": "PaleoMAP PaleoCoastlines data, version 7.1",
+  "citation": "Kocsis, A. T., & Scotese, C. R. (2021). Mapping paleocoastlines and continental flooding during the Phanerozoic. Earth-Science Reviews, 213, 103463. Data: https://doi.org/10.5281/zenodo.4297693",
+  "record": "https://zenodo.org/records/4297693",
+  "license": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "note": "Zenodo 기록과 압축본의 Data/Readme.md 가 CC-BY 4.0 이라 적는다."
+  },
+  "role": "해안선 — 0~535 Ma 의 81 시점. 좌표가 이미 PALEOMAP 복원 좌표라 회전하지 않는다",
+  "evidence": "PaleoDEM 해안선을 PBDB 해양 화석이 가리키는 최대 해침선까지 옮긴 것이다. 그래서 같은 PBDB 화석으로 이 해안선을 '검증'하면 순환 논리가 된다.",
+  "archive": {
+    "url": "https://zenodo.org/api/records/4297693/files/PaleoCoastlines_v7.1.zip/content",
+    "path": "data/sources/paleocoastlines/PaleoCoastlines_v7.1.zip",
+    "bytes": 88660667,
+    "sha256": "4d039888bce4548f8126e0ad70a4ecb21472daad7671a4560c06a6bcd7734ddd",
+    "unzip": "data/sources/paleocoastlines/unzipped",
+    "members": ["Data/CS/*"]
+  },
+  "pinned_from": "크기·SHA-256 은 jikhanjung/EarthThruTime3D 의 sources/paleogeography/paleocoastlines2021.json 과 같다(2026-09-13 에 받은 것)."
+}

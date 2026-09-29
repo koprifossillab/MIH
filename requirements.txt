@@ -1,0 +1,8 @@
+# 개발 장비의 venv 하나에 전부 까는 입구다. 컨테이너는 requirements-web.txt 만 쓴다.
+#
+#   python -m venv .venv
+#   .venv\Scripts\pip install -r requirements.txt      (Windows)
+#   .venv/bin/pip install -r requirements.txt          (Linux)
+
+-r requirements-web.txt
+-r requirements-pipeline.txt

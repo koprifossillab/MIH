@@ -1,0 +1,9 @@
+# 셸 스크립트·Dockerfile 은 리눅스 서버에서 돈다. Windows 에서 커밋해도 LF 로 둔다 —
+# CRLF 가 섞이면 entrypoint 가 `/bin/bash^M: bad interpreter` 로 멈춘다.
+* text=auto
+*.sh text eol=lf
+Dockerfile* text eol=lf
+*.conf text eol=lf
+*.yml text eol=lf
+*.webp binary
+*.png binary
