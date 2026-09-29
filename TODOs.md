@@ -5,7 +5,6 @@
 
 ## 배포
 
-- [ ] 운영 `.env` 에 `WEGENER_EDITOR_KEY` 를 정한다(없으면 명칭 고치기가 닫힌다)
 - [ ] PBDB 를 주기적으로 다시 받는 cron — 서버 `.venv` 로 `fetch --refresh-pbdb` → `build --no-relief` → 임시 폴더에서
       `/srv/WegenersDream/data` 로 바꿔 끼운다. 주기부터 정한다
 - [ ] Docker Hub 비밀값(`DOCKERHUB_USERNAME`·`DOCKERHUB_TOKEN`)을 저장소에 넣어야 CI 가 태그에서 이미지를 민다

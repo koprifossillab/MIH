@@ -16,8 +16,8 @@
 **배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.11.2`, 컨테이너
 `wegenersdream-web-1`, `127.0.0.1:8095`, nginx `snippets/WegenersDream-subpath.conf`, 첫 화면 카드). 이미지는 그 서버에서
 구웠고 Docker Hub 에는 없다(git 태그도 없다). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
-`python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 의
-`WEGENER_EDITOR_KEY` 는 비어 있어 명칭 고치기가 닫혀 있다.
+`python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 에
+`WEGENER_EDITOR_KEY` 를 넣어 명칭 고치기가 열쇠로 열린다(비밀키는 비워 두어 `state/secret_key` 를 쓴다).
 
 **git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(작업 장비) — 이날의 PBDB 사본·`data/state`(16 MB)와
 가공물 전체(69 MB), 되살리는 법은 그 안의 README. PBDB 사본은 다시 받을 수 없어 둔 것이다. 같은 디스크라
