@@ -10,11 +10,16 @@
   var app = document.getElementById("app");
   var DATA = app.dataset.dataBase.replace(/x$/, "");
   var LABELS_URL = app.dataset.labelsUrl;
+  // 시점 파일은 하루 캐시된다(views.FRAME_MAX_AGE). 다시 가공해도 이름이 같아, 주소에 가공 시각을 붙여
+  // 가공할 때마다 새 주소가 되게 한다 — 안 붙이면 013 에서 고친 노릭절 채집지가 하루 동안 안 보였다.
+  var BUILT = "";
+  function dataUrl(path) { return DATA + path + (BUILT ? "?b=" + encodeURIComponent(BUILT) : ""); }
   var CSRF = app.dataset.csrf;
   var PBDB = "https://paleobiodb.org/data1.2/";
   var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
-  var WINDOW_MA = 2.5;        // pipeline/common.py 와 같은 값
-  var MAX_SPAN_MA = 20;
+  // 채집지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
+  var WINDOW_MA = 2.5;
+  var MAX_SPAN_MA = 21.6;
   var OLDEST = 540;
   var WORLD = [[-90, -180], [90, 180]];
   var UNKNOWN_COLOR = "#f5f5f5";
@@ -146,7 +151,7 @@
   function reliefWidth() { return map.getZoom() >= 3 ? "4096" : "2048"; }
   function reliefUrl(f) {
     var files = f.relief_files || {};
-    return DATA + (files[reliefWidth()] || f.relief);
+    return dataUrl(files[reliefWidth()] || f.relief);
   }
   map.on("zoomend", function () {
     var f = frame();
@@ -304,7 +309,7 @@
       ? "PaleoCoastlines " + fmtAge(f.coastline.age) + "."
       : "가장 가까운 " + fmtAge(f.coastline.age) + " 해안선을 그었다.";
     var want = f.age;
-    getJSON(DATA + f.coastline.file).then(function (geo) {
+    getJSON(dataUrl(f.coastline.file)).then(function (geo) {
       if (frame().age !== want) return;
       coastLayer.clearLayers();
       if ($("coast").checked) coastLayer.addData(geo);
@@ -528,10 +533,11 @@
     fossilLayer.clearLayers();
     if (!f.fossils || !f.fossils.file) return;
     var want = f.age;
-    getJSON(DATA + f.fossils.file).then(function (payload) {
+    getJSON(dataUrl(f.fossils.file)).then(function (payload) {
       if (frame().age !== want) return;
       state.payload = payload;
       drawFossils();
+      if (state.taxon && $("coeval").checked) drawTaxa();   // 같은 시대 다른 산지는 채집지 자료가 있어야 그린다
     });
   }
 
@@ -625,7 +631,7 @@
 
   // ── 분류군 찾기 ─────────────────────────────────────────────────────
   // 채집지 점과 같은 규칙으로 거른다(pipeline/common.py 의 belongs): 연대 범위가 시점
-  // ±2.5 Myr 창과 겹치고, 범위가 20 Myr 이하. PBDB 의 overlap 도 같은 뜻이다.
+  // ±2.5 Myr 창과 겹치고, 범위가 가장 긴 절(21.6 Myr) 이하. PBDB 의 overlap 도 같은 뜻이다.
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
                   early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12 };
   var taxonSeq = 0;
@@ -690,8 +696,25 @@
                      app: (both[1].records || [])[0] || null };
       renderDist();
       renderChrono();
+      if ($("coeval").checked) drawTaxa();     // "같은 시대" 구간은 절 분포로 잡는다
       return state.dist;
     }).catch(function () { state.dist = null; renderDist(); return null; });
+  }
+
+  // 산출 시대 칩을 누르면 그 기 안에서 찾은 분류군의 산출이 가장 많은 지도로 간다. 기의 가운데로
+  // 가면(층서표 칩의 동작) 그 분류군이 없는 시점에 떨어지곤 했다 — Coelophysis 는 트라이아스기 가운데
+  // 225 Ma 에 산출이 없다.
+  function goToRichest(p) {
+    var d = state.dist, best = -1;
+    Object.keys(d.frames).forEach(function (j) {
+      var age = state.frames[j].age;
+      if (age > p.top && age <= p.base && (best < 0 || d.frames[j] > d.frames[best])) best = +j;
+    });
+    if (best < 0) { focusUnit(p); return; }
+    stopTour();
+    show(best, { focus: p });
+    $("chrono-note").textContent = p.full + " 에서 " + state.taxon + " 산출이 가장 많은 " + fmtAge(state.frames[best].age) +
+      " 지도(절 단위 " + fmtNum(d.frames[best]) + "건).";
   }
 
   function renderDist() {
@@ -711,8 +734,8 @@
       b.style.background = p.color;
       b.style.color = ink(p.color);
       b.innerHTML = esc(p.ko) + '<span class="cnt">' + fmtNum(d.units[p.id]) + "</span>";
-      b.title = p.full + " · 산출 " + fmtNum(d.units[p.id]) + "건";
-      b.addEventListener("click", function () { focusUnit(p); });
+      b.title = p.full + " · 산출 " + fmtNum(d.units[p.id]) + "건 — 이 기에서 산출이 가장 많은 지도로";
+      b.addEventListener("click", function () { goToRichest(p); });
       $("dist-periods").appendChild(b);
     });
     var a = d.app;
@@ -806,7 +829,7 @@
       // 산출을 채집지로 묶는다 — 한 채집지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
       var byColl = {}, rows = [];
       (data.records || []).forEach(function (r) {
-        if (r.max_ma - r.min_ma > MAX_SPAN_MA) return;
+        if (r.max_ma - r.min_ma > MAX_SPAN_MA + 1e-6) return;     // 227.3 − 205.7 = 21.600000000000023
         if (r.paleolat == null || r.paleolng == null) return;
         var row = byColl[r.collection_no];
         if (!row) {
@@ -830,11 +853,92 @@
     });
   }
 
+  // ── 같은 시대 다른 산지 (속 이하) ───────────────────────────────────
+  // 지금 지도에서 찾은 분류군 산출들의 연대 범위를 한 구간(가장 젊은 min ~ 가장 오래된 max)으로
+  // 잡고, 그 구간과 연대가 겹치는 다른 채집지(그 분류군이 안 나온 곳)를 작고 흐리게 함께 그린다.
+  // 환경 거르기는 따르고 국가 거르기는 따르지 않는다 — 나라를 골라 그 나라의 분류군을 보면서
+  // 같은 시대의 다른 나라 기록과 견주려는 것이다.
+  var GENUS_RANKS = { genus: 1, subgenus: 1, species: 1, subspecies: 1 };
+
+  // "같은 시대" 의 구간. 산출 하나하나의 범위를 합치면 넓게 매겨진 산출 하나(예: 83.6–66 Ma)가 구간을
+  // 지도 전체로 넓혀, 거의 모든 채집지가 "같은 시대" 가 된다(Tyrannosaurus 70 Ma 에서 14,288 곳 중
+  // 14,204 곳). 그래서 **절 단위 분포(010)에서 그 분류군이 실제로 나온 절**, 그중 지도 시점의 창에 걸치는
+  // 절들로 구간을 잡는다. 절 단위 산출이 없는 시점만 산출 범위의 합으로 돌아간다.
+  function coevalSpan(rows) {
+    if (!rows.length) return null;
+    var f = frame(), lo = f.age - WINDOW_MA, hi = f.age + WINDOW_MA, stages = [];
+    // 지도 나이가 든 절을 먼저 쓴다. 창에 살짝 걸친 이웃 절까지 넣으면(70 Ma 창이 캄파이나절 끝 0.3 Myr
+    // 에 걸친다) 구간이 다시 넓어진다. 나이가 든 절에 산출이 없으면 창과 가장 많이 겹치는 절 하나.
+    var cands = ((state.dist && state.dist.stages) || []).filter(function (s) { return s.base >= lo && s.top <= hi; });
+    stages = cands.filter(function (s) { return f.age > s.top && f.age <= s.base; });
+    if (!stages.length && cands.length) {
+      var overlapOf = function (s) { return Math.min(s.base, hi) - Math.max(s.top, lo); };
+      stages = [cands.sort(function (a, b) { return overlapOf(b) - overlapOf(a); })[0]];
+    }
+    if (stages.length) {
+      var names = stages.map(function (s) { return stageName(s); });
+      return { old: Math.max.apply(null, stages.map(function (s) { return s.base; })),
+               young: Math.min.apply(null, stages.map(function (s) { return s.top; })),
+               label: names.join("·") };
+    }
+    var old = -Infinity, young = Infinity;
+    rows.forEach(function (row) {
+      old = Math.max(old, Number(row[COLUMNS.max_ma]));
+      young = Math.min(young, Number(row[COLUMNS.min_ma]));
+    });
+    return { old: old, young: young, label: "산출 범위" };
+  }
+
+  // PBDB 절 이름 → 한글판 이름(가운데 나이가 든 우리 절). 없으면 PBDB 이름 그대로.
+  function stageName(s) {
+    var mid = (s.base + s.top) / 2, found = s.name;
+    Object.keys(state.units).forEach(function (id) {
+      var u = state.units[id];
+      if (u.rank === "age" && mid > u.top && mid <= u.base) found = u.ko;
+    });
+    return found;
+  }
+
+  function drawCoeval(rows) {
+    var note = $("coeval-note");
+    $("coeval-row").hidden = !GENUS_RANKS[state.taxonRank];
+    if (!GENUS_RANKS[state.taxonRank] || !$("coeval").checked) { note.textContent = ""; return 0; }
+    var span = coevalSpan(rows), payload = state.payload;
+    if (!span || !payload) {
+      note.textContent = span ? "채집지 자료를 읽는 중…" : "이 시점에는 찾은 분류군의 산출이 없어 견줄 시대가 없다.";
+      return 0;
+    }
+    var col = columns(payload), own = {}, n = 0, inside = $("coeval-rule").value === "inside";
+    rows.forEach(function (row) { own[row[COLUMNS.collection_no]] = true; });
+    payload.rows.forEach(function (row) {
+      if (own[row[col.collection_no]] || !state.enabled[termKey(row[col.environment])]) return;
+      var old = row[col.max_ma], young = row[col.min_ma];
+      // 겹침: 연대 범위가 구간에 걸치면 / 안: 연대 범위 전체가 구간 안에 들면
+      if (inside ? (old > span.old + 1e-6 || young < span.young - 1e-6) : (old < span.young || young > span.old)) return;
+      n += 1;
+      var a = state.opacity * 0.6;
+      L.circleMarker([row[col.paleolat], row[col.paleolng]], {
+        renderer: renderer, radius: 2.6, weight: 0.6, color: "#ffffff", opacity: Math.min(1, a + 0.15),
+        fillColor: pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]), fillOpacity: a,
+      }).bindTooltip("<b>" + esc(row[col.collection_name] || "이름 없는 채집지") + "</b><small>" +
+                     esc(row[col.early_interval]) + " · " + esc(countryName(row[col.cc])) + " · 같은 시대 다른 산지</small>",
+                     { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
+        .on("click", function (e) { openCollection(e.latlng, row, col); })
+        .addTo(taxonLayer);
+    });
+    note.textContent = "같은 시대(" + span.label + ", " + span.old + "–" + span.young + " Ma)" +
+      (inside ? " 안에 드는" : "와 겹치는") + " 다른 산지 " + fmtNum(n) + "곳을 작은 점으로 함께 보인다" +
+      (state.country ? " — 국가와 상관없이" : "") + ".";
+    return n;
+  }
+
   function drawTaxa() {
     taxonLayer.clearLayers();
     var rows = state.taxa;
     if (!state.taxon || !rows) return;
-    var shown = 0, occs = 0;
+    var shown = 0, occs = 0, visible = [];
+    rows.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc])) visible.push(row); });
+    drawCoeval(visible);            // 먼저 그려 찾은 분류군의 점 밑에 깐다
     rows.forEach(function (row) {
       if (!passes(row[COLUMNS.environment], row[COLUMNS.cc])) return;
       shown += 1;
@@ -867,6 +971,8 @@
     state.dist = null;
     renderDist();
     renderChrono();
+    $("coeval-row").hidden = true;
+    $("coeval-note").textContent = "";
     taxonLayer.clearLayers();
     $("taxon").value = "";
     $("taxon-clear").hidden = true;
@@ -1058,7 +1164,7 @@
     borderLayer.clearLayers();
     var want = f.age, show = $("borders").checked;
     if (!f.borders || (!show && !state.country)) return;
-    getJSON(DATA + f.borders).then(function (geo) {
+    getJSON(dataUrl(f.borders)).then(function (geo) {
       if (frame().age !== want) return;
       borderLayer.clearLayers();
       var iso = state.country && countryIso(state.country);
@@ -1104,7 +1210,7 @@
           resolve({ w: c.width, h: c.height, values: values });
         };
         img.onerror = reject;
-        img.src = DATA + info.file;
+        img.src = dataUrl(info.file);
       });
     }
     return state.grids[info.file];
@@ -1218,6 +1324,8 @@
       if (e.key === "ArrowRight") { stopTour(); show(state.i + 1); e.preventDefault(); }
     });
     $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
+    $("coeval").addEventListener("change", drawTaxa);
+    $("coeval-rule").addEventListener("change", drawTaxa);
     $("play").addEventListener("change", function () {
       clearInterval(state.playing);
       state.playing = null;
@@ -1268,6 +1376,8 @@
     getJSON(DATA + "index.json").then(function (index) {
       // 슬라이더 왼쪽이 옛날이다.
       state.frames = index.frames.slice().sort(function (a, b) { return b.age - a.age; });
+      if (index.rules) { WINDOW_MA = index.rules.window_ma; MAX_SPAN_MA = index.rules.max_span_ma; }
+      BUILT = index.built_at || "";
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
