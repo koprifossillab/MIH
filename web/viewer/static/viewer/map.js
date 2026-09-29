@@ -1090,6 +1090,10 @@
     $("coast").addEventListener("change", function () { drawCoast(frame()); });
     $("borders").addEventListener("change", function () { drawBorders(frame(), false); });
     $("climate").addEventListener("change", function () { drawClimate(frame()); });
+    $("climate-opacity").addEventListener("input", function () {
+      climateLayer.setOpacity(+this.value / 100);
+      $("climate-opacity-value").textContent = this.value + "%";
+    });
     $("point-opacity").addEventListener("input", function () {
       state.opacity = +this.value / 100;
       $("point-opacity-value").textContent = this.value + "%";
