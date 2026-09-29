@@ -3,6 +3,14 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 0.11.0 — 2026-09-30 · `work/20260930-koprifossillab`
+
+- **이름을 바꿨다: MIH → 베게너의 꿈 (Wegener's Dream)** — 화면 제목·머리말·README (020)
+- 기술 이름도 함께: 저장소·URL `/WegenersDream/`·`/srv/WegenersDream`, 환경변수 `MIH_*` → `WEGENER_*`,
+  파이썬 패키지 `mihweb` → `wegenerweb`, 이미지 `koprifossillab/wegenersdream`, nginx 조각
+  `WegenersDream-subpath.conf`. **운영 `.env` 와 로컬 실행의 환경변수 이름을 바꿔야 한다** (020)
+- 가공물은 다시 만들 필요 없다
+
 ## 0.10.1 — 2026-09-29 · `work/20260929-koprifossillab`
 
 - 분류군 찾기 결과 점의 테두리도 흰색으로(검은 테두리를 버림) — 모든 점·세모가 같은 흰 테두리 (019)

@@ -3,4 +3,4 @@ from django.apps import AppConfig
 
 class ViewerConfig(AppConfig):
     name = "viewer"
-    verbose_name = "MIH 뷰어"
+    verbose_name = "Wegener's Dream 뷰어"

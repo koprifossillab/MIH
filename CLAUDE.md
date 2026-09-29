@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-시대별 고지리 지도(PALEOMAP) 위에 PBDB 화석 채집지를 올려 보는 2D 지도 뷰어.
+**베게너의 꿈 (Wegener's Dream)** — 시대별 고지리 지도(PALEOMAP) 위에 PBDB 화석 산지를 올려 보는 2D 지도 뷰어.
 문서는 한국어로 쓴다 — 커밋 메시지, devlog, 주석 모두.
 
 연구소 서버(paleoserver, 172.16.116.98)에 **GSM 과 같은 갈래로** 얹는다 —
-저장소·이미지·`/srv/MIH`·nginx 서브경로(`/MIH/`)가 따로다. phyloserver 의 앱이 아니다.
+저장소·이미지·`/srv/WegenersDream`·nginx 서브경로(`/WegenersDream/`)가 따로다. phyloserver 의 앱이 아니다.
 
 ## 시작하기 전에 읽을 것
 
@@ -14,9 +14,16 @@
 
 ## 이름
 
-저장소·URL(`/MIH/`)·환경변수(`MIH_*`)는 `MIH`. 기술이 소문자를 강제하는 자리만
-`mih` — 파이썬 패키지(`mihweb`), Docker 이미지(`koprifossillab/mih`).
-약자의 풀이와 한국어 이름은 아직 정하지 않았다. 정해지면 화면 제목과 README 첫 줄에 적는다.
+화면 이름은 **베게너의 꿈**, 영문 **Wegener's Dream**(대륙이동설의 알프레트 베게너 — 그가 그리던 움직이는 대륙
+위의 생물 기록). 2026-09-30 에 첫 이름 `MIH` 에서 바꿨다(020). 옛 devlog·CHANGELOG 의 MIH 는 기록이라 그대로 둔다.
+
+| 자리 | 이름 |
+|---|---|
+| 저장소·URL(`/WegenersDream/`)·`/srv/WegenersDream` | `WegenersDream` |
+| 환경변수 | `WEGENER_*` |
+| 소문자를 강제하는 자리 — 파이썬 패키지, Docker 이미지·compose 이름 | `wegenerweb`, `koprifossillab/wegenersdream`, `wegenersdream` |
+
+작업 장비의 폴더(`D:\Claude\MIH`)와 09-29 백업 폴더(`D:\Claude\MIH-backup`)는 옛 이름 그대로다.
 
 ## 판 모델을 하나로
 

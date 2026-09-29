@@ -11,7 +11,7 @@ venv/
 # 원본은 sources/*.json 매니페스트가 주소와 SHA-256 으로 고정한다.
 data/sources/
 data/derived/
-# 뷰어가 쓰는 자리 — 화면에서 고친 명칭(labels.json). 운영은 /srv/MIH/state
+# 뷰어가 쓰는 자리 — 화면에서 고친 명칭(labels.json). 운영은 /srv/WegenersDream/state
 data/state/
 
 # Django

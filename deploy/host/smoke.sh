@@ -1,11 +1,11 @@
 #!/bin/bash
 # 배포 뒤 확인. 화면·상태·자료 목록이 nginx 를 거쳐 열리는지 본다.
 #
-#   deploy/host/smoke.sh                 # http://127.0.0.1/MIH/
-#   deploy/host/smoke.sh http://172.16.116.98/MIH/
+#   deploy/host/smoke.sh                 # http://127.0.0.1/WegenersDream/
+#   deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 set -euo pipefail
 
-BASE="${1:-http://127.0.0.1/MIH/}"
+BASE="${1:-http://127.0.0.1/WegenersDream/}"
 fail=0
 
 check() {
