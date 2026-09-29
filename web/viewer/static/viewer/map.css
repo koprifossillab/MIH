@@ -47,6 +47,15 @@ body {
 .now .unit { padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 13px; }
 .now .sep { color: var(--muted); }
 .now .label { color: var(--muted); }
+/* 언어 단추(027) — 머리말 오른쪽 */
+.lang { margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; align-self: center; }
+.lang button { border: 0; background: var(--bg); color: var(--muted); font: inherit; font-size: 12px; padding: 2px 9px; cursor: pointer; }
+.lang button + button { border-left: 1px solid var(--line); }
+.lang button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+/* 영어로 열 때 한국어 원문을 잠깐도 보이지 않게(<head> 의 스크립트가 붙이고 map.js 가 뗀다) */
+.i18n-pending body { visibility: hidden; }
+/* 영어판: 층서표 줄머리(Era·Period …)가 한 글자보다 길다 */
+.lang-en .chrono-row .rank { width: 44px; }
 
 .stage { flex: 1; display: flex; min-height: 0; }
 #map { flex: 1; min-width: 0; background: #06162f; }

@@ -1,7 +1,7 @@
 {
   "id": "pbdb",
   "title": "Paleobiology Database — 채집지(collection) 전체, PALEOMAP 고좌표 포함",
-  "citation": "Paleobiology Database (https://paleobiodb.org), data service v1.2. 채집지마다 원 문헌이 데이터베이스에 있다.",
+  "citation": "Paleobiology Database (https://paleobiodb.org), data service v1.2. The original reference for each collection is in the database.",
   "license": {
     "name": "CC BY 4.0",
     "url": "https://creativecommons.org/licenses/by/4.0/",
