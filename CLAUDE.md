@@ -6,6 +6,12 @@
 연구소 서버(paleoserver, 172.16.116.98)에 **GSM 과 같은 갈래로** 얹는다 —
 저장소·이미지·`/srv/MIH`·nginx 서브경로(`/MIH/`)가 따로다. phyloserver 의 앱이 아니다.
 
+## 시작하기 전에 읽을 것
+
+**[HANDOFF.md](HANDOFF.md) 부터** — 지금 무엇이 돌아가고, 어느 브랜치에 무엇이 기다리고, 어디에
+함정이 있는지. 할 일은 [TODOs.md](TODOs.md), 판마다 무엇이 바뀌었는지는 [CHANGELOG.md](CHANGELOG.md),
+**왜 그렇게 했는지는 `devlog/`** 다.
+
 ## 이름
 
 저장소·URL(`/MIH/`)·환경변수(`MIH_*`)는 `MIH`. 기술이 소문자를 강제하는 자리만
@@ -29,7 +35,8 @@
 - 연대 범위(min_ma~max_ma)가 시점 ±2.5 Myr 창과 **겹친다** (`WINDOW_MA`). 한 채집지가 여러 시점에 오른다
 - 연대 범위가 20 Myr 이하 (`MAX_SPAN_MA`)
 - **중간값 규칙으로 돌아가지 않는다** — 층서 단계로 매긴 연대의 중간값이 몰려 빈 시점이 생긴다(devlog 001)
-- 바다·뭍 환경 목록은 EarthThruTime3D(MIT)의 것. 해안·석호·하구는 어느 쪽으로도 밀지 않는다
+- 퇴적기원(해양·육상·미상)은 `pipeline/environments.py` 가 정한다. 해안·석호는 해양기원, 하구·만은
+  육상기원이다(연구자의 판단, devlog 003) — 첫 판의 "어느 쪽으로도 밀지 않는다" 는 버렸다
 
 ## 층서표와 퇴적 환경 — 한 곳에만 적는다
 
@@ -56,16 +63,42 @@ sources/*.json ──fetch──▶ data/sources/ ──build──▶ data/deri
 
 ## PBDB 에 바로 묻는 것
 
-브라우저가 PBDB API 를 곧장 부른다(CORS `*`). 둘뿐이다 — 채집지 산출 목록, 분류군 찾기.
-서버는 PBDB 를 부르지 않는다. 사내망에서 PBDB 가 막히는 일이 생기면 그때 GSM 처럼
-서버에 문(`viewer/pbdb.py`) 하나를 두고 중계한다.
+브라우저가 PBDB API 를 곧장 부른다(CORS `*`). 넷이다 — 채집지 산출 목록(`occs/list?coll_id`),
+분류군 찾기(`occs/list?base_name`, 언제나 `pgm=scotese`), 이름 후보(`taxa/auto`·`taxa/list?match_name`),
+찾은 이름의 계급(`taxa/single`). 서버는 PBDB 를 부르지 않는다. 사내망에서 PBDB 가 막히는 일이
+생기면 그때 GSM 처럼 서버에 문(`viewer/pbdb.py`) 하나를 두고 중계한다.
 
-## 협업
+## 커밋 — DiaRUGA 의 규약을 따른다
 
-phyloserver 규약을 따른다 — 코드는 `work/<YYYYMMDD>-<계정>` 브랜치, 문서만 고치는
-커밋은 `main` 에 바로. 커밋은 conventional commits(feat, fix, chore, docs).
-작업 전에 `git pull --rebase`. 고친 파일을 지정해 커밋한다(`git add -A` 금지).
+**코드 작업은 하루치 브랜치에서 한다** — `work/<YYYYMMDD>-<계정>`. **코드에 손대기 직전에**
+만들고(`git switch -c work/20260929-koprifossillab`), 그 뒤로 **커밋·push·확인을 전부 그
+브랜치에서** 한다. **`main` 병합은 사람이 정한다.**
+
+**문서·기록만 고치는 커밋은 `main` 에 바로 올린다**(HANDOFF·TODOs·CLAUDE.md 같은 것).
+브랜치는 부딪힐 수 있는 것을 격리하려고 있는 것이다. 애매하면 묻는다.
+
+**한 단계가 끝날 때마다 커밋하고 push 한다** — 기능 여럿을 한 커밋에 몰지 않는다. 단계마다
+devlog 하나, 판 번호는 몇 단계를 묶어 따로 적는다("0.5.0 을 적는다 (004~006)").
+
+메시지는 **한국어 평서문으로 무엇을 했는지**를 쓰고 devlog 번호를 붙인다:
+
+```
+국가를 고르면 그 나라 범위로 지도를 당기고, "이 나라로 다시 가기" 를 단다 (005)
+Scotese 2021 지표 기온 지도를 받아 시점마다 기온 격자 PNG 로 굽는다 (004)
+```
+
+0.4.0 까지는 conventional commits(`feat:`)였다. 그 뒤로는 위의 꼴이다.
+
+**`git add` 는 내가 고친 파일만 지정한다** — `git add -A`·`git add .`·`git commit -a` 는 쓰지
+않는다. `git commit -F <메시지 파일> -- <파일…>`. 커밋 전에 `git status --short` 를 보고, 내가 손대지
+않은 파일은 그대로 둔다. 작업 전에 `git pull --rebase`.
 
 ## devlog
 
-`devlog/YYYYMMDD_NNN_slug.md`. **무엇을 했는지가 아니라 왜 그렇게 했는지를 적는다.**
+**그때의 판단과 근거를 남기는 곳이다.** 실제로 한 작업은 `devlog/YYYYMMDD_NNN_주제.md`, 계획은
+`YYYYMMDD_PNN_주제.md` 로 번호를 올려 가며 **단계마다 끊어** 적는다. 머리줄 아래에
+`날짜 · \`브랜치\`` 를 적고, 절에 번호를 붙인다. **무엇을 했는지보다 왜 그렇게 했고 무엇을
+버렸는지**를 쓴다. 무엇을 했는지는 `git log` 가 안다.
+
+**HANDOFF.md 는 지금만 말한다** — 지난 일은 devlog 의 몫이고, HANDOFF 는 근거가 필요한 자리마다
+devlog 번호를 건다. **TODOs.md 에는 끝난 일을 쌓지 않는다.**
