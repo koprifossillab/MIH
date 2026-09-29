@@ -81,6 +81,7 @@ def build(skip_relief=False):
             "borders": borders.get(age),
             "climate": temps.get(age),
             "fossils": {"file": found.get("file"), "count": found.get("count", 0),
+                        "vague": found.get("vague", 0), "pbdb_fallback": found.get("pbdb_fallback", 0),
                         "by_env": found.get("by_env", {})},
         })
 

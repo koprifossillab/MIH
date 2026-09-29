@@ -76,7 +76,7 @@
           <span><i class="shape solid"></i> 절 단위로 정해진 기록</span>
           <label><input type="checkbox" id="show-wide" checked> <i class="shape tri"></i> 모호한 연대 기록도 보기</label>
         </div>
-        <p class="note">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보인다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
+        <p class="note">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
         <div class="legend" id="legend" aria-live="polite"></div>
         <p class="note env-count-note" id="env-count-note">수: 산지 수(지금 지도)</p>
         <div class="envtree" id="envtree"></div>
@@ -155,7 +155,7 @@
       <section class="sources">
         <h2>자료</h2>
         <ul id="sources"></ul>
-        <p class="note">배경·해안선·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 PBDB 가 산지 연대의 중간값에서 계산한 것이라, 범위가 넓은 산지는 지도 시점과 다른 때의 위치다(대개 1° 안).</p>
+        <p class="note">배경·해안선·국경·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 산지의 지금 좌표를 <b>지도 시점의 나이로</b> 해안선과 같은 판 모델(v19o)로 돌린 것이라, 범위가 넓은 산지도 시점마다 그때 자리에 그려진다. 그 나이에 판이 없는 드문 산지(0.1% 미만)만 PBDB 고좌표(연대 중간값)를 쓴다 — 팝업에 적는다.</p>
         <p class="note">MIH {{ version }}{% if built_at %} · 자료 {{ built_at|slice:":10" }}{% endif %}</p>
       </section>
     </aside>

@@ -568,8 +568,12 @@
     getJSON(dataUrl(f.fossils.file)).then(function (payload) {
       if (frame().age !== want) return;
       state.payload = payload;
+      var col = columns(payload);
+      payload.byNo = {};
+      payload.rows.forEach(function (row) { payload.byNo[row[col.collection_no]] = row; });
       drawFossils();
-      if (state.taxon && $("coeval").checked) drawTaxa();   // 같은 시대 다른 산지는 산지 자료가 있어야 그린다
+      // 찾은 분류군도 산지 자료의 좌표(이 시점 나이로 계산한 것, 017)로 옮기고, 같은 시대 다른 산지를 그린다
+      if (state.taxon) drawTaxa();
     });
   }
 
@@ -640,7 +644,10 @@
         (rowPrecise(row, col) ? "" : '<br><small class="wide-note">▲ 모호한 연대 — 절 단위로 정해지지 않은 기록(세·기·대). 걸친 모든 시점에 보인다</small>') + "</dd>" +
       (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
       "<dt>환경</dt><dd>" + esc(env || "기록 없음") + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
-      "<dt>고좌표</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°</dd>" +
+      "<dt>고좌표</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°<br><small>" +
+        (col.rotated != null && row[col.rotated]
+          ? "이 지도 나이(" + fmtAge(frame().age) + ")로 계산 — PALEOMAP v19o"
+          : "PBDB 제공 — 산지 연대의 중간값에서 계산한 자리") + "</small></dd>" +
       (row[col.cc] ? "<dt>지금 국가</dt><dd>" + esc(countryName(row[col.cc])) + "</dd>" : "") +
       (row.matched ? "<dt>찾은 분류군</dt><dd><i>" + row.matched.map(esc).join("</i>, <i>") + "</i></dd>" : "") +
       '</dl><a href="' + PBDB_COLL_PAGE + no + '" target="_blank" rel="noopener">PBDB 산지 ' + no + "</a>" +
@@ -679,7 +686,7 @@
   // ±2.5 Myr 창과 겹치면. PBDB 의 overlap 도 같은 뜻이다. 모호한 연대는 세모로 그린다(016).
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
                   early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12,
-                  precise: 13 };
+                  precise: 13, rotated: 14 };
   var taxonSeq = 0;
   // 과 이하 — 커서만 대도 산출 목록이 뜨는 계급. 그 위(목·강…)는 산지 하나에 수십~수백 건이라 요약만.
   var LOW_RANKS = { family: 1, subfamily: 1, tribe: 1, subtribe: 1, genus: 1, subgenus: 1, species: 1, subspecies: 1 };
@@ -937,7 +944,8 @@
         if (!row) {
           row = byColl[r.collection_no] = [r.collection_no, r.paleolng, r.paleolat, "", 0, r.collection_name,
             r.early_interval, r.late_interval || "", r.max_ma, r.min_ma, r.formation || "",
-            r.environment || "", r.cc || "", isPrecise(r.early_interval, r.late_interval) ? 1 : 0];
+            r.environment || "", r.cc || "", isPrecise(r.early_interval, r.late_interval) ? 1 : 0, 0];
+          row.pbdb = [r.paleolng, r.paleolat];
           row.matched = [];
           row.occs = [];
           rows.push(row);
@@ -1038,10 +1046,24 @@
     return n;
   }
 
+  // PBDB 에 바로 물은 산출의 고좌표는 산지 연대의 중간값에서 계산한 하나뿐이다. 산지 자료에 같은 산지가 있으면
+  // 그 좌표(이 시점 나이로 계산한 것)로 옮겨 산지 점·해안선과 맞춘다(017). 없으면 PBDB 좌표 그대로.
+  function placeTaxa(rows) {
+    var payload = state.payload, col = payload && columns(payload);
+    rows.forEach(function (row) {
+      var own = payload && payload.byNo[row[COLUMNS.collection_no]];
+      var rotated = own && col.rotated != null && own[col.rotated];
+      row[COLUMNS.paleolng] = rotated ? own[col.paleolng] : row.pbdb[0];
+      row[COLUMNS.paleolat] = rotated ? own[col.paleolat] : row.pbdb[1];
+      row[COLUMNS.rotated] = rotated ? 1 : 0;
+    });
+  }
+
   function drawTaxa() {
     taxonLayer.clearLayers();
     var rows = state.taxa;
     if (!state.taxon || !rows) return;
+    placeTaxa(rows);
     var shown = 0, occs = 0, visible = [];
     var ok = function (row) { return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise]); };
     rows.forEach(function (row) { if (ok(row)) visible.push(row); });

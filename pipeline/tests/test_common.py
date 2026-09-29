@@ -90,7 +90,7 @@ class EmsianTest(unittest.TestCase):
     def test_assign_matches_belongs(self):
         rows = [(252.5, 252.5, ["a"]), (250, 250, ["b"]), (410.62, 393.47, ["emsian"])]
         ages = [255, 250, 245, 415, 410, 405, 400, 395, 390]
-        binned = assign(rows, ages)
+        binned = {age: [item[2] for item in items] for age, items in assign(rows, ages).items()}
         self.assertEqual(binned[255], [["a"]])
         self.assertEqual(binned[250], [["a"], ["b"]])
         self.assertEqual(binned[245], [])
