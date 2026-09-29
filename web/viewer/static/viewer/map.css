@@ -113,6 +113,8 @@ body {
 .proj-row { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; }
 .proj-row[hidden] { display: none; }
 .proj-row h2 { margin-right: 4px; }
+.leaflet-container.moll { cursor: grab; }
+.leaflet-container.spinning { cursor: grabbing; }
 .proj-row label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #333; }
 .dot.m { background: var(--marine); }
