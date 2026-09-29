@@ -107,15 +107,32 @@ def fetch_pinned(name):
             print(f"  풀었다: {count} 파일 -> {out.relative_to(ROOT)}")
 
 
+def fetch_pbdb_intervals(refresh=False):
+    """PBDB 시대 이름표 — 산지를 새로 받을 때 함께 새로 받는다(새 이름이 들어올 수 있다)."""
+    spec = manifest("pbdb")["intervals"]
+    target = source_path(spec["path"])
+    if target.exists() and not refresh:
+        print(f"있음  {spec['path']}")
+        return
+    temp = download(spec["url"], target, timeout=300)
+    records = json.loads(temp.read_text(encoding="utf-8")).get("records") or []
+    if not records or "type" not in records[0]:
+        temp.unlink(missing_ok=True)
+        raise SystemExit("PBDB 시대 이름표에 type 칸이 없다 — 질의를 확인한다")
+    temp.replace(target)
+    print(f"  시대 이름 {len(records)} 개")
+
+
 def fetch_pbdb(refresh=False):
     spec = manifest("pbdb")
     query = spec["query"]
     target = source_path(query["path"])
     receipt = target.parent / "receipt.json"
+    fetch_pbdb_intervals(refresh)
     if target.exists() and receipt.exists() and not refresh:
         print(f"있음  {query['path']} ({json.loads(receipt.read_text())['retrieved_at']} 에 받음)")
         return
-    print("받기  PBDB 채집지 전체 — 서버가 표를 만드는 데 몇 분 걸린다")
+    print("받기  PBDB 산지 전체 — 서버가 표를 만드는 데 몇 분 걸린다")
     temp = download(query["url"], target, timeout=1800)
     # 줄이 아니라 행을 센다 — geology_comments 같은 칸에 줄바꿈이 들어 있다.
     with open(temp, newline="", encoding="utf-8", errors="replace") as handle:
@@ -133,7 +150,7 @@ def fetch_pbdb(refresh=False):
         "sha256": sha256(target),
         "records": rows,
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"  {rows} 채집지")
+    print(f"  {rows} 산지")
 
 
 def fetch_receipted(name, refresh=False):

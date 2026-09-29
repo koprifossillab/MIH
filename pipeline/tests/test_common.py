@@ -4,8 +4,9 @@
 """
 import unittest
 
-from pipeline.common import MAX_SPAN_MA, age_key, belongs, environment_class, parse_dem_name, period
+from pipeline.common import age_key, belongs, environment_class, parse_dem_name, period
 from pipeline.fossils import assign
+from pipeline.intervals import is_vague
 
 
 class DemNameTest(unittest.TestCase):
@@ -40,17 +41,48 @@ class BinningTest(unittest.TestCase):
         self.assertTrue(belongs(247.5, 247.5, 250))        # 창 끝은 넣는다
         self.assertFalse(belongs(247.4, 247.4, 250))
         self.assertTrue(belongs(270, 251, 260))            # 19 Myr — 범위가 창과 겹친다
-        self.assertFalse(belongs(274, 251, 260))           # 23 Myr — 가장 긴 절보다 넓다
         self.assertTrue(belongs(248, 252, 250))            # 뒤집혀 적힌 것도 받는다
 
-    def test_span_limit_is_longest_stage(self):
-        # 노릭절(227.3–205.7, 21.6 Myr)은 절 하나다 — 절 하나로 매겨진 채집지는 빠지면 안 된다(013).
-        # 부동소수로는 21.600000000000023 이라 허용이 없으면 빠진다.
-        self.assertAlmostEqual(MAX_SPAN_MA, 21.6)
-        self.assertTrue(belongs(227.3, 205.7, 205))
-        self.assertTrue(belongs(227.3, 205.7, 225))
-        self.assertFalse(belongs(227.3, 205.6, 225))       # 21.7 Myr
+    def test_no_span_limit(self):
+        # 015 — 연대 범위의 상한이 없다. 후기 트라이아스기(237–201.4)는 걸친 모든 시점에 오른다
+        self.assertTrue(belongs(237, 201.4, 205))
+        self.assertTrue(belongs(237, 201.4, 235))
+        self.assertFalse(belongs(237, 201.4, 240))         # 창(237.5–242.5)과 안 겹친다
+        self.assertTrue(belongs(538.8, 251.902, 400))      # 고생대 — 넓어도 오른다(넓은 연대로 표시)
 
+
+class VagueTest(unittest.TestCase):
+    """모호한 연대 — 절 단위로 정해지지 않은 PBDB 시대 이름(016). 길이가 아니라 이름의 등급으로 가른다."""
+
+    TYPES = {"Norian": "age", "Rhaetian": "age", "Aptian": "age", "Albian": "age", "Lacian": "subage",
+             "Ivorian": "age", "Late Triassic": "epoch", "Middle Cambrian": "epoch", "Paleozoic": "era",
+             "Cretaceous": "period", "Early Pleistocene": "subepoch", "Pennsylvanian": "epoch"}
+
+    def vague(self, early, late=""):
+        return is_vague(early, late, self.TYPES)
+
+    def test_defined_ranges_are_not_vague(self):
+        self.assertFalse(self.vague("Norian"))                 # 노릭절 하나(21.6 Myr)
+        self.assertFalse(self.vague("Norian", "Rhaetian"))     # 절 둘로 정해진 범위 — 연구자가 바로잡은 것
+        self.assertFalse(self.vague("Aptian", "Albian"))
+        self.assertFalse(self.vague("Lacian"))                 # 아절
+        self.assertFalse(self.vague("Ivorian"))                # 지역 절
+
+    def test_epochs_periods_eras_are_vague(self):
+        self.assertTrue(self.vague("Middle Cambrian"))
+        self.assertTrue(self.vague("Late Triassic"))
+        self.assertTrue(self.vague("Paleozoic"))
+        self.assertTrue(self.vague("Cretaceous"))
+        self.assertTrue(self.vague("Pennsylvanian"))
+
+    def test_one_vague_end_makes_it_vague(self):
+        self.assertTrue(self.vague("Norian", "Late Triassic"))
+
+    def test_unknown_name_counts_as_defined(self):
+        self.assertFalse(self.vague("Revueltian"))
+
+
+class EmsianTest(unittest.TestCase):
     def test_emsian_reaches_400(self):
         # 에므스절(410.62–393.47, 17 Myr)은 중간값 402 라 옛 규칙으로는 400 Ma 가 비었다
         self.assertTrue(belongs(410.62, 393.47, 400))
@@ -58,7 +90,7 @@ class BinningTest(unittest.TestCase):
     def test_assign_matches_belongs(self):
         rows = [(252.5, 252.5, ["a"]), (250, 250, ["b"]), (410.62, 393.47, ["emsian"])]
         ages = [255, 250, 245, 415, 410, 405, 400, 395, 390]
-        binned = assign(rows, ages)
+        binned = {age: [item[2] for item in items] for age, items in assign(rows, ages).items()}
         self.assertEqual(binned[255], [["a"]])
         self.assertEqual(binned[250], [["a"], ["b"]])
         self.assertEqual(binned[245], [])

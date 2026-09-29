@@ -61,25 +61,15 @@ def age_key(age_ma):
 WINDOW_MA = 2.5         # 시점 ±2.5 Myr — PaleoDEM 간격(5 Myr)의 절반
 
 
-def _longest_age():
-    from .timescale import longest_age
-    return round(longest_age(), 2)
-
-
-# 연대 범위의 상한 = **가장 긴 절의 길이**(ICS 2024 노릭절 21.6 Myr). 절 하나로 매겨진 채집지는 하나도
-# 빠지지 않게 하려는 것이다. 처음에는 20 으로 적고 "노릭절이 들어온다" 고 했는데, 노릭절은 옛 판에서
-# 18.5 였고 2024 판은 21.6 이라 노릭절 채집지 1,567 곳이 통째로 빠져 있었다(devlog 013).
-# 뷰어는 이 값을 index.json 의 rules 로 받는다 — 두 곳에 따로 적지 않는다.
-MAX_SPAN_MA = _longest_age()
-_EPS = 1e-6             # 227.3 − 205.7 = 21.600000000000023
+# **연대 범위의 상한은 없다**(015). 범위가 긴 산지도 걸친 모든 시점에 올린다. 013 까지는 "가장 긴 절
+# (21.6 Myr) 이하" 만 올렸고, 그 전에는 20 Myr 로 노릭절이 통째로 빠졌다. 연대가 절 단위로 정해지지 않은
+# **모호한 연대**(`precise = 0`)는 PBDB 시대 이름의 등급으로 가르고(intervals.py, 016) 뷰어가 세모로 그린다.
 
 
 def belongs(max_ma, min_ma, age_ma):
-    """채집지(max_ma~min_ma)가 이 시점의 지도에 오르는가."""
+    """산지(max_ma~min_ma)가 이 시점의 지도에 오르는가 — 연대 범위가 창과 겹치면."""
     if max_ma < min_ma:
         max_ma, min_ma = min_ma, max_ma
-    if max_ma - min_ma > MAX_SPAN_MA + _EPS:
-        return False
     return max_ma >= age_ma - WINDOW_MA and min_ma <= age_ma + WINDOW_MA
 
 

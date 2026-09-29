@@ -11,8 +11,9 @@ import json
 from datetime import datetime, timezone
 
 from . import climate, coastlines, countries, fossils, relief
-from .common import DERIVED, MAX_SPAN_MA, WINDOW_MA, manifest, period
+from .common import DERIVED, WINDOW_MA, manifest, period
 from .environments import classify, tree_for_index
+from .intervals import VAGUE_TYPES, load_types, vague_names
 from .timescale import containing, units
 
 COASTLINE_REACH_MA = 10.0
@@ -80,6 +81,7 @@ def build(skip_relief=False):
             "borders": borders.get(age),
             "climate": temps.get(age),
             "fossils": {"file": found.get("file"), "count": found.get("count", 0),
+                        "vague": found.get("vague", 0), "pbdb_fallback": found.get("pbdb_fallback", 0),
                         "by_env": found.get("by_env", {})},
         })
 
@@ -92,7 +94,9 @@ def build(skip_relief=False):
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "frames": sorted(frames, key=lambda f: f["age"]),
         # 채집지를 시점에 올리는 규칙. 뷰어의 분류군 찾기가 같은 값으로 거른다(두 곳에 적지 않는다).
-        "rules": {"window_ma": WINDOW_MA, "max_span_ma": MAX_SPAN_MA},
+        # vague_intervals — 모호한 등급(세·기·대 …)의 PBDB 시대 이름. 뷰어가 PBDB 에 바로 물은 결과를 같은 규칙으로 가른다(016)
+        "rules": {"window_ma": WINDOW_MA, "vague_types": list(VAGUE_TYPES),
+                  "vague_intervals": vague_names(load_types())},
         "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
                       "units": scale},
         "environments": tree_for_index(env_counts),
