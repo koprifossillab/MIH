@@ -61,12 +61,9 @@ def age_key(age_ma):
 WINDOW_MA = 2.5         # 시점 ±2.5 Myr — PaleoDEM 간격(5 Myr)의 절반
 
 
-# **연대 범위의 상한은 없다**(015). 절 하나를 넘게 매겨진 산지("후기 트라이아스기", "노릭절–래티아절" …)도
-# 그 범위가 걸친 모든 시점에 올리고, 대신 **넓은 연대**(`precise = 0`)로 표시해 뷰어가 고리 모양으로
-# 그린다. 013 까지는 "가장 긴 절(21.6 Myr) 이하" 만 올렸고, 그 전에는 20 Myr 로 노릭절이 통째로 빠졌다.
-# 절 하나 안인지는 timescale.within_one_stage(허용 1 Myr) 가 정한다. 뷰어는 같은 값을 index.json 의
-# rules 로 받는다 — 두 곳에 따로 적지 않는다.
-from .timescale import STAGE_TOLERANCE_MA  # noqa: E402
+# **연대 범위의 상한은 없다**(015). 범위가 긴 산지도 걸친 모든 시점에 올린다. 013 까지는 "가장 긴 절
+# (21.6 Myr) 이하" 만 올렸고, 그 전에는 20 Myr 로 노릭절이 통째로 빠졌다. 연대가 절 단위로 정해지지 않은
+# **모호한 연대**(`precise = 0`)는 PBDB 시대 이름의 등급으로 가르고(intervals.py, 016) 뷰어가 세모로 그린다.
 
 
 def belongs(max_ma, min_ma, age_ma):

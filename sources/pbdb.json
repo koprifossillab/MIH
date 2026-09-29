@@ -13,5 +13,10 @@
     "path": "data/sources/pbdb/collections.csv",
     "fields": "loc 는 국가 코드(cc, ISO 3166-1 alpha-2)·주 를 준다 — 국가로 거르기(devlog 003)",
     "note": "살아 있는 데이터베이스라 같은 요청도 나중에는 더 많이 돌려준다. 그래서 크기·SHA-256 을 미리 고정하지 않고, 받은 날 받은 것의 값을 data/sources/pbdb/receipt.json 에 적는다. pgm=scotese 가 요점이다 — 기본값(gplates, Wright et al. 2013)은 배경과 판 모델이 달라 점이 어긋난다."
+  },
+  "intervals": {
+    "url": "https://paleobiodb.org/data1.2/intervals/list.json?all_records&vocab=pbdb",
+    "path": "data/sources/pbdb/intervals.json",
+    "note": "PBDB 시대 이름표(약 1,900 개)와 그 등급(type: age·subage·zone·epoch·period·era …). 산지의 연대가 절 단위로 정해졌는지(age·subage·zone·subzone·chron·subchron) 아니면 모호한지(epoch·subepoch·period·era·eon·bin)를 가르는 데 쓴다 — devlog 016"
   }
 }

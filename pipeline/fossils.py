@@ -5,19 +5,21 @@ PBDB 에 바로 묻는다 — 백만 건이 넘는 산출을 미리 다 싣지 �
 
 좌표는 PBDB 가 PALEOMAP 모델(pgm=scotese)로 **산지 연대의 중간값**에서 계산한
 고좌표다. 범위가 넓은 산지는 여러 시점에 오르므로 지도 시점과 다른 때의 위치다.
-절 하나 안에 매겨진 산지는 지도 시점과 대개 1° 안이지만, 절을 넘는 **넓은 연대** 산지는
-더 어긋날 수 있다 — 그래서 `precise = 0` 으로 표시해 뷰어가 고리로 그린다(015).
+
+연대가 절 단위로 정해지지 않은 **모호한 연대** 산지("Middle Cambrian", "Late Triassic" …)는
+`precise = 0` 으로 표시해 뷰어가 세모로 그린다. 절 이름 여럿으로 정해진 범위("Norian–Rhaetian")는
+정해진 기록이다 — intervals.py, devlog 016.
 """
 import bisect
 import csv
 import json
 
 from .common import DERIVED, WINDOW_MA, age_key, environment_class, manifest, source_path
-from .timescale import stage_bounds, within_one_stage
+from .intervals import is_vague, load_types
 
 FIELDS = ["collection_no", "paleolng", "paleolat", "env", "n_occs", "collection_name",
           "early_interval", "late_interval", "max_ma", "min_ma", "formation", "environment", "cc",
-          "precise"]     # 1 = 절 하나 안에 매겨진 연대, 0 = 절을 넘는 넓은 연대
+          "precise"]     # 1 = 절 단위 이하로 정해진 연대, 0 = 모호한 연대(세·기·대 …)
 
 
 def number(value):
@@ -29,9 +31,9 @@ def number(value):
 
 def read_collections(path):
     """(max_ma, min_ma, 행) 을 낸다. 연대나 고좌표가 없는 것은 세기만 하고 버린다."""
-    stats = {"records": 0, "no_age": 0, "wide": 0, "no_paleo": 0, "environments": {}}
+    stats = {"records": 0, "no_age": 0, "vague": 0, "no_paleo": 0, "environments": {}}
     rows = []
-    bounds = stage_bounds()
+    types = load_types()
     with open(path, newline="", encoding="utf-8", errors="replace") as handle:
         for record in csv.DictReader(handle):
             stats["records"] += 1
@@ -47,8 +49,10 @@ def read_collections(path):
                 continue
             environment = (record.get("environment") or "").strip()
             stats["environments"][environment] = stats["environments"].get(environment, 0) + 1
-            precise = within_one_stage(old, young, bounds)
-            stats["wide"] += not precise
+            early = (record.get("early_interval") or "").strip()
+            late = (record.get("late_interval") or "").strip()
+            precise = not is_vague(early, late, types)
+            stats["vague"] += not precise
             rows.append((old, young, [
                 int(record["collection_no"]), round(plng, 2), round(plat, 2),
                 environment_class(environment), int(number(record.get("n_occs")) or 0),
@@ -99,8 +103,8 @@ def build(ages):
         (DERIVED / name).write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
                                     encoding="utf-8")
         counts = {k: sum(1 for r in members if r[3] == k) for k in "mto"}
-        wide = sum(1 for r in members if not r[-1])
-        entries.append({"age": age, "file": name, "count": len(members), "wide": wide, "by_env": counts})
-        print(f"  화석 {age:6.1f} Ma  {len(members):6d} 산지 (넓은 연대 {wide}, 해양 {counts['m']}, 육상 {counts['t']})")
+        vague = sum(1 for r in members if not r[-1])
+        entries.append({"age": age, "file": name, "count": len(members), "vague": vague, "by_env": counts})
+        print(f"  화석 {age:6.1f} Ma  {len(members):6d} 산지 (모호한 연대 {vague}, 해양 {counts['m']}, 육상 {counts['t']})")
     stats["used"] = len(rows)
     return entries, {"stats": stats, "receipt": receipt}

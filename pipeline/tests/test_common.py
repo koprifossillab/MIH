@@ -6,7 +6,7 @@ import unittest
 
 from pipeline.common import age_key, belongs, environment_class, parse_dem_name, period
 from pipeline.fossils import assign
-from pipeline.timescale import within_one_stage
+from pipeline.intervals import is_vague
 
 
 class DemNameTest(unittest.TestCase):
@@ -51,26 +51,38 @@ class BinningTest(unittest.TestCase):
         self.assertTrue(belongs(538.8, 251.902, 400))      # 고생대 — 넓어도 오른다(넓은 연대로 표시)
 
 
-class PrecisionTest(unittest.TestCase):
-    """절 하나 안에 드는가 — 뷰어가 넓은 연대를 고리로 그리는 기준(015)."""
+class VagueTest(unittest.TestCase):
+    """모호한 연대 — 절 단위로 정해지지 않은 PBDB 시대 이름(016). 길이가 아니라 이름의 등급으로 가른다."""
 
-    def test_single_stages(self):
-        self.assertTrue(within_one_stage(227.3, 205.7))    # 노릭절(21.6 Myr)도 절 하나다
-        self.assertTrue(within_one_stage(254.14, 251.902))  # 창싱절
-        self.assertTrue(within_one_stage(399.5, 393.47))   # 후기 에므스절(아절)
-        self.assertTrue(within_one_stage(66.0, 66.0))      # 한 점
+    TYPES = {"Norian": "age", "Rhaetian": "age", "Aptian": "age", "Albian": "age", "Lacian": "subage",
+             "Ivorian": "age", "Late Triassic": "epoch", "Middle Cambrian": "epoch", "Paleozoic": "era",
+             "Cretaceous": "period", "Early Pleistocene": "subepoch", "Pennsylvanian": "epoch"}
 
-    def test_pbdb_boundaries_within_tolerance(self):
-        # PBDB 의 우지아핑절은 259.857–254.14, ICS 2024 는 259.51 — 허용(1 Myr) 안이라 절 하나다
-        self.assertTrue(within_one_stage(259.857, 254.14))
-        self.assertTrue(within_one_stage(47.8, 41.2))      # PBDB 루테티아절(ICS 48.07–41.03)
+    def vague(self, early, late=""):
+        return is_vague(early, late, self.TYPES)
 
-    def test_wide(self):
-        self.assertFalse(within_one_stage(237, 201.4))     # 후기 트라이아스기
-        self.assertFalse(within_one_stage(227.3, 201.4))   # 노릭절–래티아절
-        self.assertFalse(within_one_stage(121.4, 100.5))   # 압트절–알바절
-        self.assertFalse(within_one_stage(66, 56))         # 팔레오세(절 셋)
+    def test_defined_ranges_are_not_vague(self):
+        self.assertFalse(self.vague("Norian"))                 # 노릭절 하나(21.6 Myr)
+        self.assertFalse(self.vague("Norian", "Rhaetian"))     # 절 둘로 정해진 범위 — 연구자가 바로잡은 것
+        self.assertFalse(self.vague("Aptian", "Albian"))
+        self.assertFalse(self.vague("Lacian"))                 # 아절
+        self.assertFalse(self.vague("Ivorian"))                # 지역 절
 
+    def test_epochs_periods_eras_are_vague(self):
+        self.assertTrue(self.vague("Middle Cambrian"))
+        self.assertTrue(self.vague("Late Triassic"))
+        self.assertTrue(self.vague("Paleozoic"))
+        self.assertTrue(self.vague("Cretaceous"))
+        self.assertTrue(self.vague("Pennsylvanian"))
+
+    def test_one_vague_end_makes_it_vague(self):
+        self.assertTrue(self.vague("Norian", "Late Triassic"))
+
+    def test_unknown_name_counts_as_defined(self):
+        self.assertFalse(self.vague("Revueltian"))
+
+
+class EmsianTest(unittest.TestCase):
     def test_emsian_reaches_400(self):
         # 에므스절(410.62–393.47, 17 Myr)은 중간값 402 라 옛 규칙으로는 400 Ma 가 비었다
         self.assertTrue(belongs(410.62, 393.47, 400))
