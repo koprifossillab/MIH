@@ -259,9 +259,10 @@
     box.innerHTML = "";
     tree.forEach(function (top) {
       var topEl = node("top", top.id, '<i class="dot ' + top.id + '"></i> ' + esc(top.ko), top.en);
+      // 환경군은 펼쳐 둔다 — 접어 두면 작은 ▸ 단추를 찾지 못해 없는 것처럼 보였다.
+      // 원 용어(셋째 단계)는 많아서 접어 둔다.
       var groupsEl = document.createElement("div");
       groupsEl.className = "kids";
-      groupsEl.hidden = true;
       top.groups.forEach(function (g) {
         var terms = g.id === "o-unlisted" ? [UNLISTED] : g.terms.map(function (t) { return t.term; });
         terms.forEach(function (t) { state.termTop[t] = top.id; state.termGroup[t] = g.id; state.enabled[t] = true; });
@@ -304,12 +305,14 @@
 
   function wireToggle(el, kids) {
     var tog = el.querySelector(".tog");
-    tog.hidden = false;
-    tog.addEventListener("click", function () {
-      kids.hidden = !kids.hidden;
+    var paint = function () {
       tog.textContent = kids.hidden ? "▸" : "▾";
       tog.setAttribute("aria-label", kids.hidden ? "펼치기" : "접기");
-    });
+      tog.setAttribute("aria-expanded", String(!kids.hidden));
+    };
+    tog.hidden = false;
+    paint();
+    tog.addEventListener("click", function () { kids.hidden = !kids.hidden; paint(); });
   }
 
   function termsUnder(level, id) {

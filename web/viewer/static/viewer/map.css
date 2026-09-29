@@ -97,10 +97,12 @@ body {
 .env .row label { display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: 0; }
 .env .row .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; padding-left: 6px; }
 .env .tog {
-  width: 16px; flex: none; border: 0; background: none; color: var(--muted); padding: 0; cursor: pointer; font-size: 11px;
+  width: 22px; height: 22px; flex: none; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--ink); padding: 0; cursor: pointer; font-size: 12px; line-height: 1;
 }
+.env .tog:hover { border-color: var(--accent); color: var(--accent); }
 .env .tog[hidden] { display: inline-block; visibility: hidden; }
-.env .kids { margin-left: 18px; }
+.env .kids { margin-left: 13px; padding-left: 12px; border-left: 1px solid var(--line); }
 .env.group > .row, .env.term > .row { font-size: 13px; }
 .env.term .en { color: var(--muted); font-size: 11px; }
 .env.zero > .row label { color: var(--muted); }
