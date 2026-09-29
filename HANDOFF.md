@@ -93,7 +93,13 @@ CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이
 ### 3.5 git 이름·이메일은 장비 계정의 것을 쓴다
 
 저장소에 `user.name`·`user.email` 을 따로 두지 않는다 — 각 Linux 계정의 전역 git 설정을 그대로 쓴다(09-30 연구자).
-paleoserver `paleoadmin` 은 `Jikhan Jung <honestjung@gmail.com>`, 09-30 까지 작업 장비의 커밋은 `koprifossillab`.
+Linux 계정과 GitHub 계정의 대응(devlog 글쓴이도 이것)은 CLAUDE.md "devlog" — paleoadmin → `koprifossillab`,
+jikhanjung → `jikhanjung`, sclee → `wetherilli`, jschoi → `Tupandactyl`(아직 저장소 협업자가 아니다).
+
+paleoserver `paleoadmin` 은 09-30 저녁부터 git·gh·push 가 모두 koprifossillab 이다. push 는 전용 SSH 키
+(`~/.ssh/id_ed25519_koprifossillab`)를 `~/.ssh/config` 의 `Host github-koprifossillab` 으로 쓰고, 이 저장소의 원격이
+`git@github-koprifossillab:koprifossillab/WegenersDream.git` 다. 그냥 `github.com` 은 옛 키(jikhanjung)로 간다 —
+paleoadmin 의 다른 저장소는 그대로다. 09-30 낮의 커밋·PR #1~#9·릴리스는 `Jikhan Jung`·jikhanjung 으로 올라갔다.
 
 ## 4. 어디까지 왔나
 
