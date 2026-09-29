@@ -19,9 +19,6 @@
 - [ ] `D:\Claude\MIH-backup\20260929\`(PBDB 사본·가공물, 85 MB)을 작업 장비 밖(NAS 또는 paleoserver)으로 옮긴다 —
       지금은 저장소와 같은 디스크다. 배포 때 가공물 zip 을 그대로 `/srv/WegenersDream/data` 에 풀면 6 분 가공을 건너뛴다
 
-## 화면
-
-
 ## 저장소
 
 - [ ] 라이선스를 정한다(LICENSE 파일이 없다). 쓰는 자료는 CC BY 4.0·퍼블릭 도메인, Leaflet 은 BSD-2
