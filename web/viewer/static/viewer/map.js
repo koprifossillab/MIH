@@ -224,37 +224,50 @@
   });
 
   // 선을 가운데 경선의 반대편(이음매)에서 끊는다. 끊는 자리는 이음매 위의 점을 보간해 양쪽 가장자리에 붙인다.
-  // 자료가 ±180° 를 따라 긋는 선분(판을 자른 자국)은 버린다 — 돌리면 바다 한가운데 경선으로 보인다.
+  // 자료가 정거원통 지도의 테두리(경도 ±180°, 위도 ±90°)를 따라 긋는 선분은 버린다 — 판 다각형을 지도 사각형에서
+  // 자른 자국이라, 몰바이데에서는 가장자리에서 극으로 가는 사선이나 돌린 뒤 바다 한가운데의 경선으로 보인다(028).
   // 좌표는 GeoJSON 순서([경도, 위도]). 이음매 위의 점은 lon0 ± (180 − ε) 로 두어 어느 쪽 가장자리인지 정한다.
-  var SEAM_EPS = 1e-7;
+  var SEAM_EPS = 1e-7, EDGE_BAND = 0.1;
+  // 테두리 선분 — 두 끝이 모두 같은 쪽 경도 ±180° 또는 위도 ±90° 의 0.1°(약 11 km) 안(또는 아래 strip). 끝점이 정확히 180° 가 아닌
+  // 자름 자국(179.941° → 180°, 18°N → 89.8°S)이 있어 띠로 잡는다. 날짜변경선 0.1° 안의 짧은 진짜 선도 버려지지만
+  // 보이지 않는 폭이다.
+  function edgeSegment(a, p) {
+    var lon = Math.abs(a[0]) >= 180 - EDGE_BAND && Math.abs(p[0]) >= 180 - EDGE_BAND && (a[0] > 0) === (p[0] > 0);
+    var lat = Math.abs(a[1]) >= 90 - EDGE_BAND && Math.abs(p[1]) >= 90 - EDGE_BAND && (a[1] > 0) === (p[1] > 0);
+    // 날짜변경선 1° 안에서 위도로 5° 넘게 곧게 오르내리는 선분도 자름 자국이다(510 Ma: −180°, 90°S → −179.657°, 30.8°N)
+    var strip = Math.abs(a[0]) >= 179 && Math.abs(p[0]) >= 179 && (a[0] > 0) === (p[0] > 0) && Math.abs(p[1] - a[1]) >= 5;
+    return lon || lat || strip;
+  }
   function splitLine(coords, lon0) {
     var out = [], cur = [];
+    function flush(next) { if (cur.length > 1) out.push(cur); cur = next || []; }
     for (var i = 0; i < coords.length; i++) {
       var p = coords[i];
       if (i > 0) {
-        var a = coords[i - 1];
-        if (Math.abs(Math.abs(a[0]) - 180) < 1e-9 && a[0] === p[0]) {
-          if (cur.length > 1) out.push(cur);
-          cur = [];
+        var a = coords[i - 1], d = p[0] - a[0];
+        if (edgeSegment(a, p) || Math.abs(d) > 180) {
+          flush();   // 테두리 자국이거나, 자료가 날짜변경선에서 건너뛴 곳(180 → −180)
         } else {
-          var ra = wrap180(a[0] - lon0), d = p[0] - a[0], rb = ra + d;
-          if (rb >= 180 || rb < -180) {
-            var edge = rb >= 180 ? 180 : -180, t = (edge - ra) / d, lat = a[1] + t * (p[1] - a[1]);
+          // 이음매를 넘는가 — 두 점을 돌린 경도가 180° 넘게 벌어지면. ra + d 로 재면 179.987 + 0.013 이
+          // 180 에 못 미쳐(부동소수점) 넘는 것을 놓친다.
+          var ra = wrap180(a[0] - lon0), rp = wrap180(p[0] - lon0);
+          if (Math.abs(rp - ra) > 180) {
+            var edge = d > 0 ? 180 : -180, t = Math.max(0, Math.min(1, (edge - ra) / d)), lat = a[1] + t * (p[1] - a[1]);
             cur.push([lon0 + edge - Math.sign(edge) * SEAM_EPS, lat]);
-            if (cur.length > 1) out.push(cur);
-            cur = [[lon0 - edge + Math.sign(edge) * SEAM_EPS, lat]];
+            flush([[lon0 - edge + Math.sign(edge) * SEAM_EPS, lat]]);
           }
         }
       }
       cur.push(p);
     }
-    if (cur.length > 1) out.push(cur);
+    flush();
     return out;
   }
-  // 정거원통이거나 가운데 경선이 0 이면 그대로. 아니면 선마다 끊은 MultiLineString 으로.
+  // 정거원통은 그대로. 몰바이데는 가운데 경선이 0 이어도 끊는다 — 경도가 꼭 +180° 인 점은 −180°(왼쪽 끝)로
+  // 넘어가 179° 의 이웃 점과 지도 폭을 가로지르는 선이 되고, 테두리 선분도 버려야 한다(028).
   function seamGeo(geo) {
-    var lon0 = state.proj === "moll" ? Mollweide.lon0 : 0;
-    if (!lon0) return geo;
+    if (state.proj !== "moll") return geo;
+    var lon0 = Mollweide.lon0;
     function cut(ft) {
       var g = ft.geometry, lines = g.type === "LineString" ? [g.coordinates] : g.type === "MultiLineString" ? g.coordinates
         : g.type === "Polygon" ? g.coordinates : g.type === "MultiPolygon" ? [].concat.apply([], g.coordinates) : null;
