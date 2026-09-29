@@ -181,6 +181,7 @@ body {
 .suggest .nm b { font-style: italic; color: var(--accent); }
 .suggest .meta { color: var(--muted); font-size: 11px; }
 .suggest .empty-sg { color: var(--muted); cursor: default; }
+.links { display: flex; gap: 14px; }
 button.link { border: 0; background: none; color: var(--accent); padding: 0; cursor: pointer; text-decoration: underline; }
 
 .sources ul { padding-left: 18px; margin: 0; font-size: 12px; }

@@ -855,13 +855,16 @@
       if (li) { e.preventDefault(); pick(+li.dataset.k); }
     });
     input.addEventListener("blur", function () { setTimeout(function () { box.hidden = true; }, 150); });
-    $("country-clear").addEventListener("click", function () { setCountry(null); });
+    $("country-clear").addEventListener("click", function () { setCountry(null); map.flyToBounds(WORLD, { duration: 0.6 }); });
+    // 시점을 옮기면 나라가 움직인다 — 그 시점의 자리로 다시 당긴다.
+    $("country-focus").addEventListener("click", function () { drawBorders(frame(), true); });
   }
 
   function setCountry(cc) {
     state.country = cc;
     $("country").value = cc ? countryName(cc) : "";
     $("country-clear").hidden = !cc;
+    $("country-focus").hidden = !cc;
     noteCountry();
     drawBorders(frame(), true);
     if (state.taxon) searchTaxon(state.taxon); else redraw();
@@ -888,7 +891,7 @@
         return ft.properties.cc === iso;
       }) });
       borderLayer.eachLayer(function (layer) { if (layer.feature.properties.cc === iso) { picked = layer; layer.bringToFront(); } });
-      if (focus && picked) map.fitBounds(picked.getBounds(), { maxZoom: 4, padding: [30, 30] });
+      if (focus) focusCountry(picked);
       $("borders-note").textContent = iso && !picked && !state.countryBy[state.country].ocean
         ? countryName(state.country) + " 땅은 " + fmtAge(want) + " 판 모델에 아직 없다(그보다 젊은 지각)." : "";
     });
@@ -975,6 +978,38 @@
     });
   });
   map.on("mouseout", function () { $("temp-readout").textContent = ""; });
+
+  // 고른 나라의 범위로 지도를 당긴다.
+  // - 국경 조각들 가운데 가장 큰 조각을 잡고, 그 둘레(20°)의 조각만 함께 넣는다 — 알래스카·하와이,
+  //   날짜변경선에서 잘린 러시아 동쪽 끝 같은 조각까지 넣으면 지구 전체로 물러난다
+  // - 국경이 없으면(대양 코드, 그 시점에 아직 없는 땅) 그 나라 채집지들의 범위로
+  function focusCountry(picked) {
+    var bounds = null;
+    if (picked) {
+      var pieces = [];
+      (picked.feature.geometry.coordinates || []).forEach(function (line) {
+        var b = L.latLngBounds(line.map(function (p) { return [p[1], p[0]]; }));
+        pieces.push({ b: b, n: line.length });
+      });
+      pieces.sort(function (a, b) { return b.n - a.n; });
+      if (pieces.length) {
+        var big = pieces[0].b;
+        bounds = L.latLngBounds(big.getSouthWest(), big.getNorthEast());
+        // 둘레는 경위도로 20° 를 더한 상자다. 비율(pad)로 넓히면 러시아처럼 넓은 나라는 지구를 다 덮는다.
+        var near = L.latLngBounds([big.getSouth() - 20, big.getWest() - 20], [big.getNorth() + 20, big.getEast() + 20]);
+        pieces.slice(1).forEach(function (p) { if (near.intersects(p.b)) bounds.extend(p.b); });
+      }
+    }
+    if (!bounds && state.payload) {
+      var col = columns(state.payload), pts = [];
+      state.payload.rows.forEach(function (row) {
+        if (row[col.cc] === state.country) pts.push([row[col.paleolat], row[col.paleolng]]);
+      });
+      if (pts.length) bounds = L.latLngBounds(pts);
+    }
+    if (!bounds) return;
+    map.flyToBounds(bounds, { maxZoom: 6, padding: [40, 40], duration: 0.8 });
+  }
 
   // ── 범례(시대 색) ───────────────────────────────────────────────────
   // 퇴적기원 색은 환경 나무의 색 견본이 범례를 겸한다. 시대 색일 때는 지금 보이는 점의 기를 적는다.
