@@ -72,10 +72,15 @@
           <label><input type="radio" name="color-by" value="age"> 시대(기)</label>
         </div>
         <label class="opacity">점 불투명도 <input type="range" id="point-opacity" min="15" max="100" step="5" value="60" aria-label="점 불투명도"> <output id="point-opacity-value">60%</output></label>
+        <div class="shapes">
+          <span><i class="shape solid"></i> 절 하나 안에 매겨진 기록</span>
+          <label><input type="checkbox" id="show-wide" checked> <i class="shape ring"></i> 넓은 연대(절을 넘는) 기록도 보기</label>
+        </div>
+        <p class="note">넓은 연대 기록은 걸친 모든 시점에 고리로 보인다 — 연대가 불완전하고, 고좌표는 연대 중간값의 것이라 지도 시점과 더 어긋날 수 있다.</p>
         <div class="legend" id="legend" aria-live="polite"></div>
         <p class="note env-count-note" id="env-count-note">수: 산지 수(지금 지도)</p>
         <div class="envtree" id="envtree"></div>
-        <p class="note">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고, 범위가 가장 긴 절(노릭절 21.6 Myr) 이하인 것이 오른다 — 범위가 넓은 산지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
+        <p class="note">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
 
       <section>

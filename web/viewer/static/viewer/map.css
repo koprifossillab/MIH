@@ -150,6 +150,14 @@ body {
 .colorby { display: flex; gap: 10px; align-items: center; font-size: 13px; margin: 2px 0 6px; }
 .colorby > span { color: var(--muted); font-size: 12px; }
 .colorby label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
+/* 점 모양 범례 — 채운 점(절 하나 안) / 고리(넓은 연대, 015) */
+.shapes { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; margin: 2px 0; }
+.shapes span, .shapes label { display: inline-flex; align-items: center; gap: 5px; }
+.shapes label { cursor: pointer; }
+.shape { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.shape.solid { background: var(--ink); opacity: .75; border: 1px solid #fff; }
+.shape.ring { border: 2px solid var(--ink); opacity: .75; }
+.pop .wide-note { color: #9a5b00; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-bottom: 4px; }
 .legend:empty { display: none; }
 .legend .leg { display: inline-flex; align-items: center; gap: 4px; }

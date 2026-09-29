@@ -289,6 +289,27 @@ def units():
     return out
 
 
+STAGE_TOLERANCE_MA = 1.0
+"""절 하나 안에 드는지 볼 때의 허용. PBDB 의 절 경계는 ICS 2024 와 조금 다르다(우지아핑절 하한 259.857 대
+259.51, 루테티아절 47.8 대 48.07 …). 허용이 없으면 PBDB 가 절 하나로 매긴 산지가 '넓은 연대' 가 된다."""
+
+
+def stage_bounds():
+    """절들의 (상한, 하한) — 젊은 것부터."""
+    return sorted((u["top"], u["base"]) for u in units() if u["rank"] == "age" or
+                  (u["rank"] == "epoch" and u["en"] == "Pridoli"))
+
+
+def within_one_stage(old, young, bounds=None, tolerance=STAGE_TOLERANCE_MA):
+    """연대 범위(old~young)가 절 하나 안에 드는가. 프리돌리세는 절이 없어 세 하나를 절처럼 본다."""
+    if old < young:
+        old, young = young, old
+    for top, base in bounds or stage_bounds():
+        if old <= base + tolerance and young >= top - tolerance:
+            return True
+    return False
+
+
 def longest_age():
     """가장 긴 절의 길이(Myr) — ICS 2024 에서는 노릭절 21.6. 채집지 연대 범위 상한의 근거다(common.py)."""
     return max(u["base"] - u["top"] for u in units() if u["rank"] == "age")

@@ -19,7 +19,7 @@
   var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
   // 산지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
   var WINDOW_MA = 2.5;
-  var MAX_SPAN_MA = 21.6;
+  var STAGE_TOLERANCE_MA = 1.0;   // 절 하나 안에 드는지 볼 때의 허용(PBDB 와 ICS 2024 의 경계 차이)
   var OLDEST = 540;
   var WORLD = [[-90, -180], [90, 180]];
   var UNKNOWN_COLOR = "#f5f5f5";
@@ -36,6 +36,7 @@
     payload: null,
     colorBy: "env",                         // 점 색: env(퇴적기원) · age(기 단위 시대)
     opacity: 0.6,                           // 점 불투명도 — 겹친 점과 밑그림이 함께 보이게
+    showWide: true, stages: [],             // 넓은 연대(절을 넘는) 산지를 보일지, 절 목록(015)
     taxonRank: "", taxonLow: false,         // 찾은 분류군의 계급 — 과 이하이면 커서만 대도 산출 목록
     grids: {},                              // 기온 격자(파일 → {w, h, data, offset})
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
@@ -85,10 +86,20 @@
     }
     return envColor(environment);
   }
-  // 산지를 보일지 — 켠 환경, 고른 나라.
-  function passes(environment, cc) {
+  // 산지를 보일지 — 켠 환경, 고른 나라, 그리고 넓은 연대를 보이기로 했는지.
+  function passes(environment, cc, precise) {
     if (!state.enabled[termKey(environment)]) return false;
+    if (!precise && !state.showWide) return false;
     return !state.country || cc === state.country;
+  }
+
+  // 연대 범위가 절 하나 안에 드는가(pipeline/timescale.within_one_stage 와 같은 규칙).
+  // 절을 넘는 넓은 연대는 걸친 모든 시점에 오르되 고리로 그려 불완전한 기록임을 밝힌다(015).
+  function isPrecise(old, young) {
+    old = Number(old); young = Number(young);
+    if (old < young) { var t = old; old = young; young = t; }
+    var tol = STAGE_TOLERANCE_MA;
+    return state.stages.some(function (s) { return old <= s.base + tol && young >= s.top - tol; });
   }
 
   // 배경색 위 글자색 — 층서표 색은 밝은 것과 짙은 것이 섞여 있다.
@@ -193,6 +204,8 @@
     Object.keys(state.kids).forEach(function (k) { state.kids[k].sort(byOldFirst); });
     state.periods = ts.units.filter(function (u) { return u.rank === "period"; })
       .sort(function (a, b) { return a.top - b.top; });
+    // 절들 — 프리돌리세는 절이 없어 세 하나를 절처럼 본다(파이프라인과 같다)
+    state.stages = ts.units.filter(function (u) { return u.rank === "age" || (u.rank === "epoch" && u.en === "Pridoli"); });
     // 시점 막대 밑의 기·세 띠 — 막대와 같게 왼쪽이 540 Ma 다.
     var rows = { period: $("strip-period"), epoch: $("strip-epoch") };
     ts.units.forEach(function (u) {
@@ -548,12 +561,25 @@
 
   // 점 하나. 테두리를 흰색으로 두어 푸른 바다 위 푸른 점, 짙은 땅 위 붉은 점도 보이게 한다.
   // 반투명하게 두어(기본 60%) 겹친 점과 그 밑의 해안선·지형이 함께 보이게 한다.
-  function marker(latlng, color, big) {
+  // **넓은 연대**(절을 넘는)는 고리로 — 채움을 거의 비우고 테두리를 그 색으로 굵게. 같은 색 체계를 지키면서
+  // 모양으로 "불완전한 기록" 을 밝힌다(015). 고좌표도 연대 중간값의 것이라 지도 시점과 더 어긋날 수 있다.
+  function marker(latlng, color, big, wide) {
     var a = state.opacity;
+    if (wide) {
+      return L.circleMarker(latlng, {
+        renderer: renderer, radius: big ? 4.8 : 3.6, weight: big ? 2 : 1.5,
+        color: color, opacity: Math.min(1, a + 0.2), fillColor: color, fillOpacity: a * 0.15,
+      });
+    }
     return L.circleMarker(latlng, {
       renderer: renderer, radius: big ? 4.6 : 3.4, weight: big ? 1.2 : 0.7,
       color: big ? "#111" : "#ffffff", opacity: Math.min(1, a + 0.15), fillColor: color, fillOpacity: a,
     });
+  }
+
+  // 산지 행이 절 하나 안인가 — 가공물에 precise 칸이 있으면 그것을, 없으면(옛 가공물) 여기서 센다.
+  function rowPrecise(row, col) {
+    return col.precise != null ? !!row[col.precise] : isPrecise(row[col.max_ma], row[col.min_ma]);
   }
 
   function columns(payload) {
@@ -572,15 +598,19 @@
     var inCountry = state.country
       ? payload.rows.filter(function (row) { return row[col.cc] === state.country; }) : payload.rows;
     syncCounts(inCountry, col);
-    var shown = 0;
+    var shown = 0, wide = 0;
     payload.rows.forEach(function (row) {
-      if (!passes(row[col.environment], row[col.cc])) return;
+      var precise = rowPrecise(row, col);
+      if (!passes(row[col.environment], row[col.cc], precise)) return;
       shown += 1;
-      marker([row[col.paleolat], row[col.paleolng]], pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]))
+      if (!precise) wide += 1;
+      marker([row[col.paleolat], row[col.paleolng]], pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]),
+             false, !precise)
         .on("click", function (e) { openCollection(e.latlng, row, col); })
         .addTo(fossilLayer);
     });
-    $("fossil-count").textContent = fmtNum(shown) + (shown === payload.rows.length ? "곳" : " / " + fmtNum(payload.rows.length) + "곳");
+    $("fossil-count").textContent = fmtNum(shown) + (shown === payload.rows.length ? "곳" : " / " + fmtNum(payload.rows.length) + "곳") +
+      (wide ? " (넓은 연대 " + fmtNum(wide) + ")" : "");
     renderLegend();
   }
 
@@ -597,7 +627,8 @@
       });
     });
     var html = "<h3>" + esc(row[col.collection_name] || "이름 없는 산지") + "</h3><dl>" +
-      "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma)</dd>" +
+      "<dt>연대</dt><dd>" + esc(interval) + " (" + row[col.max_ma] + "–" + row[col.min_ma] + " Ma)" +
+        (rowPrecise(row, col) ? "" : '<br><small class="wide-note">○ 넓은 연대 — 절 하나를 넘어 매겨진 기록. 걸친 모든 시점에 보이고, 고좌표는 연대 중간값의 것이다</small>') + "</dd>" +
       (row[col.formation] ? "<dt>지층</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
       "<dt>환경</dt><dd>" + esc(env || "기록 없음") + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
       "<dt>고좌표</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°</dd>" +
@@ -636,9 +667,10 @@
 
   // ── 분류군 찾기 ─────────────────────────────────────────────────────
   // 산지 점과 같은 규칙으로 거른다(pipeline/common.py 의 belongs): 연대 범위가 시점
-  // ±2.5 Myr 창과 겹치고, 범위가 가장 긴 절(21.6 Myr) 이하. PBDB 의 overlap 도 같은 뜻이다.
+  // ±2.5 Myr 창과 겹치면. PBDB 의 overlap 도 같은 뜻이다. 넓은 연대는 고리로 그린다(015).
   var COLUMNS = { collection_no: 0, paleolng: 1, paleolat: 2, env: 3, n_occs: 4, collection_name: 5,
-                  early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12 };
+                  early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12,
+                  precise: 13 };
   var taxonSeq = 0;
   // 과 이하 — 커서만 대도 산출 목록이 뜨는 계급. 그 위(목·강…)는 산지 하나에 수십~수백 건이라 요약만.
   var LOW_RANKS = { family: 1, subfamily: 1, tribe: 1, subtribe: 1, genus: 1, subgenus: 1, species: 1, subspecies: 1 };
@@ -673,7 +705,7 @@
   //
   // 퇴적기원으로 거르면 수도 따라가야 한다(014). diversity 는 우리 환경군으로 거를 수 없으므로, 산출이
   // OCC_LIMIT 건 이하인 분류군은 **산출 기록 자체(나이·환경)** 를 한 번 받아 두고 브라우저에서 센다 —
-  // 그러면 지도와 같은 규칙(창과 겹침, 가장 긴 절 이하)으로 셀 수 있다. 그보다 많은 분류군(삼엽충 4.5 만)은
+  // 그러면 지도와 같은 규칙(창과 겹침, 넓은 연대는 걸친 모든 시점)으로 셀 수 있다. 그보다 많은 분류군(삼엽충 4.5 만)은
   // 절 단위 수를 그대로 쓰고 퇴적기원이 수에 반영되지 않는다고 적는다.
   var OCC_LIMIT = 5000;
 
@@ -721,12 +753,18 @@
       });
     };
     if (base.occs) {
-      // 산출 하나하나 — 켠 환경만, 지도와 같은 규칙으로
+      // 산출 하나하나 — 켠 환경만, 지도와 같은 규칙으로. 넓은 연대는(보이기로 했으면) 걸친 모든 단위·시점에
+      // 더한다(015) — 지도에 그 모든 시점에서 보이는 것과 맞춘다.
       base.occs.forEach(function (o) {
         if (!state.enabled[termKey(o.env)]) return;
+        var precise = isPrecise(o.old, o.young);
+        if (!precise && !state.showWide) return;
         total += 1;
-        if (o.old - o.young > MAX_SPAN_MA + 1e-6) return;
-        addUnits((o.old + o.young) / 2, 1);
+        if (precise) addUnits((o.old + o.young) / 2, 1);
+        else Object.keys(state.units).forEach(function (id) {
+          var u = state.units[id];
+          if (o.old > u.top && o.young < u.base) units[id] = (units[id] || 0) + 1;
+        });
         state.frames.forEach(function (f, j) {
           if (o.old >= f.age - WINDOW_MA && o.young <= f.age + WINDOW_MA) frames[j] = (frames[j] || 0) + 1;
         });
@@ -882,13 +920,13 @@
       // 산출을 산지로 묶는다 — 한 산지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
       var byColl = {}, rows = [];
       (data.records || []).forEach(function (r) {
-        if (r.max_ma - r.min_ma > MAX_SPAN_MA + 1e-6) return;     // 227.3 − 205.7 = 21.600000000000023
+        // 연대 범위의 상한은 없다 — 넓은 연대는 precise = 0 으로 고리로 그린다(015)
         if (r.paleolat == null || r.paleolng == null) return;
         var row = byColl[r.collection_no];
         if (!row) {
           row = byColl[r.collection_no] = [r.collection_no, r.paleolng, r.paleolat, "", 0, r.collection_name,
             r.early_interval, r.late_interval || "", r.max_ma, r.min_ma, r.formation || "",
-            r.environment || "", r.cc || ""];
+            r.environment || "", r.cc || "", isPrecise(r.max_ma, r.min_ma) ? 1 : 0];
           row.matched = [];
           row.occs = [];
           rows.push(row);
@@ -964,17 +1002,23 @@
     var col = columns(payload), own = {}, n = 0, inside = $("coeval-rule").value === "inside";
     rows.forEach(function (row) { own[row[COLUMNS.collection_no]] = true; });
     payload.rows.forEach(function (row) {
+      var precise = rowPrecise(row, col);
       if (own[row[col.collection_no]] || !state.enabled[termKey(row[col.environment])]) return;
+      if (!precise && !state.showWide) return;
       var old = row[col.max_ma], young = row[col.min_ma];
       // 겹침: 연대 범위가 구간에 걸치면 / 안: 연대 범위 전체가 구간 안에 들면
       if (inside ? (old > span.old + 1e-6 || young < span.young - 1e-6) : (old < span.young || young > span.old)) return;
       n += 1;
-      var a = state.opacity * 0.6;
-      L.circleMarker([row[col.paleolat], row[col.paleolng]], {
+      var a = state.opacity * 0.6, color = pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]);
+      L.circleMarker([row[col.paleolat], row[col.paleolng]], precise ? {
         renderer: renderer, radius: 2.6, weight: 0.6, color: "#ffffff", opacity: Math.min(1, a + 0.15),
-        fillColor: pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]), fillOpacity: a,
+        fillColor: color, fillOpacity: a,
+      } : {
+        renderer: renderer, radius: 2.8, weight: 1.1, color: color, opacity: Math.min(1, a + 0.2),
+        fillColor: color, fillOpacity: a * 0.15,
       }).bindTooltip("<b>" + esc(row[col.collection_name] || "이름 없는 산지") + "</b><small>" +
-                     esc(row[col.early_interval]) + " · " + esc(countryName(row[col.cc])) + " · 같은 시대 다른 산지</small>",
+                     esc(row[col.early_interval]) + (row[col.late_interval] ? "–" + esc(row[col.late_interval]) : "") +
+                     " · " + esc(countryName(row[col.cc])) + " · 같은 시대 다른 산지" + (precise ? "" : " · ○ 넓은 연대") + "</small>",
                      { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { openCollection(e.latlng, row, col); })
         .addTo(taxonLayer);
@@ -990,17 +1034,19 @@
     var rows = state.taxa;
     if (!state.taxon || !rows) return;
     var shown = 0, occs = 0, visible = [];
-    rows.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc])) visible.push(row); });
-    // 환경 칸의 수 = 이 지도에서 찾은 분류군의 산출 건수(나라는 거르되 환경은 거르지 않고 센다)
-    syncCounts(rows.filter(function (row) { return !state.country || row[COLUMNS.cc] === state.country; }),
-               COLUMNS, function (row) { return row[COLUMNS.n_occs]; });
+    var ok = function (row) { return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise]); };
+    rows.forEach(function (row) { if (ok(row)) visible.push(row); });
+    // 환경 칸의 수 = 이 지도에서 찾은 분류군의 산출 건수(나라·넓은 연대는 거르되 환경은 거르지 않고 센다)
+    syncCounts(rows.filter(function (row) {
+      return (!state.country || row[COLUMNS.cc] === state.country) && (row[COLUMNS.precise] || state.showWide);
+    }), COLUMNS, function (row) { return row[COLUMNS.n_occs]; });
     drawCoeval(visible);            // 먼저 그려 찾은 분류군의 점 밑에 깐다
     rows.forEach(function (row) {
-      if (!passes(row[COLUMNS.environment], row[COLUMNS.cc])) return;
+      if (!ok(row)) return;
       shown += 1;
       occs += row[COLUMNS.n_occs];
       marker([row[COLUMNS.paleolat], row[COLUMNS.paleolng]],
-             pointColor(row[COLUMNS.environment], row[COLUMNS.max_ma], row[COLUMNS.min_ma]), true)
+             pointColor(row[COLUMNS.environment], row[COLUMNS.max_ma], row[COLUMNS.min_ma]), true, !row[COLUMNS.precise])
         .bindTooltip(function () { return taxonTip(row); },
                      { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { openCollection(e.latlng, row, COLUMNS); })
@@ -1359,10 +1405,10 @@
     var seen = {};
     var add = function (maxMa, minMa) { var p = periodOf(maxMa, minMa); if (p) seen[p.id] = p; };
     if (state.taxon && state.taxa) {
-      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
+      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
     } else if (state.payload) {
       var col = columns(state.payload);
-      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc])) add(row[col.max_ma], row[col.min_ma]); });
+      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col))) add(row[col.max_ma], row[col.min_ma]); });
     }
     box.innerHTML = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst).map(function (p) {
       return '<span class="leg"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
@@ -1382,6 +1428,11 @@
     });
     $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
     $("coeval").addEventListener("change", drawTaxa);
+    $("show-wide").addEventListener("change", function () {
+      state.showWide = this.checked;
+      if (state.taxon) computeDist();
+      redraw();
+    });
     $("coeval-rule").addEventListener("change", drawTaxa);
     $("play").addEventListener("change", function () {
       clearInterval(state.playing);
@@ -1433,7 +1484,10 @@
     getJSON(DATA + "index.json").then(function (index) {
       // 슬라이더 왼쪽이 옛날이다.
       state.frames = index.frames.slice().sort(function (a, b) { return b.age - a.age; });
-      if (index.rules) { WINDOW_MA = index.rules.window_ma; MAX_SPAN_MA = index.rules.max_span_ma; }
+      if (index.rules) {
+        WINDOW_MA = index.rules.window_ma;
+        if (index.rules.stage_tolerance_ma != null) STAGE_TOLERANCE_MA = index.rules.stage_tolerance_ma;
+      }
       BUILT = index.built_at || "";
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);

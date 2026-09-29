@@ -4,8 +4,9 @@
 """
 import unittest
 
-from pipeline.common import MAX_SPAN_MA, age_key, belongs, environment_class, parse_dem_name, period
+from pipeline.common import age_key, belongs, environment_class, parse_dem_name, period
 from pipeline.fossils import assign
+from pipeline.timescale import within_one_stage
 
 
 class DemNameTest(unittest.TestCase):
@@ -40,16 +41,35 @@ class BinningTest(unittest.TestCase):
         self.assertTrue(belongs(247.5, 247.5, 250))        # 창 끝은 넣는다
         self.assertFalse(belongs(247.4, 247.4, 250))
         self.assertTrue(belongs(270, 251, 260))            # 19 Myr — 범위가 창과 겹친다
-        self.assertFalse(belongs(274, 251, 260))           # 23 Myr — 가장 긴 절보다 넓다
         self.assertTrue(belongs(248, 252, 250))            # 뒤집혀 적힌 것도 받는다
 
-    def test_span_limit_is_longest_stage(self):
-        # 노릭절(227.3–205.7, 21.6 Myr)은 절 하나다 — 절 하나로 매겨진 채집지는 빠지면 안 된다(013).
-        # 부동소수로는 21.600000000000023 이라 허용이 없으면 빠진다.
-        self.assertAlmostEqual(MAX_SPAN_MA, 21.6)
-        self.assertTrue(belongs(227.3, 205.7, 205))
-        self.assertTrue(belongs(227.3, 205.7, 225))
-        self.assertFalse(belongs(227.3, 205.6, 225))       # 21.7 Myr
+    def test_no_span_limit(self):
+        # 015 — 연대 범위의 상한이 없다. 후기 트라이아스기(237–201.4)는 걸친 모든 시점에 오른다
+        self.assertTrue(belongs(237, 201.4, 205))
+        self.assertTrue(belongs(237, 201.4, 235))
+        self.assertFalse(belongs(237, 201.4, 240))         # 창(237.5–242.5)과 안 겹친다
+        self.assertTrue(belongs(538.8, 251.902, 400))      # 고생대 — 넓어도 오른다(넓은 연대로 표시)
+
+
+class PrecisionTest(unittest.TestCase):
+    """절 하나 안에 드는가 — 뷰어가 넓은 연대를 고리로 그리는 기준(015)."""
+
+    def test_single_stages(self):
+        self.assertTrue(within_one_stage(227.3, 205.7))    # 노릭절(21.6 Myr)도 절 하나다
+        self.assertTrue(within_one_stage(254.14, 251.902))  # 창싱절
+        self.assertTrue(within_one_stage(399.5, 393.47))   # 후기 에므스절(아절)
+        self.assertTrue(within_one_stage(66.0, 66.0))      # 한 점
+
+    def test_pbdb_boundaries_within_tolerance(self):
+        # PBDB 의 우지아핑절은 259.857–254.14, ICS 2024 는 259.51 — 허용(1 Myr) 안이라 절 하나다
+        self.assertTrue(within_one_stage(259.857, 254.14))
+        self.assertTrue(within_one_stage(47.8, 41.2))      # PBDB 루테티아절(ICS 48.07–41.03)
+
+    def test_wide(self):
+        self.assertFalse(within_one_stage(237, 201.4))     # 후기 트라이아스기
+        self.assertFalse(within_one_stage(227.3, 201.4))   # 노릭절–래티아절
+        self.assertFalse(within_one_stage(121.4, 100.5))   # 압트절–알바절
+        self.assertFalse(within_one_stage(66, 56))         # 팔레오세(절 셋)
 
     def test_emsian_reaches_400(self):
         # 에므스절(410.62–393.47, 17 Myr)은 중간값 402 라 옛 규칙으로는 400 Ma 가 비었다

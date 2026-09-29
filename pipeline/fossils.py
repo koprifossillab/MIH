@@ -1,21 +1,23 @@
-"""PBDB 채집지 → 시점마다 화석 점 JSON 하나.
+"""PBDB 산지 → 시점마다 화석 점 JSON 하나.
 
-점 하나는 채집지(collection) 하나다. 산출(occurrence)은 점을 눌렀을 때 뷰어가
+점 하나는 산지(collection) 하나다. 산출(occurrence)은 점을 눌렀을 때 뷰어가
 PBDB 에 바로 묻는다 — 백만 건이 넘는 산출을 미리 다 싣지 않으려는 것이다.
 
-좌표는 PBDB 가 PALEOMAP 모델(pgm=scotese)로 **채집지 연대의 중간값**에서 계산한
-고좌표다. 범위가 넓은 채집지는 여러 시점에 오르므로 지도 시점과 최대 약 12 Myr
-어긋난다. 판이 그동안 움직이는 거리는 대개 1° 안이고, PBDB 의 모델 판본과 배경의
-판본이 달라 생기는 차이(EarthThruTime3D 가 잰 중앙값 1.1°)와 같은 크기다. devlog 001.
+좌표는 PBDB 가 PALEOMAP 모델(pgm=scotese)로 **산지 연대의 중간값**에서 계산한
+고좌표다. 범위가 넓은 산지는 여러 시점에 오르므로 지도 시점과 다른 때의 위치다.
+절 하나 안에 매겨진 산지는 지도 시점과 대개 1° 안이지만, 절을 넘는 **넓은 연대** 산지는
+더 어긋날 수 있다 — 그래서 `precise = 0` 으로 표시해 뷰어가 고리로 그린다(015).
 """
 import bisect
 import csv
 import json
 
-from .common import DERIVED, MAX_SPAN_MA, WINDOW_MA, age_key, environment_class, manifest, source_path
+from .common import DERIVED, WINDOW_MA, age_key, environment_class, manifest, source_path
+from .timescale import stage_bounds, within_one_stage
 
 FIELDS = ["collection_no", "paleolng", "paleolat", "env", "n_occs", "collection_name",
-          "early_interval", "late_interval", "max_ma", "min_ma", "formation", "environment", "cc"]
+          "early_interval", "late_interval", "max_ma", "min_ma", "formation", "environment", "cc",
+          "precise"]     # 1 = 절 하나 안에 매겨진 연대, 0 = 절을 넘는 넓은 연대
 
 
 def number(value):
@@ -27,8 +29,9 @@ def number(value):
 
 def read_collections(path):
     """(max_ma, min_ma, 행) 을 낸다. 연대나 고좌표가 없는 것은 세기만 하고 버린다."""
-    stats = {"records": 0, "no_age": 0, "too_wide": 0, "no_paleo": 0, "environments": {}}
+    stats = {"records": 0, "no_age": 0, "wide": 0, "no_paleo": 0, "environments": {}}
     rows = []
+    bounds = stage_bounds()
     with open(path, newline="", encoding="utf-8", errors="replace") as handle:
         for record in csv.DictReader(handle):
             stats["records"] += 1
@@ -38,15 +41,14 @@ def read_collections(path):
                 continue
             if old < young:
                 old, young = young, old
-            if old - young > MAX_SPAN_MA + 1e-6:      # common.belongs 와 같은 허용(21.6 의 부동소수 오차)
-                stats["too_wide"] += 1
-                continue
             plng, plat = number(record.get("paleolng")), number(record.get("paleolat"))
             if plng is None or plat is None:
                 stats["no_paleo"] += 1
                 continue
             environment = (record.get("environment") or "").strip()
             stats["environments"][environment] = stats["environments"].get(environment, 0) + 1
+            precise = within_one_stage(old, young, bounds)
+            stats["wide"] += not precise
             rows.append((old, young, [
                 int(record["collection_no"]), round(plng, 2), round(plat, 2),
                 environment_class(environment), int(number(record.get("n_occs")) or 0),
@@ -57,6 +59,7 @@ def read_collections(path):
                 (record.get("formation") or "").strip(),
                 environment,
                 (record.get("cc") or "").strip(),       # PBDB 국가 코드(GB 는 UK, 대양은 O1~O7)
+                1 if precise else 0,
             ]))
     return rows, stats
 
@@ -96,7 +99,8 @@ def build(ages):
         (DERIVED / name).write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
                                     encoding="utf-8")
         counts = {k: sum(1 for r in members if r[3] == k) for k in "mto"}
-        entries.append({"age": age, "file": name, "count": len(members), "by_env": counts})
-        print(f"  화석 {age:6.1f} Ma  {len(members):6d} 채집지 (바다 {counts['m']}, 뭍 {counts['t']})")
+        wide = sum(1 for r in members if not r[-1])
+        entries.append({"age": age, "file": name, "count": len(members), "wide": wide, "by_env": counts})
+        print(f"  화석 {age:6.1f} Ma  {len(members):6d} 산지 (넓은 연대 {wide}, 해양 {counts['m']}, 육상 {counts['t']})")
     stats["used"] = len(rows)
     return entries, {"stats": stats, "receipt": receipt}
