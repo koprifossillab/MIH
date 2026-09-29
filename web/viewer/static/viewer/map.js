@@ -605,7 +605,7 @@
     var a = state.opacity;
     var options = {
       renderer: renderer, radius: big ? 4.6 : 3.4, weight: big ? 1.2 : 0.7,
-      color: big ? "#111" : "#ffffff", opacity: Math.min(1, a + 0.15), fillColor: color, fillOpacity: a,
+      color: "#ffffff", opacity: Math.min(1, a + 0.15), fillColor: color, fillOpacity: a,
     };
     return vague ? new L.TriangleMarker(latlng, options) : L.circleMarker(latlng, options);
   }
