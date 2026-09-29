@@ -4,11 +4,16 @@
 어디에 함정이 있는지**를 적는다. **지난 일은 여기 안 남긴다** — 그것은 `devlog/` 의 몫이고, 여기는
 **지금**만 말한다.
 
-**브랜치** `main` = `0.9.0` (09-29 병합) · **`work/20260929-koprifossillab` = `0.10.0` 이 병합을 기다린다** —
-연대 범위 길이로 거르는 막대(018, 가공물은 그대로). 병합은 사람이 정한다. 0.9.0 은 모호한 연대 산지를
-세모로(016), 화석 좌표를 시점마다 v19o 로 계산(017). **가공물을 다시 만들어야 한다** — `python -m pipeline fetch`
-(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`. 화석 파일에 `precise`·`rotated` 칸.
+**브랜치** `main` = `0.10.1` (09-29 작업 마감에 병합) · 병합을 기다리는 브랜치는 없다. 다음 코드 작업은 그날의
+새 브랜치(`work/<YYYYMMDD>-koprifossillab`)를 `main` 에서 만든다. 0.9.0 부터 모호한 연대 산지를 세모로(016),
+화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
+`python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
+화석 파일에 `precise`·`rotated` 칸이 있어야 한다.
 **아직 어디에도 배포하지 않았다** — 연구소 서버(paleoserver)에 올리는 일은 TODOs 첫 줄이다.
+
+**git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(작업 장비) — 이날의 PBDB 사본·`data/state`(16 MB)와
+가공물 전체(69 MB), 되살리는 법은 그 안의 README. PBDB 사본은 다시 받을 수 없어 둔 것이다. 같은 디스크라
+장비를 잃으면 함께 잃는다 — NAS 나 paleoserver 로 옮기는 일은 TODOs.
 
 ## 1. 한 줄 요약
 
