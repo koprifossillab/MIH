@@ -39,6 +39,7 @@ body {
   padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
 .brand strong { font-size: 18px; letter-spacing: .04em; color: var(--accent); }
+.brand .ver { margin-left: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .brand .sub { margin-left: 6px; color: var(--muted); }
 .now { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .now .age { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
