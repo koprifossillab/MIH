@@ -344,15 +344,19 @@
     drawClimate(f);
     loadFossils(f);
     state.taxonReady = state.taxon ? searchTaxon(state.taxon) : null;
+    // 옆 시점의 배경과 산지 자료를 미리 받아 둔다 — 밀대를 한 칸 옮길 때 기다리지 않게(021)
     [state.i - 1, state.i + 1].forEach(function (j) {
-      if (state.frames[j]) { var img = new Image(); img.src = reliefUrl(state.frames[j]); }
+      var g = state.frames[j];
+      if (!g) return;
+      var img = new Image(); img.src = reliefUrl(g);
+      if (g.fossils && g.fossils.file) getJSON(dataUrl(g.fossils.file)).catch(function () { /* 그 시점에 가면 다시 묻는다 */ });
     });
   }
 
+  // 옛 해안선은 새 것이 올 때까지 둔다 — 먼저 지우면 받는 동안 비어 깜박인다(021)
   function drawCoast(f) {
-    coastLayer.clearLayers();
     var note = $("coast-note");
-    if (!f.coastline) { note.textContent = "이 시점 ±10 Myr 안에 해안선 자료가 없다."; return; }
+    if (!f.coastline) { coastLayer.clearLayers(); note.textContent = "이 시점 ±10 Myr 안에 해안선 자료가 없다."; return; }
     note.textContent = f.coastline.age === f.age
       ? "PaleoCoastlines " + fmtAge(f.coastline.age) + "."
       : "가장 가까운 " + fmtAge(f.coastline.age) + " 해안선을 그었다.";
@@ -361,7 +365,7 @@
       if (frame().age !== want) return;
       coastLayer.clearLayers();
       if ($("coast").checked) coastLayer.addData(geo);
-    });
+    }).catch(function () { if (frame().age === want) coastLayer.clearLayers(); });
   }
 
   // ── 퇴적 환경 나무 ──────────────────────────────────────────────────
@@ -579,11 +583,13 @@
   }
 
   // ── 화석 산지 ─────────────────────────────────────────────────────
+  // 자료(state.payload)는 곧바로 비우지만 화면의 점은 새 자료가 올 때까지 둔다 — 먼저 지우면
+  // 처음 가 보는 시점마다 받는 동안(사내망에서 0.1~0.3 초) 점이 사라져 깜박인다(021).
+  // state.payload 를 남기지 않는 것은 분류군 찾기가 그것을 이 시점의 좌표로 믿고 쓰기 때문이다(017).
   function loadFossils(f) {
     $("fossil-count").textContent = "";
     state.payload = null;
-    fossilLayer.clearLayers();
-    if (!f.fossils || !f.fossils.file) return;
+    if (!f.fossils || !f.fossils.file) { fossilLayer.clearLayers(); return; }
     var want = f.age;
     getJSON(dataUrl(f.fossils.file)).then(function (payload) {
       if (frame().age !== want) return;
@@ -594,7 +600,7 @@
       drawFossils();
       // 찾은 분류군도 산지 자료의 좌표(이 시점 나이로 계산한 것, 017)로 옮기고, 같은 시대 다른 산지를 그린다
       if (state.taxon) drawTaxa();
-    });
+    }).catch(function () { if (frame().age === want) fossilLayer.clearLayers(); });
   }
 
   // 점 하나. 테두리를 흰색으로 두어 푸른 바다 위 푸른 점, 짙은 땅 위 붉은 점도 보이게 한다.
