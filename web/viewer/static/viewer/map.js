@@ -34,6 +34,7 @@
     taxonRank: "", taxonLow: false,         // 찾은 분류군의 계급 — 과 이하이면 커서만 대도 산출 목록
     grids: {},                              // 기온 격자(파일 → {w, h, data, offset})
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
+    dist: null,                             // 찾은 분류군의 산출 시대 분포(절 단위, PBDB diversity)
     labels: { env: {} }, editable: false, needsKey: false, editing: false,
   };
   var cache = {};
@@ -226,11 +227,15 @@
       lists[rank].forEach(function (u) {
         var b = document.createElement("button");
         b.type = "button";
-        b.className = "chip" + (picked[rank] && picked[rank].id === u.id ? " on" : "") + (here[u.id] ? " here" : "");
+        var n = state.dist && state.taxon ? state.dist.units[u.id] || 0 : null;
+        b.className = "chip" + (picked[rank] && picked[rank].id === u.id ? " on" : "") + (here[u.id] ? " here" : "") +
+          (n === 0 ? " none-found" : "");
         b.style.background = u.color;
         b.style.color = ink(u.color);
         b.textContent = chipName(u);
-        b.title = u.full + " · " + u.en + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? " · 지금 지도" : "");
+        if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
+        b.title = u.full + " · " + u.en + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? " · 지금 지도" : "") +
+          (n !== null ? " · " + state.taxon + " 산출 " + fmtNum(n) + "건" : "");
         b.addEventListener("click", function () { focusUnit(u); });
         box.appendChild(b);
       });
@@ -649,11 +654,93 @@
     return head + "<ul>" + items.join("") + "</ul>";
   }
 
+  // ── 산출 시대 분포 ──────────────────────────────────────────────────
+  // PBDB occs/diversity 가 절(stage)마다 산출 수(noc)를 한 번에 준다 — 삼엽충처럼 산출이 5만 건인
+  // 분류군도 응답이 수 KB 다. 이것으로 (1) 산출이 있는 기를 아이콘으로 (2) 층서표 칩에 수를
+  // (3) 시점 막대 밑에 시점별 산출 막대를 그리고 (4) 차례로 보기(011)의 시점 목록을 만든다.
+  // PBDB 의 절 경계는 ICS 2024 와 조금 달라서, 절을 가운데 나이로 우리 단위에 넣는다.
+  function loadDistribution(name) {
+    var key = name + "|" + (state.country || "");
+    if (state.dist && state.dist.key === key) return Promise.resolve(state.dist);
+    var cc = state.country ? "&cc=" + encodeURIComponent(state.country) : "";
+    return Promise.all([
+      getJSON(PBDB + "occs/diversity.json?base_name=" + encodeURIComponent(name) + cc + "&count=genera&time_reso=stage"),
+      getJSON(PBDB + "taxa/single.json?name=" + encodeURIComponent(name) + "&show=app&vocab=pbdb").catch(function () { return {}; }),
+    ]).then(function (both) {
+      if (state.taxon !== name) return null;
+      var stages = (both[0].records || []).filter(function (r) { return +r.noc > 0; }).map(function (r) {
+        return { name: r.nam, base: +r.eag, top: +r.lag, n: +r.noc };
+      });
+      var units = {}, frames = {}, total = 0;
+      stages.forEach(function (s) {
+        total += s.n;
+        var mid = (s.base + s.top) / 2;
+        Object.keys(state.units).forEach(function (id) {
+          var u = state.units[id];
+          if (mid > u.top && mid <= u.base) units[id] = (units[id] || 0) + s.n;
+        });
+      });
+      // 시점의 창(±2.5 Myr)과 겹치는 절의 산출을 더한다 — 채집지 점과 같은 겹침 규칙이다.
+      state.frames.forEach(function (f, j) {
+        var n = 0;
+        stages.forEach(function (s) { if (s.base >= f.age - WINDOW_MA && s.top <= f.age + WINDOW_MA) n += s.n; });
+        if (n) frames[j] = n;
+      });
+      state.dist = { key: key, stages: stages, units: units, frames: frames, total: total,
+                     app: (both[1].records || [])[0] || null };
+      renderDist();
+      renderChrono();
+      return state.dist;
+    }).catch(function () { state.dist = null; renderDist(); return null; });
+  }
+
+  function renderDist() {
+    var d = state.dist, box = $("taxon-dist"), strip = $("strip-taxon");
+    box.hidden = !d || !state.taxon;
+    strip.hidden = box.hidden;
+    strip.innerHTML = "";
+    if (box.hidden) return;
+    $("dist-total").textContent = "산출 " + fmtNum(d.total) + "건" + (state.country ? " · " + countryName(state.country) : "");
+    // 산출이 있는 기 — 층서표 색 아이콘에 수를 붙인다. 누르면 그 기의 가운데 지도로 간다.
+    var periods = state.periods.slice().sort(byOldFirst).filter(function (p) { return d.units[p.id]; });
+    $("dist-periods").innerHTML = "";
+    periods.forEach(function (p) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip";
+      b.style.background = p.color;
+      b.style.color = ink(p.color);
+      b.innerHTML = esc(p.ko) + '<span class="cnt">' + fmtNum(d.units[p.id]) + "</span>";
+      b.title = p.full + " · 산출 " + fmtNum(d.units[p.id]) + "건";
+      b.addEventListener("click", function () { focusUnit(p); });
+      $("dist-periods").appendChild(b);
+    });
+    var a = d.app;
+    $("dist-note").textContent = !periods.length ? "PBDB 에 절 단위로 매겨진 산출이 없다." :
+      (a && a.early_interval ? "처음 " + a.early_interval + " (" + a.firstapp_max_ma + "–" + a.firstapp_min_ma + " Ma) · 마지막 " +
+        a.late_interval + " (" + a.lastapp_max_ma + "–" + a.lastapp_min_ma + " Ma). " : "") +
+      "칩과 막대의 수는 PBDB 가 절 단위로 센 산출이다 — 절보다 넓게 매겨진 산출은 빠진다.";
+    // 시점 막대 밑 — 시점마다 로그 높이의 막대
+    var max = 0;
+    Object.keys(d.frames).forEach(function (j) { max = Math.max(max, d.frames[j]); });
+    Object.keys(d.frames).forEach(function (j) {
+      var f = state.frames[j], n = d.frames[j];
+      var bar = document.createElement("span");
+      bar.style.left = ((OLDEST - Math.min(f.age, OLDEST)) / OLDEST * 100) + "%";
+      bar.style.height = Math.max(2, Math.round(Math.log(1 + n) / Math.log(1 + max) * 14)) + "px";
+      bar.title = fmtAge(f.age) + " · 산출 " + fmtNum(n) + "건";
+      bar.addEventListener("click", function () { show(+j); });
+      strip.appendChild(bar);
+    });
+  }
+
   function searchTaxon(name) {
     var f = frame();
     var seq = ++taxonSeq;
+    if (state.taxon !== name) state.dist = null;
     state.taxon = name;
     state.taxa = null;
+    loadDistribution(name);
     lookupRank(name).then(function (rank) {
       if (seq !== taxonSeq) return;
       state.taxonRank = rank;
@@ -730,6 +817,9 @@
     state.taxa = null;
     state.taxonRank = "";
     state.taxonLow = false;
+    state.dist = null;
+    renderDist();
+    renderChrono();
     taxonLayer.clearLayers();
     $("taxon").value = "";
     $("taxon-clear").hidden = true;

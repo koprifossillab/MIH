@@ -39,6 +39,7 @@
             <div class="strip" id="strip" aria-hidden="true">
               <div class="strip-row" id="strip-period"></div>
               <div class="strip-row" id="strip-epoch"></div>
+              <div class="strip-row taxon-row" id="strip-taxon" hidden></div>
             </div>
           </div>
           <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근">▶</button>
@@ -87,6 +88,11 @@
           <button type="submit">찾기</button>
         </form>
         <p class="note" id="taxon-status">두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.</p>
+        <div class="dist" id="taxon-dist" hidden>
+          <h3>산출 시대 <small id="dist-total"></small></h3>
+          <div class="chips" id="dist-periods"></div>
+          <p class="note" id="dist-note"></p>
+        </div>
         <button type="button" id="taxon-clear" class="link" hidden>분류군 지우기</button>
       </section>
 
