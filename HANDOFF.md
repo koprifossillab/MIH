@@ -98,8 +98,9 @@ jikhanjung → `jikhanjung`, sclee → `wetherilli`, jschoi → `Tupandactyl`(�
 
 paleoserver `paleoadmin` 은 09-30 저녁부터 git·gh·push 가 모두 koprifossillab 이다. push 는 전용 SSH 키
 (`~/.ssh/id_ed25519_koprifossillab`)를 `~/.ssh/config` 의 `Host github-koprifossillab` 으로 쓰고, 이 저장소의 원격이
-`git@github-koprifossillab:koprifossillab/WegenersDream.git` 다. 그냥 `github.com` 은 옛 키(jikhanjung)로 간다 —
-paleoadmin 의 다른 저장소는 그대로다. 09-30 낮의 커밋·PR #1~#9·릴리스는 `Jikhan Jung`·jikhanjung 으로 올라갔다.
+`git@github-koprifossillab:koprifossillab/WegenersDream.git` 다. 기본 `github.com` 도 이 키(koprifossillab)다 —
+옛 키(jikhanjung)는 `Host github-jikhanjung` 으로 남겼다. **jikhanjung 소유 저장소(SSH 원격)는 koprifossillab 으로
+push·비공개 fetch 가 안 된다** — 손볼 때 원격을 `git@github-jikhanjung:…` 으로 바꾼다. 09-30 낮의 커밋·PR #1~#9·릴리스는 `Jikhan Jung`·jikhanjung 으로 올라갔다.
 
 ## 4. 어디까지 왔나
 
