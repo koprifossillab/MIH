@@ -22,37 +22,21 @@ def source_path(relative):
 
 
 # ── 지질시대 ──────────────────────────────────────────────────────────
-# 기(Period)의 하한, Ma. ICS 국제층서표 v2024/12 를 따르고, 이름은 대한지질학회가
-# 옮긴 한글판 표기다. 시점 이름표에만 쓰므로 기 단위로 충분하다.
-PERIODS = [
-    (2.58, "제4기", "Quaternary"),
-    (23.03, "신진기", "Neogene"),
-    (66.0, "고진기", "Paleogene"),
-    (143.1, "백악기", "Cretaceous"),
-    (201.4, "쥐라기", "Jurassic"),
-    (251.902, "트라이아스기", "Triassic"),
-    (298.9, "페름기", "Permian"),
-    (358.86, "석탄기", "Carboniferous"),
-    (419.62, "데본기", "Devonian"),
-    (443.8, "실루리아기", "Silurian"),
-    (486.85, "오르도비스기", "Ordovician"),
-    (538.8, "캄브리아기", "Cambrian"),
-    (635.0, "에디아카라기", "Ediacaran"),
-]
-
-
+# 층서표는 timescale.py 한 곳에 있다(이름 2023/04 한글판, 경계 2024/12).
 def period(age_ma):
     """나이가 속한 기. 경계 나이는 더 젊은 쪽에 넣는다(66.0 Ma 는 고진기)."""
-    for base, korean, english in PERIODS:
-        if age_ma <= base:
-            return {"ko": korean, "en": english}
+    from .timescale import containing
+    for unit in containing(age_ma):
+        if unit["rank"] == "period":
+            return {"ko": unit["ko"], "en": unit["en"]}
     return {"ko": "선캄브리아", "en": "Precambrian"}
 
 
 # ── PaleoDEM 파일 이름 ────────────────────────────────────────────────
 # 예: "Map88_PALEOMAP_1deg_Cambrian_Precambrian boundary_540Ma.nc"
 #     "Map48_PALEOMAP_1deg_Middle_Devonian_385.2Ma.nc"
-_DEM_NAME = re.compile(r"_1deg_(?P<label>.+)_(?P<age>\d+(?:\.\d+)?)Ma\.nc$")
+#     6 분 격자는 `_6min_` 이고 385.2·390.5 를 정수로 반올림해 적는다.
+_DEM_NAME = re.compile(r"_(?:1deg|6min)_(?P<label>.+?)_(?P<age>\d+(?:\.\d+)?)\s*Ma\.nc$")
 
 
 def parse_dem_name(name):
@@ -87,37 +71,7 @@ def belongs(max_ma, min_ma, age_ma):
     return max_ma >= age_ma - WINDOW_MA and min_ma <= age_ma + WINDOW_MA
 
 
-# 퇴적 환경 → 바다(m)·뭍(t)·그 밖(o). 해안·석호·하구처럼 지도가 긋는 선 바로 위인
-# 환경은 어느 쪽으로도 밀지 않고 '그 밖'에 둔다. 목록은 EarthThruTime3D 의 것이다.
-MARINE = {
-    "marine indet.", "carbonate indet.", "peritidal", "shallow subtidal indet.",
-    "open shallow subtidal", "lagoonal/restricted shallow subtidal", "sand shoal",
-    "reef, buildup or bioherm", "perireef or subreef", "intrashelf/intraplatform reef",
-    "platform/shelf-margin reef", "slope/ramp reef", "basin reef", "deep subtidal ramp",
-    "deep subtidal shelf", "deep subtidal indet.", "offshore ramp", "offshore shelf",
-    "offshore indet.", "slope", "basinal (carbonate)", "basinal (siliceous)",
-    "shoreface", "transition zone/lower shoreface", "offshore", "submarine fan",
-    "basinal (siliciclastic)", "deep-water indet.", "delta front", "prodelta",
-    "foreshore",
-}
-TERRESTRIAL = {
-    "terrestrial indet.", "fluvial indet.", "alluvial fan", "channel lag",
-    # PBDB 는 둘을 따옴표째 적는다.
-    "coarse channel fill", "fine channel fill", '"channel"', "wet floodplain",
-    "dry floodplain", '"floodplain"', "crevasse splay", "levee", "mire/swamp",
-    "fluvial-lacustrine indet.", "lacustrine - large", "lacustrine - small", "pond",
-    "crater lake", "lacustrine delta plain", "lacustrine interdistributary bay",
-    "lacustrine delta front", "lacustrine prodelta", "lacustrine deltaic indet.",
-    "lacustrine indet.", "dune", "interdune", "loess", "eolian indet.", "cave",
-    "fissure fill", "sinkhole", "karst indet.", "tar", "spring", "glacial",
-    "fluvial-deltaic indet.", "deltaic indet.", "delta plain", "interdistributary bay",
-}
-
-
 def environment_class(environment):
-    value = (environment or "").strip()
-    if value in MARINE:
-        return "m"
-    if value in TERRESTRIAL:
-        return "t"
-    return "o"
+    """퇴적 환경 → 바다(m)·뭍(t)·해안/기타(o). 갈래는 environments.py 의 나무 한 곳에 있다."""
+    from .environments import classify
+    return classify(environment)[0]

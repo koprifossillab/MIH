@@ -27,7 +27,7 @@ def number(value):
 
 def read_collections(path):
     """(max_ma, min_ma, 행) 을 낸다. 연대나 고좌표가 없는 것은 세기만 하고 버린다."""
-    stats = {"records": 0, "no_age": 0, "too_wide": 0, "no_paleo": 0}
+    stats = {"records": 0, "no_age": 0, "too_wide": 0, "no_paleo": 0, "environments": {}}
     rows = []
     with open(path, newline="", encoding="utf-8", errors="replace") as handle:
         for record in csv.DictReader(handle):
@@ -46,6 +46,7 @@ def read_collections(path):
                 stats["no_paleo"] += 1
                 continue
             environment = (record.get("environment") or "").strip()
+            stats["environments"][environment] = stats["environments"].get(environment, 0) + 1
             rows.append((old, young, [
                 int(record["collection_no"]), round(plng, 2), round(plat, 2),
                 environment_class(environment), int(number(record.get("n_occs")) or 0),

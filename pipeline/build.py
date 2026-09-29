@@ -3,15 +3,20 @@
 시점은 PaleoDEM 이 정한다(109 장). 해안선은 81 시점뿐이라 시점마다 가장 가까운
 해안선을 붙이되, 10 Myr 보다 멀면 붙이지 않는다 — 먼 시대의 해안선을 긋느니 없다고
 말하는 편이 낫다. 어느 나이의 해안선을 그었는지는 목록에 적어 화면에 띄운다.
+
+목록에는 층서표(timescale.py)와 퇴적 환경 나무(environments.py)도 싣는다. 뷰어는 둘을
+따로 들고 있지 않고 여기서 받아 그린다 — 이름·경계·색을 고칠 자리가 한 곳이다.
 """
 import json
 from datetime import datetime, timezone
 
 from . import coastlines, fossils, relief
 from .common import DERIVED, manifest, period
+from .environments import classify, tree_for_index
+from .timescale import containing, units
 
 COASTLINE_REACH_MA = 10.0
-SCHEMA = 1
+SCHEMA = 2
 
 
 def nearest(entries, age, reach):
@@ -37,6 +42,7 @@ def build():
     fossil_entries, fossil_meta = fossils.build([e["age"] for e in reliefs])
     by_age = {e["age"]: e for e in fossil_entries}
 
+    scale = units()
     frames = []
     for entry in reliefs:
         age = entry["age"]
@@ -46,16 +52,27 @@ def build():
             "age": age,
             "label": entry["label"],
             "period": period(age),
+            "units": [u["id"] for u in containing(age, scale)],
             "relief": entry["file"],
+            "relief_files": entry["files"],
+            "grid": entry["grid"],
             "land_fraction": entry["land_fraction"],
             "coastline": {"age": coast["age"], "file": coast["file"]} if coast else None,
             "fossils": {"file": found.get("file"), "count": found.get("count", 0),
                         "by_env": found.get("by_env", {})},
         })
+
+    env_counts = fossil_meta["stats"].pop("environments")
+    unlisted = sorted(t for t in env_counts if classify(t)[1] == "o-unlisted")
+    if unlisted:
+        print(f"  환경 나무에 없는 PBDB 용어 {len(unlisted)} 개: {unlisted} — environments.py 에 넣는다")
     index = {
         "schema": SCHEMA,
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "frames": sorted(frames, key=lambda f: f["age"]),
+        "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
+                      "units": scale},
+        "environments": tree_for_index(env_counts),
         "pbdb": fossil_meta,
         "sources": [cite("paleodem"), cite("paleocoastlines"), cite("pbdb")],
     }

@@ -1,11 +1,15 @@
-"""PaleoDEM 1° 격자 → 시점마다 배경 그림 한 장(정거원통, WebP).
+"""PaleoDEM 격자 → 시점마다 배경 그림(정거원통, WebP) 두 장 — 2048·4096 폭.
 
 색은 고도로 칠하고(바다는 깊이, 뭍은 높이) 북서쪽 빛의 음영을 얹는다. 해수면(0 m)에서
 색이 끊기므로 PaleoDEM 자신의 해안선이 그림에 그대로 보인다. 화석으로 고친 해안선
 (PaleoCoastlines)은 뷰어가 이 위에 선으로 따로 긋는다.
 
-1° 격자는 361×181 칸이다. 2048 폭으로 겹선형 보간하면 칸이 계단으로 보이지 않을
-만큼만 부드러워진다 — 없는 세부가 생기는 것은 아니다.
+그리는 격자는 **6 분(0.1°, 3601×1801)** 이다. 1° 격자(361×181)로는 4096 폭에서 한 칸이
+11 픽셀 덩어리라 확대하면 흐려졌다(devlog 002). 6 분 격자가 없으면 1° 로 돌아간다.
+시점 목록(나이·영문 이름표)은 1° 격자의 파일 이름이 정한다 — 6 분 판은 385.2·390.5 Ma 를
+정수로 반올림해 적어서, 나이가 1 Myr 안인 것을 짝으로 삼는다.
+
+뷰어는 넓게 볼 때 2048, 확대하면 4096 을 부른다.
 """
 import sys
 
@@ -16,8 +20,9 @@ from scipy import ndimage
 
 from .common import DERIVED, age_key, manifest, parse_dem_name, source_path
 
-WIDTH = 2048
-QUALITY = 82
+WIDTHS = (2048, 4096)
+WIDTH = WIDTHS[0]
+QUALITY = 80
 
 # (고도 m, RGB). 사이는 선형으로 섞는다. 0 m 에서 바다 쪽과 뭍 쪽이 따로 선다.
 SEA = [(-9000, (6, 22, 48)), (-5000, (18, 52, 96)), (-2500, (36, 86, 138)),
@@ -78,31 +83,50 @@ def render(z, width=WIDTH):
     return Image.fromarray(np.clip(lit, 0, 255).astype(np.uint8)), float((fine > 0).mean())
 
 
-def grids():
-    """(나이, 영문 이름표, 경로)를 나이 순으로."""
-    folder = source_path(manifest("paleodem")["archive"]["unzip"])
+def _scan(folder):
     found = {}
     for path in folder.rglob("*.nc"):
         parsed = parse_dem_name(path.name)
         if parsed:
-            found[parsed[0]] = (parsed[0], parsed[1], path)
-    if not found:
-        raise SystemExit(f"{folder} 에 PaleoDEM 격자가 없다 — 먼저 `python -m pipeline fetch`")
-    return [found[age] for age in sorted(found)]
+            found[parsed[0]] = (parsed[1], path)
+    return found
+
+
+def grids():
+    """(나이, 영문 이름표, 그릴 격자 경로, 격자 이름)을 나이 순으로."""
+    archives = {a["id"]: source_path(a["unzip"]) for a in manifest("paleodem")["archives"]}
+    coarse = _scan(archives["1deg"])
+    if not coarse:
+        raise SystemExit(f"{archives['1deg']} 에 PaleoDEM 격자가 없다 — 먼저 `python -m pipeline fetch`")
+    fine = _scan(archives["6min"]) if archives["6min"].exists() else {}
+    out = []
+    for age in sorted(coarse):
+        label, path = coarse[age]
+        match = min(fine, key=lambda a: abs(a - age), default=None)
+        if match is not None and abs(match - age) < 1.0:
+            out.append((age, label, fine[match][1], "6min"))
+        else:
+            out.append((age, label, path, "1deg"))
+    return out
 
 
 def build(only=None):
-    out = DERIVED / "relief"
-    out.mkdir(parents=True, exist_ok=True)
+    for width in WIDTHS:
+        (DERIVED / "relief" / str(width)).mkdir(parents=True, exist_ok=True)
     entries = []
-    for age, label, path in grids():
+    for age, label, path, grid in grids():
         if only and age not in only:
             continue
-        image, land = render(read_grid(path))
-        name = f"relief/{age_key(age)}.webp"
-        image.save(DERIVED / name, "WEBP", quality=QUALITY, method=6)
-        entries.append({"age": age, "label": label, "file": name, "land_fraction": round(land, 3)})
-        print(f"  배경 {age:6.1f} Ma  {label:40s} 뭍 {land:5.1%}")
+        z = read_grid(path)
+        files = {}
+        for width in WIDTHS:
+            image, land = render(z, width)
+            name = f"relief/{width}/{age_key(age)}.webp"
+            image.save(DERIVED / name, "WEBP", quality=QUALITY, method=4)
+            files[str(width)] = name
+        entries.append({"age": age, "label": label, "file": files[str(WIDTH)], "files": files,
+                        "grid": grid, "land_fraction": round(land, 3)})
+        print(f"  배경 {age:6.1f} Ma  {label:40s} {grid}  뭍 {land:5.1%}")
     return entries
 
 

@@ -19,7 +19,7 @@
     </div>
     <div class="now" aria-live="polite">
       <span id="now-age" class="age">—</span>
-      <span id="now-period" class="period"></span>
+      <span id="now-units" class="units"></span>
       <span id="now-label" class="label"></span>
     </div>
   </header>
@@ -32,28 +32,46 @@
         <h2>시점</h2>
         <div class="timeline">
           <button type="button" id="older" title="더 옛날 (←)" aria-label="더 옛날">◀</button>
-          <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점">
+          <div class="track">
+            <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점">
+            <div class="strip" id="strip" aria-hidden="true">
+              <div class="strip-row" id="strip-period"></div>
+              <div class="strip-row" id="strip-epoch"></div>
+            </div>
+          </div>
           <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근">▶</button>
         </div>
         <div class="ticks"><span>540 Ma</span><span>현재</span></div>
         <label class="play"><input type="checkbox" id="play"> 차례로 보기</label>
+
+        <h3>층서표로 고르기</h3>
+        <div class="chrono" id="chrono">
+          <div class="chrono-row"><span class="rank">대</span><div class="chips" data-rank="era"></div></div>
+          <div class="chrono-row"><span class="rank">기</span><div class="chips" data-rank="period"></div></div>
+          <div class="chrono-row"><span class="rank">세</span><div class="chips" data-rank="epoch"></div></div>
+          <div class="chrono-row"><span class="rank">절</span><div class="chips" data-rank="age"></div></div>
+        </div>
+        <p class="note" id="chrono-note"></p>
+        <p class="note">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
       </section>
 
       <section>
         <h2>화석 채집지 <small id="fossil-count"></small></h2>
-        <label class="swatch"><input type="checkbox" data-env="m" checked> <i class="dot m"></i> 바다 환경 <small id="count-m"></small></label>
-        <label class="swatch"><input type="checkbox" data-env="t" checked> <i class="dot t"></i> 뭍 환경 <small id="count-t"></small></label>
-        <label class="swatch"><input type="checkbox" data-env="o" checked> <i class="dot o"></i> 해안·기타·미상 <small id="count-o"></small></label>
+        <div class="envtree" id="envtree"></div>
         <p class="note">점 하나가 PBDB 채집지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치고 20 Myr 이하인 것이 오른다 — 범위가 넓은 채집지는 여러 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
 
       <section>
         <h2>분류군 찾기</h2>
-        <form id="taxon-form" class="taxon">
-          <input type="search" id="taxon" placeholder="예: Trilobita, Dinosauria" autocomplete="off" aria-label="분류군 이름">
+        <form id="taxon-form" class="taxon" autocomplete="off">
+          <div class="combo">
+            <input type="search" id="taxon" placeholder="이름 일부 — 예: lobit, saur" autocomplete="off"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-list" aria-label="분류군 이름">
+            <ul id="taxon-list" class="suggest" role="listbox" hidden></ul>
+          </div>
           <button type="submit">찾기</button>
         </form>
-        <p class="note" id="taxon-status">PBDB 에 바로 묻는다. 시점을 옮기면 다시 묻는다.</p>
+        <p class="note" id="taxon-status">두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.</p>
         <button type="button" id="taxon-clear" class="link" hidden>분류군 지우기</button>
       </section>
 
@@ -62,6 +80,7 @@
         <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> 화석으로 고친 해안선</label>
         <p class="note" id="coast-note"></p>
         <label class="swatch"><input type="checkbox" id="grid"> 경위선 30°</label>
+        <p class="note" id="relief-note"></p>
       </section>
 
       <section class="sources">

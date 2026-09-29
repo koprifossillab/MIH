@@ -78,26 +78,31 @@ def unzip(path, out, patterns=None):
     return count
 
 
+def archives(spec):
+    """매니페스트의 압축본들. 하나면 `archive`, 여럿이면 `archives` 에 적는다."""
+    return spec.get("archives") or [spec["archive"]]
+
+
 def fetch_pinned(name):
     spec = manifest(name)
-    archive = spec["archive"]
-    target = source_path(archive["path"])
-    if target.exists():
-        check_pinned(target, archive)
-        print(f"있음  {archive['path']}")
-    else:
-        print(f"받기  {spec['title']}")
-        temp = download(archive["url"], target)
-        try:
-            check_pinned(temp, archive)
-        except SystemExit:
-            temp.unlink(missing_ok=True)
-            raise
-        temp.replace(target)
-    out = source_path(archive["unzip"])
-    if not out.exists():
-        count = unzip(target, out, archive.get("members"))
-        print(f"  풀었다: {count} 파일 -> {out.relative_to(ROOT)}")
+    for archive in archives(spec):
+        target = source_path(archive["path"])
+        if target.exists():
+            check_pinned(target, archive)
+            print(f"있음  {archive['path']}")
+        else:
+            print(f"받기  {spec['title']} ({archive.get('id', '')}, {archive['bytes'] / 1e6:.0f} MB)")
+            temp = download(archive["url"], target, timeout=1800)
+            try:
+                check_pinned(temp, archive)
+            except SystemExit:
+                temp.unlink(missing_ok=True)
+                raise
+            temp.replace(target)
+        out = source_path(archive["unzip"])
+        if not out.exists():
+            count = unzip(target, out, archive.get("members"))
+            print(f"  풀었다: {count} 파일 -> {out.relative_to(ROOT)}")
 
 
 def fetch_pbdb(refresh=False):

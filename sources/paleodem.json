@@ -8,13 +8,26 @@
     "url": "https://creativecommons.org/licenses/by/4.0/",
     "note": "각 압축본 안의 License.txt 가 CC BY 4.0 이라 적는다."
   },
-  "role": "배경 — 1° 고도 격자 109 장, 0~540 Ma, 5 Myr 간격(385.2·390.5 Ma 포함)",
-  "archive": {
-    "url": "https://zenodo.org/records/5460860/files/Scotese_Wright_2018_Maps_1-88_1degX1deg_PaleoDEMS_nc.zip?download=1",
-    "path": "data/sources/paleodem/Scotese_Wright_2018_Maps_1-88_1degX1deg_PaleoDEMS_nc.zip",
-    "bytes": 9302291,
-    "sha256": "7014767a168c28d3762f55117ebafcd0f6b6b90029a495e2d14fd23f94abc16d",
-    "unzip": "data/sources/paleodem/nc"
-  },
+  "role": "배경 — 고도 격자 109 장, 0~540 Ma, 5 Myr 간격(385.2·390.5 Ma 포함)",
+  "archives": [
+    {
+      "id": "1deg",
+      "note": "시점 목록(나이·이름표)의 기준. 385.2·390.5 Ma 를 소수 그대로 적는다",
+      "url": "https://zenodo.org/records/5460860/files/Scotese_Wright_2018_Maps_1-88_1degX1deg_PaleoDEMS_nc.zip?download=1",
+      "path": "data/sources/paleodem/Scotese_Wright_2018_Maps_1-88_1degX1deg_PaleoDEMS_nc.zip",
+      "bytes": 9302291,
+      "sha256": "7014767a168c28d3762f55117ebafcd0f6b6b90029a495e2d14fd23f94abc16d",
+      "unzip": "data/sources/paleodem/nc"
+    },
+    {
+      "id": "6min",
+      "note": "배경 그림을 그리는 격자(0.1°, 3601×1801). 385.2·390.5 Ma 를 385·391 로 반올림해 적어, 나이로 1° 목록에 맞춘다",
+      "url": "https://zenodo.org/records/5460860/files/Scotese_Wright_2018_Maps_1-88_6minX6min_PaleoDEMS_nc.zip?download=1",
+      "path": "data/sources/paleodem/Scotese_Wright_2018_Maps_1-88_6minX6min_PaleoDEMS_nc.zip",
+      "bytes": 207273848,
+      "sha256": "ab360184d8260a815ef5ed6b8b4e0abdbf99ef5ee8aa87dfd070af323ceb42da",
+      "unzip": "data/sources/paleodem/nc6"
+    }
+  ],
   "pinned_from": "크기·SHA-256 은 jikhanjung/EarthThruTime3D 의 sources/paleodem.json 과 같다(2026-09-12 에 받은 것)."
 }

@@ -39,7 +39,9 @@ body {
 .brand .sub { margin-left: 6px; color: var(--muted); }
 .now { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .now .age { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.now .period { font-weight: 600; }
+.now .units { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.now .unit { padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 13px; }
+.now .sep { color: var(--muted); }
 .now .label { color: var(--muted); }
 
 .stage { flex: 1; display: flex; min-height: 0; }
@@ -53,8 +55,28 @@ body {
 .panel section + section { border-top: 1px solid var(--line); }
 .note { color: var(--muted); font-size: 12px; margin: 6px 0; }
 
-.timeline { display: flex; gap: 6px; align-items: center; }
-.timeline input { flex: 1; min-width: 0; }
+.panel h3 { font-size: 12px; margin: 14px 0 6px; color: var(--muted); font-weight: 600; }
+.timeline { display: flex; gap: 6px; align-items: flex-start; }
+.timeline .track { flex: 1; min-width: 0; }
+.timeline input { width: 100%; margin: 4px 0 2px; }
+.timeline > button { margin-top: 2px; }
+/* 시점 막대 밑의 기·세 띠. 막대의 손잡이 폭만큼 안쪽에서 시작한다. */
+.strip { margin: 0 7px; }
+.strip-row { position: relative; height: 7px; }
+.strip-row + .strip-row { margin-top: 1px; }
+.strip-row span { position: absolute; top: 0; bottom: 0; cursor: pointer; }
+.strip-row span:hover { outline: 1px solid var(--ink); z-index: 1; }
+
+.chrono-row { display: flex; gap: 6px; align-items: flex-start; margin: 3px 0; }
+.chrono-row .rank { width: 16px; flex: none; color: var(--muted); font-size: 12px; padding-top: 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 3px; min-width: 0; }
+.chips .none { color: var(--muted); font-size: 12px; padding-top: 3px; }
+.chip {
+  border: 1px solid rgba(0, 0, 0, .25); border-radius: 4px; padding: 1px 6px;
+  font: inherit; font-size: 12px; line-height: 1.5; cursor: pointer;
+}
+.chip.here { box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .45); }
+.chip.on { outline: 2px solid var(--accent); outline-offset: 1px; font-weight: 700; }
 .timeline button, .taxon button {
   border: 1px solid var(--line); background: var(--bg); color: var(--ink);
   border-radius: 6px; padding: 4px 10px; cursor: pointer;
@@ -70,11 +92,38 @@ body {
 .dot.o { background: var(--other); }
 .line { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--coast); }
 
+/* 퇴적 환경 나무 */
+.env .row { display: flex; align-items: center; gap: 4px; margin: 2px 0; }
+.env .row label { display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: 0; }
+.env .row .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; padding-left: 6px; }
+.env .tog {
+  width: 16px; flex: none; border: 0; background: none; color: var(--muted); padding: 0; cursor: pointer; font-size: 11px;
+}
+.env .tog[hidden] { display: inline-block; visibility: hidden; }
+.env .kids { margin-left: 18px; }
+.env.group > .row, .env.term > .row { font-size: 13px; }
+.env.term .en { color: var(--muted); font-size: 11px; }
+.env.zero > .row label { color: var(--muted); }
+.env.top > .row { font-weight: 600; }
+
 .taxon { display: flex; gap: 6px; }
+.combo { position: relative; flex: 1; min-width: 0; }
 .taxon input {
-  flex: 1; min-width: 0; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+  width: 100%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
   background: var(--bg); color: var(--ink);
 }
+.suggest {
+  position: absolute; left: 0; right: -60px; top: calc(100% + 2px); z-index: 1000;
+  list-style: none; margin: 0; padding: 4px 0; max-height: 320px; overflow-y: auto;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+}
+.suggest li { padding: 4px 10px; cursor: pointer; display: flex; flex-direction: column; }
+.suggest li.active, .suggest li:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.suggest .nm { font-style: italic; }
+.suggest .nm b { font-style: italic; color: var(--accent); }
+.suggest .meta { color: var(--muted); font-size: 11px; }
+.suggest .empty-sg { color: var(--muted); cursor: default; }
 button.link { border: 0; background: none; color: var(--accent); padding: 0; cursor: pointer; text-decoration: underline; }
 
 .sources ul { padding-left: 18px; margin: 0; font-size: 12px; }
