@@ -17,6 +17,7 @@
 - **⤓ 그림** — 지금 보는 지도를 PNG 로 내려받는다. 밑 띠에 시점·층서·평균 기온·투영·거르기·출처·주소 (wetherilli 008)
 - **고침**: 몰바이데에서 기온 층을 처음 켤 때 색이 그려지지 않던 것 (wetherilli 009)
 - 화면 문구 열쇠가 `i18n.js` 에 한·영으로 다 있는지 보는 시험 (wetherilli 007)
+- **병합 전 판 확인** — `deploy/host/premerge.sh <PR>`(충돌·뒤처짐·판·CI)와 CI 의 "판 확인" 작업(`deploy/check_version.py`) (wetherilli 010)
 - 가공물은 다시 만들 필요 없다
 
 ## 0.15.3 — 2026-09-30 · `feature/mollweide-rotate-only`

@@ -98,7 +98,10 @@ sources/*.json ──fetch──▶ data/sources/ ──build──▶ data/deri
 (`feature/mollweide-drag`). **코드에 손대기 직전에** `main` 에서 만들고(`git switch -c feature/<이름> main`),
 **커밋·push·확인을 전부 그 브랜치에서** 한다. **작업이 끝나면 PR 을 만든다**(`gh pr create --base main`) — CI 를
 통과해야 하고, **`main` 병합은 사람이 정한다.** 판을 올리는 것은 그 PR 안에서 한다(CHANGELOG·`version.py`).
-병합하고 판이 올랐으면 CHANGELOG 의 그 절로 GitHub 릴리스(`v<판>`)를 만든다 — 태그마다 CI 가 Docker Hub 에 이미지를
+**병합 직전에 `deploy/host/premerge.sh <PR 번호>` 를 돌린다**(wetherilli 010) — 글자 충돌, main 보다 뒤처졌는지,
+판 확인(`deploy/check_version.py`: 판과 CHANGELOG 맨 위가 같은가, main 보다 낮거나 같은 판 번호를 다른 내용으로 썼는가,
+태그가 이미 있는가), CI 를 본다. 하나라도 FAIL 이면 병합하지 않고 브랜치를 `git rebase origin/main` 해 판을 다시 매긴다.
+판 확인은 CI 의 "판 확인" 작업으로도 돈다. 병합하고 판이 올랐으면 CHANGELOG 의 그 절로 GitHub 릴리스(`v<판>`)를 만든다 — 태그마다 CI 가 Docker Hub 에 이미지를
 올린다(koprifossillab 031). 2026-09-30 전에는 하루치 브랜치(`work/<YYYYMMDD>-<계정>`)였다.
 
 **문서·기록만 고치는 커밋은 `main` 에 바로 올린다**(HANDOFF·TODOs·CLAUDE.md 같은 것).

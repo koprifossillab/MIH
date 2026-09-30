@@ -90,5 +90,5 @@ deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 
 ## 인용
 
-화면의 "자료" 칸과 `index.json` 의 `sources` 에 다섯 자료의 인용이 있다. 그림을 쓸 때
+화면의 ⚙ 설정 · 자료 창과 `index.json` 의 `sources` 에 다섯 자료의 인용이 있다. 그림을 쓸 때
 자료를 모두 밝힌다. PBDB 는 채집지마다 원 문헌이 따로 있다.
