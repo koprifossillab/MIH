@@ -499,6 +499,7 @@
       map.getContainer().classList.toggle("moll", proj === "moll");
       map._resetView(worldCenter(), worldZoom(), true);
     }
+    if ($("tool-zoomin")) syncZoomButtons();   // 지구본에서는 늘 켠다
     var f = frame();
     if (!f) return;
     relief.setUrl(reliefUrl(f));
@@ -1975,8 +1976,11 @@
   // 밑에 띠를 붙여 시점·층서·평균 기온·투영·거르기·출처·주소·날짜를 적는다 — 그림만 떨어져 돌아다녀도 무엇인지 알게.
   // ── 도구 묶음(wetherilli 014) ──────────────────────────────────────
   // GSM 의 지도 위 손잡이처럼 오른쪽 위에 세로로 붙인다 — 아이콘 밑에 이름. 그림 단추(008)가 혼자 떠 있던 자리다.
-  // 전체 보기 · 거리 재기 · 링크 복사 · 그림 | 지우기. 잰 결과는 묶음 왼쪽의 칸(.tool-out)에 적는다.
+  // 확대 · 축소 · 전체 보기 · 거리 재기 · 링크 복사 · 다운로드 | 지우기. 잰 결과는 묶음 왼쪽의 칸(.tool-out)에 적는다.
+  // 확대·축소 단추는 wetherilli 001 에서 치웠다가(휠로 된다) 연구자가 다시 바라 묶음 맨 위에 둔다(tupandactyl 004).
   var ICON = {
+    zoomin: '<circle class="stroke" cx="10.5" cy="10.5" r="6"/><path class="stroke" d="M15 15l5 5M8 10.5h5M10.5 8v5"/>',
+    zoomout: '<circle class="stroke" cx="10.5" cy="10.5" r="6"/><path class="stroke" d="M15 15l5 5M8 10.5h5"/>',
     world: '<circle class="stroke" cx="12" cy="12" r="8"/><path class="stroke" d="M4 12h16M12 4c-3 3-3 13 0 16M12 4c3 3 3 13 0 16"/>',
     measure: '<path class="stroke dash" d="M6 18 18 6"/><circle cx="5" cy="19" r="2.3"/><circle cx="19" cy="5" r="2.3"/>',
     link: '<path class="stroke" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path class="stroke" d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
@@ -1995,6 +1999,7 @@
     }
     box.innerHTML = '<div class="tool-col">' +
       '<div class="tool-cap">' + esc(tr("tool.cap")) + "</div>" +
+      btn("tool.zoomin", "tool-zoomin") + btn("tool.zoomout", "tool-zoomout") + '<span class="tool-sep" aria-hidden="true"></span>' +
       btn("tool.world", "tool-world") + btn("tool.measure", "tool-measure") + btn("tool.link", "tool-link") +
       btn("export", "tool-export") + '<span class="tool-sep" aria-hidden="true"></span>' +
       btn("tool.clear", "tool-clear", "danger") + '</div><output class="tool-out" id="tool-out" hidden></output>';
@@ -2005,6 +2010,21 @@
   tools.addTo(map);
   $("tool-measure").setAttribute("aria-pressed", "false");
   $("tool-clear").disabled = true;
+  // 한 번에 한 단계. 지구본은 카메라 높이를 반으로·두 배로(globe.js 가 가장 낮은·높은 높이로 가둔다)
+  function zoomBy(dir) {
+    if (state.proj === "globe") { globe.zoom(dir > 0 ? 0.5 : 2); return; }
+    if (dir > 0) map.zoomIn(); else map.zoomOut();
+  }
+  $("tool-zoomin").addEventListener("click", function () { zoomBy(1); });
+  $("tool-zoomout").addEventListener("click", function () { zoomBy(-1); });
+  // 평면 지도에서는 더 들어갈·물러날 수 없으면 흐리게
+  function syncZoomButtons() {
+    var flat = state.proj !== "globe", z = map.getZoom();
+    $("tool-zoomin").disabled = flat && z >= map.getMaxZoom();
+    $("tool-zoomout").disabled = flat && z <= map.getMinZoom();
+  }
+  map.on("zoomend", syncZoomButtons);
+  syncZoomButtons();
   $("tool-world").addEventListener("click", function () {
     if (state.proj === "globe") { globe.home(); return; }
     map.flyTo(worldCenter(), worldZoom(), { duration: 0.6 });
