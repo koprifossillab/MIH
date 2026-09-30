@@ -4,7 +4,8 @@
   "citation": "Brown, J. L., Hill, D. J., Dolan, A. M., Carnaval, A. C., & Haywood, A. M. (2018). PaleoClim, high spatial resolution paleoclimate surfaces for global land areas. Scientific Data, 5, 180254. https://doi.org/10.1038/sdata.2018.254 — LGM: Karger et al. (2017) CHELSA v1.2. Data: http://www.paleoclim.org",
   "record": "http://www.paleoclim.org",
   "license": {
-    "name": "CC BY-NC-SA (MIS19·mPWP 압축본 안의 readme). LGM(CHELSA v1.2)·LIG 압축본에는 조건 문서가 없다 — 쓰기 전에 확인",
+    "name": "CC BY-NC-SA 4.0",
+    "note": "MIS19·mPWP 압축본 안의 readme 가 CC BY-NC-SA 라고 적는다. LGM(CHELSA v1.2)·LIG 압축본에는 조건 문서가 없어 PaleoClim 의 조건으로 본다. 연구자가 이 조건으로 쓰기로 정했다(2026-09-30, tupandactyl 010)",
     "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
   },
   "role": "최근의 절 시점(tupandactyl 009)에 그 절 안의 기온 지도 — Scotese(2021) 격자는 5 Myr 간격이라 0·5 Ma 사이가 없다. 오늘날 좌표(5 Myr 안에서는 PALEOMAP 과 거의 같다), 육지만",

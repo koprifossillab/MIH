@@ -10,7 +10,7 @@
   플라이오세 중기 온난기(320.5 만 년 전). 젤라절은 여전히 없다. 육지만이라 바다는 투명하고, 전 지구 평균이 없어 온도계는 비운다 (tupandactyl 010)
 - 가공: `python -m pipeline paleoclim`(받기·SHA-256 확인·굽기, 1 분 안쪽) → `climate/pc_*.png`·`climate/recent.json`. 없으면 전처럼
   "이 절 안의 기온 지도가 없다" (tupandactyl 010)
-- **이용 조건: PaleoClim 은 CC BY-NC-SA**(MIS 19·플라이오세 압축본의 readme) — 병합 전에 연구자가 정한다
+- **이용 조건: PaleoClim 은 CC BY-NC-SA 4.0** — 구운 기온 그림도 같은 조건(비영리). 연구자가 이 조건으로 쓰기로 정했다. README 의 라이선스 표에 적었다 (tupandactyl 010)
 
 ## 0.25.0 — 2026-09-30 · `feature/recent-stages`
 
