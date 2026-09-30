@@ -40,7 +40,9 @@ body {
   display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
   padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
-.brand strong { font-size: 18px; letter-spacing: .04em; color: var(--accent); }
+.brand { display: flex; align-items: center; gap: 2px 8px; flex-wrap: wrap; }
+.brand .brand-mark { width: 40px; height: 40px; flex: none; margin: -6px 0; }
+.brand strong { font: 400 25px/1 "La Belle Aurore", "Segoe Script", cursive; color: var(--accent); padding-top: 4px; }
 .brand .ver { margin-left: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .brand .sub { margin-left: 6px; color: var(--muted); }
 .now { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; flex: 1 1 0; min-width: 260px; }   /* 좁아지면 안에서 꺾여 오른쪽 단추가 제 줄에 남는다 */
@@ -305,28 +307,70 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .sources li { margin-bottom: 6px; }
 .sources a { color: var(--accent); }
 
-/* 대기 화면(wetherilli 005) */
+/* 머리말의 글씨체(tupandactyl 005) — 베게너의 필체와 닮은 La Belle Aurore(OFL). 저장소에 담아 사내망에서도 뜬다 */
+@font-face {
+  font-family: "La Belle Aurore"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("vendor/fonts/la-belle-aurore-latin.woff2") format("woff2");
+}
+
+/* 대기 화면(wetherilli 005 → tupandactyl 005) — 빈티지 종이. 색은 한 가지 잉크(세피아)와 종이로만 — 어두운 모드에서도
+   오래된 인쇄물처럼 보이게 테마를 따르지 않는다 */
 .splash {
-  position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center;
-  background: var(--bg); transition: opacity .3s ease; visibility: visible;
+  --paper: #efe4cc; --sink: #3b2a1a; --fade: #7a6650;
+  position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; overflow: hidden;
+  color: var(--sink); cursor: pointer; visibility: visible; transition: opacity .6s ease;
+  background:
+    radial-gradient(120% 95% at 50% 45%, transparent 55%, rgba(80, 52, 22, .38) 100%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .23 0 0 0 0 .16 0 0 0 0 .09 0 0 0 .16 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"),
+    radial-gradient(80% 60% at 30% 20%, rgba(255, 250, 235, .55), transparent 70%),
+    var(--paper);
 }
 .splash.done { opacity: 0; pointer-events: none; }
-.splash-card { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px; text-align: center; max-width: 420px; }
-.splash-brand strong { font-size: 22px; letter-spacing: .04em; color: var(--accent); }
-.splash-brand span { margin-left: 6px; color: var(--muted); }
-.splash-spin {
-  width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent);
-  animation: splash-spin .9s linear infinite;
+/* 고서의 한 페이지 — 종이는 splash.js 가 캔버스에 그린다(얼룩·여우 반점·책등 그늘). 머리글과 도판 설명은 옛 책의 짜임 */
+.splash-paper { position: absolute; inset: 0; width: 100%; height: 100%; }
+.splash-head { position: absolute; top: 28px; left: 11%; right: 7%; display: flex; justify-content: space-between; padding-bottom: 6px;
+  border-bottom: 3px double rgba(59, 42, 26, .55); font: 13px/1.2 "EB Garamond", Georgia, "Times New Roman", serif;
+  letter-spacing: .28em; text-transform: uppercase; color: rgba(59, 42, 26, .78); }
+.splash-stage { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px; }
+/* 메달 — 둘레에 메소사우루스가 두를 자리를 비운다 */
+.splash-medal { --m: clamp(120px, 27vmin, 250px); width: var(--m); height: var(--m); margin: calc(var(--m) * .38) 0 calc(var(--m) * .56);   /* 밑은 곧은 주둥이가 뻗는 자리까지 */
+  opacity: 0; transform: scale(.96); transition: opacity 1s ease, transform 1.4s ease; filter: sepia(.25) contrast(1.05); }
+.splash.lit .splash-medal { opacity: 1; transform: none; }
+.splash-medal img { display: block; width: 100%; height: 100%; }
+.splash-title {
+  margin: 0; font: 400 clamp(40px, 7.2vw, 78px)/1.1 "La Belle Aurore", "Segoe Script", cursive; color: var(--sink);
+  padding: 0 .3em;           /* 필기체의 꼬리가 가림막 밖으로 삐지지 않게 */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(var(--ink, -10%) - 6%), transparent calc(var(--ink, -10%) + 3%));
+  mask-image: linear-gradient(90deg, #000 calc(var(--ink, -10%) - 6%), transparent calc(var(--ink, -10%) + 3%));
 }
-@keyframes splash-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .splash-spin { animation-duration: 3s; } }
-.splash-msg { margin: 0; color: var(--muted); }
+/* 펜 획(splash.js)이 준비되면 글자 대신 SVG 가 쓴다 — 글자는 읽는 기계를 위해 남기고 숨긴다 */
+.splash-title.pen-ready { -webkit-mask-image: none; mask-image: none; }
+.splash-title.pen-ready .splash-title-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.splash-title svg { display: inline-block; max-width: 86vw; height: auto !important; }
+.splash-sub { margin: 4px 0 0; font: 400 15px/1.5 "Nanum Myeongjo", "Batang", "AppleMyungjo", Georgia, serif; letter-spacing: .12em; color: var(--fade);
+  opacity: 0; transition: opacity 1.2s ease 1s; }
+.splash.settled .splash-sub { opacity: 1; }
+.splash-msg { margin: 18px 0 0; font: italic 13px/1.5 Georgia, "Nanum Myeongjo", "Batang", serif; color: var(--fade); letter-spacing: .04em; }
+.splash.map-ready .splash-msg { visibility: hidden; }
+.splash-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.splash-foot { position: absolute; left: 11%; right: 7%; bottom: 24px; text-align: center; color: var(--fade);
+  font: 13px/1.5 "EB Garamond", Georgia, "Nanum Myeongjo", "Batang", serif; }
+.splash-foot p { margin: 0; }
+.splash-foot .plate { color: rgba(59, 42, 26, .85); letter-spacing: .02em; }
+.splash-foot .sc { font-variant: small-caps; letter-spacing: .06em; }
+.splash-foot .credit { margin-top: 4px; font-size: 11.5px; letter-spacing: .06em; }
+.splash-foot .skip { opacity: .8; }
+/* 인쇄된 잉크처럼 — 글자 가장자리가 종이에 조금 번진다 */
+.splash-title, .splash-sub, .splash-head, .splash-foot { text-shadow: 0 0 .6px rgba(59, 42, 26, .45); }
 .splash .en { display: none; }
 .lang-en .splash .en { display: inline; }
 .lang-en .splash .ko { display: none; }
-.splash.failed .splash-spin { display: none; }
-.splash.failed .splash-msg { color: var(--ink); }
-#splash-retry { border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 5px 14px; cursor: pointer; font: inherit; }
+.splash.failed { cursor: default; }
+.splash.failed .splash-msg { color: var(--sink); font-style: normal; visibility: visible; }
+#splash-retry { margin-top: 12px; border: 1px solid var(--sink); background: var(--sink); color: var(--paper); border-radius: 3px; padding: 5px 16px; cursor: pointer;
+  font: 14px Georgia, "Nanum Myeongjo", serif; letter-spacing: .06em; }
+@media (max-width: 560px) { .splash-head { left: 9%; right: 5%; letter-spacing: .16em; } .splash-foot { left: 9%; right: 5%; } }
+@media (prefers-reduced-motion: reduce) { .splash-medal, .splash-sub { transition: none; } }
 
 .empty {
   position: fixed; inset: 0; display: grid; place-content: center; text-align: center;

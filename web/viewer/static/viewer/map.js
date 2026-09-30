@@ -2474,7 +2474,9 @@
   }
 
   // ── 대기 화면(wetherilli 005) ──────────────────────────────────────
+  // 대기 화면의 움직임(splash.js, tupandactyl 005)이 있으면 그것에 맡긴다 — 움직임이 끝난 뒤에 걷는다
   function hideSplash() {
+    if (window.WegenerSplash) { window.WegenerSplash.ready(); return; }
     var box = $("splash");
     if (!box || box.classList.contains("done")) return;
     box.classList.add("done");                     // 0.3 초 흐려지며 걷힌다(CSS)
