@@ -18,6 +18,7 @@
 | 해안선 | PaleoCoastlines v7.1, Kocsis & Scotese 2021 | CC BY 4.0 |
 | 화석 점 | Paleobiology Database 채집지, PALEOMAP 고좌표(`pgm=scotese`) | CC BY 4.0 |
 | 지표 기온 | Scotese et al. 2021, HadCM3L 모의를 대리 자료에 맞춘 것 | CC BY 4.0 |
+| 최근 절의 지표 기온 | PaleoClim(Brown et al. 2018) — 최종빙기 최성기·최종간빙기·MIS 19·플라이오세 중기 온난기, 육지만 | **CC BY-NC-SA**(MIS 19·플라이오세 readme). 빙기·간빙기 파일은 조건 문서가 없어 확인 중 |
 | 국경선 | Natural Earth 1:50m 현재 국경을 PALEOMAP 판으로 돌린 것 | 퍼블릭 도메인 |
 
 자료가 모두 **PALEOMAP 판 모델 틀**이라 서로 맞는다. PBDB 기본 모델(`gplates`)을

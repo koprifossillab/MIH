@@ -773,7 +773,7 @@
   thermo.addTo(map);
   var THERMO = { lo: 10, hi: 40, now: null };
   function initThermo() {
-    var vals = state.frames.filter(function (f) { return f.climate; }).map(function (f) { return f.climate.gmst; });
+    var vals = state.frames.filter(function (f) { return f.climate && f.climate.gmst != null; }).map(function (f) { return f.climate.gmst; });
     if (!vals.length) return;
     THERMO.lo = Math.floor(Math.min.apply(null, vals) / 5) * 5;
     THERMO.hi = Math.ceil(Math.max.apply(null, vals) / 5) * 5;
@@ -783,8 +783,8 @@
   function renderThermo(f) {
     var box = $("thermo");
     if (!box) return;
-    box.hidden = !f.climate;
-    if (!f.climate) return;
+    box.hidden = !f.climate || f.climate.gmst == null;   // 육지만의 기온(PaleoClim)은 전 지구 평균이 아니다
+    if (box.hidden) return;
     var t = f.climate.gmst, lo = THERMO.lo, hi = THERMO.hi;
     // 관: 위 y=8 ~ 아래 y=78, 구: 가운데 y=90
     var y = function (v) { return 78 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * 70; };
@@ -849,6 +849,11 @@
       // Scotese(2021) 격자는 5 Myr 간격이라 홀로세(0 Ma)·장클레절(5 Ma)만 제 것이 있고, 나머지 절은 없다고 말한다
       var c = src.climate;
       f.climate = c && c.source_age >= u.top - 1e-9 && c.source_age <= u.base + 1e-9 ? c : null;
+      // Scotese 격자가 없는 절에는 PaleoClim 스냅숏(그 절 안의 나이)을 붙인다 — 육지만(tupandactyl 010)
+      if (!f.climate) {
+        var snap = (state.recentClimate || []).filter(function (p) { return p.age >= u.top && p.age <= u.base; })[0];
+        if (snap) f.climate = Object.assign({ source_age: snap.age }, snap);
+      }
       return f;
     });
     state.frames = state.frames.filter(function (f) { return f !== f0; }).concat(slices)
@@ -1934,7 +1939,8 @@
           var ctx = c.getContext("2d", { willReadFrequently: true });
           ctx.drawImage(img, 0, 0);
           var px = ctx.getImageData(0, 0, c.width, c.height).data, values = new Float32Array(c.width * c.height);
-          for (var k = 0; k < values.length; k++) values[k] = px[k * 4] - info.offset;
+          // 0 은 빈칸 — PaleoClim 은 육지만이라 바다가 0 이다(tupandactyl 010). Scotese 자료는 0 이 나오지 않는다
+          for (var k = 0; k < values.length; k++) values[k] = px[k * 4] ? px[k * 4] - info.offset : NaN;
           resolve({ w: c.width, h: c.height, values: values });
         };
         img.onerror = reject;
@@ -1957,8 +1963,8 @@
     var on = $("climate").checked, info = f.climate;
     $("temp-legend").hidden = !on;
     $("climate-note").textContent = !info ? (f.slice ? tr("climate.stageNone", { stage: unit(f.slice.unit).full }) : tr("climate.none")) :
-      (info.source_age === f.age ? "" : tr("climate.nearest", { age: fmtAge(info.source_age) })) +
-      tr("climate.gmst", { t: info.gmst.toFixed(1) });
+      (info.source_age === f.age || info.gmst == null ? "" : tr("climate.nearest", { age: fmtAge(info.source_age) })) +
+      (info.gmst != null ? tr("climate.gmst", { t: info.gmst.toFixed(1) }) : tr("climate.paleoclim", { what: EN ? info.en : info.ko }));
     if (!on || !info) { map.removeLayer(climateLayer); map.removeLayer(climateMoll); return; }
     var want = f.age;
     loadGrid(info).then(function (grid) {
@@ -1974,6 +1980,7 @@
       c.width = grid.w; c.height = grid.h;
       var ctx = c.getContext("2d"), out = ctx.createImageData(grid.w, grid.h);
       for (var k = 0; k < grid.values.length; k++) {
+        if (grid.values[k] !== grid.values[k]) continue;          // 빈칸은 투명(알파 0)
         var rgb = tempColor(grid.values[k]);
         out.data[k * 4] = rgb[0]; out.data[k * 4 + 1] = rgb[1]; out.data[k * 4 + 2] = rgb[2]; out.data[k * 4 + 3] = 255;
       }
@@ -1996,7 +2003,9 @@
       for (var q = 0; q < w; q++) {
         var x = (q + 0.5) / w * 4 * SQRT2 - 2 * SQRT2;
         if (x * x / 8 + y * y / 2 > 1) continue;
-        var ll = Mollweide.unproject.call(flat, L.point(x, y)), rgb = tempColor(tempAt(grid, ll.lat, ll.lng)), k = (r * w + q) * 4;
+        var ll = Mollweide.unproject.call(flat, L.point(x, y)), tv = tempAt(grid, ll.lat, ll.lng);
+        if (tv !== tv) continue;
+        var rgb = tempColor(tv), k = (r * w + q) * 4;
         out.data[k] = rgb[0]; out.data[k + 1] = rgb[1]; out.data[k + 2] = rgb[2]; out.data[k + 3] = 255;
       }
     }
@@ -2016,7 +2025,9 @@
       var ctx = c.getContext("2d"), out = ctx.createImageData(w, h);
       for (var r = 0; r < h; r++) {
         for (var q = 0; q < w; q++) {
-          var rgb = tempColor(tempAt(grid, 90 - (r + 0.5) / 2, (q + 0.5) / 2 - 180)), k = (r * w + q) * 4;
+          var tv = tempAt(grid, 90 - (r + 0.5) / 2, (q + 0.5) / 2 - 180);
+          if (tv !== tv) continue;
+          var rgb = tempColor(tv), k = (r * w + q) * 4;
           out.data[k] = rgb[0]; out.data[k + 1] = rgb[1]; out.data[k + 2] = rgb[2]; out.data[k + 3] = 255;
         }
       }
@@ -2033,7 +2044,9 @@
     var f = frame(), box = $("temp-readout");
     if (!f || !f.climate || !$("climate").checked || state.proj === "globe" || !onGlobe(e.containerPoint)) { box.textContent = ""; return; }
     loadGrid(f.climate).then(function (grid) {
-      box.textContent = tr("readout", { t: tempAt(grid, e.latlng.lat, e.latlng.lng).toFixed(0) }) +
+      var tv = tempAt(grid, e.latlng.lat, e.latlng.lng);
+      if (tv !== tv) { box.textContent = ""; return; }                 // 자료 없는 칸(바다)
+      box.textContent = tr("readout", { t: tv.toFixed(0) }) +
         e.latlng.lat.toFixed(1) + "°, " + e.latlng.lng.toFixed(1) + "°";
     });
   });
@@ -2400,7 +2413,7 @@
     var units = frameUnits(f).filter(function (u) { return u.rank !== "subperiod"; })
       .map(function (u) { return u.rank === "epoch" ? chipName(u) : u.ko; }).join(" › ");
     var head = fmtAge(f.age) + (units ? "  " + units : "") + (f.label ? " · " + f.label : "") +
-      (f.climate ? " · " + tr("export.gmst", { t: f.climate.gmst.toFixed(1) }) : "");
+      (f.climate && f.climate.gmst != null ? " · " + tr("export.gmst", { t: f.climate.gmst.toFixed(1) }) : "");
     var filters = [tr(state.proj === "moll" ? "export.moll" : state.proj === "globe" ? "export.globe" : "export.eq")];
     if (state.taxon) filters.push(tr("export.taxon", { name: state.taxon }));
     if (state.country) filters.push(tr("export.country", { name: countryName(state.country) }));
@@ -2572,7 +2585,12 @@
   }
 
   function start() {
-    getJSON(DATA + "index.json").then(function (index) {
+    // 최근의 절에 붙이는 PaleoClim 기온 목록(tupandactyl 010) — 없으면 그 절은 기온 지도가 없다고 말한다
+    var recentClimate = getJSON(DATA + "climate/recent.json").then(null, function () { return null; });
+    Promise.all([getJSON(DATA + "index.json"), recentClimate]).then(function (got) {
+      var index = got[0];
+      var recent = got[1];
+      state.recentClimate = (recent && recent.snapshots) || [];
       localizeIndex(index);
       // 슬라이더 왼쪽이 옛날이다.
       state.frames = index.frames.slice().sort(function (a, b) { return b.age - a.age; });
@@ -2582,7 +2600,7 @@
       }
       BUILT = index.built_at || "";
       $("slider").max = SLIDER_MAX;
-      sources(index.sources || []);
+      sources((index.sources || []).concat(recent && recent.citation ? [recent] : []));
       initTimescale(index.timescale || { units: [] });
       buildRecentSlices();
       initThermo();
