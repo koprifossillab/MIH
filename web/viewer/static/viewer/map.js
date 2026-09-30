@@ -289,6 +289,8 @@
       c.onselectstart = L.Util.falseFn;
       c.onmousemove = L.Util.falseFn;
       if (this._url) this._load(this._url);
+      // 지도에 붙기 전에 setSource 로 받은 그림(몰바이데 기온 층) — 그때는 캔버스가 없어 그리지 못했다
+      else if (this._src) this.paint();
     },
     setUrl: function (url) {
       this._url = url;

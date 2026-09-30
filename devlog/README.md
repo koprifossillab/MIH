@@ -66,3 +66,4 @@
 | wetherilli 006 | 2026-09-30 | [팝업 색을 토큰으로, 고좌표는 눌러서 복사](20260930_wetherilli_006_popup_tokens_copy.md) |
 | wetherilli 007 | 2026-09-30 | [번역이 빠진 문구를 잡는 시험](20260930_wetherilli_007_i18n_missing_key_test.md) |
 | wetherilli 008 | 2026-09-30 | [지도를 그림으로 내려받기](20260930_wetherilli_008_export_image.md) |
+| wetherilli 009 | 2026-09-30 | [몰바이데에서 기온 층이 처음 켤 때 안 그려지던 것](20260930_wetherilli_009_mollweide_climate_first_paint.md) |
