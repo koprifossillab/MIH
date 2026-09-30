@@ -62,34 +62,10 @@
   </dialog>
 
   <main class="stage">
-    <div class="mapcol">
-      <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
-      <!-- 찾기 막대(wetherilli 004) — 분류군과 국가. 후보 목록은 막대 위로 뜬다. 결과는 패널의 절에 적는다 -->
-      <div class="findbar" role="search">
-        <form id="taxon-form" class="find" autocomplete="off">
-          <label class="find-label" for="taxon" data-i18n="taxon.short">분류군</label>
-          <div class="combo">
-            <input type="search" id="taxon" placeholder="이름 일부 — 예: lobit, saur" data-i18n-attr="placeholder:taxon.ph;aria-label:taxon.label" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-list" aria-label="분류군 이름">
-            <ul id="taxon-list" class="suggest" role="listbox" hidden></ul>
-          </div>
-          <button type="button" id="taxon-clear" class="find-x" hidden title="분류군 지우기" aria-label="분류군 지우기" data-i18n-attr="title:taxon.clear;aria-label:taxon.clear">✕</button>
-          <button type="submit" class="find-go" data-i18n="taxon.go">찾기</button>
-        </form>
-        <div class="find">
-          <label class="find-label" for="country" data-i18n="country">국가</label>
-          <div class="combo">
-            <input type="search" id="country" placeholder="한글·영문 이름 또는 코드 — 예: 한국, China, US" data-i18n-attr="placeholder:country.ph;aria-label:country.label" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-controls="country-list" aria-label="국가">
-            <ul id="country-list" class="suggest" role="listbox" hidden></ul>
-          </div>
-          <button type="button" id="country-clear" class="find-x" hidden title="국가 지우기" aria-label="국가 지우기" data-i18n-attr="title:country.clear;aria-label:country.clear">✕</button>
-        </div>
-      </div>
-    </div>
-
-    <aside class="panel" id="panel">
-      <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel" aria-expanded="true">패널 접기 ▾</button>
+    <!-- 패널을 양쪽으로 나눈다(wetherilli 011) — 왼쪽은 시점과 겹쳐 보기(층), 오른쪽은 화석 산지.
+         좁은 창에서는 지도 밑에 차례로 쌓이고, 접기 막대 하나가 둘을 함께 접는다 -->
+    <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel-left panel" aria-expanded="true">패널 접기 ▾</button>
+    <aside class="panel panel-left" id="panel-left">
       <section data-sec="time">
         <h2 data-i18n="time">시점</h2>
         <div class="timeline">
@@ -118,6 +94,52 @@
         <p class="note" data-i18n="chrono.about">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
       </section>
 
+      <section data-sec="overlay">
+        <h2 data-i18n="overlay">겹쳐 보기</h2>
+        <label class="swatch"><input type="checkbox" id="climate"> <i class="line temp"></i> <span data-i18n="climate">지표 기온 (Scotese 2021)</span></label>
+        <div class="temp-legend" id="temp-legend" hidden>
+          <div class="bar" id="temp-bar"></div>
+          <div class="ticks"><span>−40</span><span>−20</span><span>0</span><span>20</span><span>40 ℃</span></div>
+          <label class="opacity"><span data-i18n="climate.opacity">기온 층 불투명도</span> <input type="range" id="climate-opacity" min="10" max="100" step="5" value="55" aria-label="기온 층 불투명도" data-i18n-attr="aria-label:climate.opacity"> <output id="climate-opacity-value">55%</output></label>
+        </div>
+        <p class="note" id="climate-note"></p>
+        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (지금 국경을 그때 자리로 돌린 것)</span></label>
+        <p class="note" id="borders-note"></p>
+        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
+        <p class="note" id="coast-note"></p>
+        <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
+        <p class="note" id="relief-note"></p>
+      </section>
+    </aside>
+
+    <div class="mapcol">
+      <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
+      <!-- 찾기 막대(wetherilli 004) — 후보 목록은 막대 위로 뜬다. 분류군 결과만 패널의 절에 적는다(011) -->
+      <div class="findbar">
+        <!-- 분류군과 국가를 한 칸에서 찾는다(wetherilli 013). 후보는 국가(바로) → 분류군(PBDB) 차례.
+             고른 것은 옆의 딱지로 남고, 둘은 함께 걸 수 있다 -->
+        <form id="find-form" class="find" role="search" autocomplete="off">
+          <div class="combo">
+            <input type="search" id="find" placeholder="분류군 또는 국가 — 예: Trilobita, saur, 한국" autocomplete="off"
+                   title="두 글자 이상 치면 PBDB 에서 분류군 후보를 찾는다(앞부분·중간 모두). 국가는 한글·영문 이름이나 코드로. 분류군은 시점을 옮기면 다시 묻는다."
+                   data-i18n-attr="placeholder:find.ph;aria-label:find.label;title:find.hint"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="find-list" aria-label="분류군 또는 국가 찾기">
+            <ul id="find-list" class="suggest" role="listbox" hidden></ul>
+          </div>
+          <button type="submit" class="find-go" data-i18n="taxon.go">찾기</button>
+        </form>
+        <div class="find-chips">
+          <span class="fchip" id="taxon-chip" hidden><small data-i18n="taxon.short">분류군</small> <b id="taxon-chip-name"></b>
+            <button type="button" id="taxon-clear" class="find-x" title="분류군 지우기" aria-label="분류군 지우기" data-i18n-attr="title:taxon.clear;aria-label:taxon.clear">✕</button></span>
+          <span class="fchip" id="country-chip" hidden><small data-i18n="country">국가</small> <b id="country-chip-name"></b>
+            <button type="button" id="country-focus" class="find-x" title="이 나라로 다시 가기" aria-label="이 나라로 다시 가기" data-i18n-attr="title:country.focus;aria-label:country.focus">⌖</button>
+            <button type="button" id="country-clear" class="find-x" title="국가 지우기" aria-label="국가 지우기" data-i18n-attr="title:country.clear;aria-label:country.clear">✕</button></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 오른쪽 패널 — 화석 산지와 찾은 분류군(wetherilli 011) -->
+    <aside class="panel panel-right" id="panel">
       <section data-sec="fossils">
         <h2 class="with-tool"><span class="title" data-i18n="fossils">화석 산지</span> <small id="fossil-count"></small>
           <button type="button" id="edit-toggle" class="tool" hidden aria-pressed="false">✎ 명칭 고치기</button></h2>
@@ -146,9 +168,10 @@
         <p class="note" data-i18n="fossils.about">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
 
-      <section data-sec="taxon">
+      <!-- 찾은 분류군의 결과만 — 찾기 칸은 지도 밑 찾기 막대에 있다. 찾기 전에는 숨긴다(wetherilli 011) -->
+      <section data-sec="taxon" id="taxon-sec" hidden>
         <h2 data-i18n="taxon">분류군 찾기</h2>
-        <p class="note" id="taxon-status" data-i18n="taxon.hint">두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.</p>
+        <p class="note" id="taxon-status" aria-live="polite"></p>
         <div class="coeval" id="coeval-row" hidden>
           <label class="swatch"><input type="checkbox" id="coeval"> <span data-i18n="coeval">같은 시대의 다른 산지 기록도 보기</span> <small data-i18n="coeval.small">(속 이하)</small></label>
           <select id="coeval-rule" aria-label="같은 시대의 기준" data-i18n-attr="aria-label:coeval.rule">
@@ -172,32 +195,6 @@
           <p class="note" id="dist-note"></p>
         </div>
       </section>
-
-      <section data-sec="country">
-        <h2 data-i18n="country">국가</h2>
-        <p class="note" id="country-note" data-i18n="country.about">고르면 지금 그 나라 땅에서 나온 산지만 보이고, 분류군 찾기도 그 나라로 좁힌다.</p>
-        <div class="links">
-          <button type="button" id="country-focus" class="link" hidden data-i18n="country.focus">이 나라로 다시 가기</button>
-        </div>
-      </section>
-
-      <section data-sec="overlay">
-        <h2 data-i18n="overlay">겹쳐 보기</h2>
-        <label class="swatch"><input type="checkbox" id="climate"> <i class="line temp"></i> <span data-i18n="climate">지표 기온 (Scotese 2021)</span></label>
-        <div class="temp-legend" id="temp-legend" hidden>
-          <div class="bar" id="temp-bar"></div>
-          <div class="ticks"><span>−40</span><span>−20</span><span>0</span><span>20</span><span>40 ℃</span></div>
-          <label class="opacity"><span data-i18n="climate.opacity">기온 층 불투명도</span> <input type="range" id="climate-opacity" min="10" max="100" step="5" value="55" aria-label="기온 층 불투명도" data-i18n-attr="aria-label:climate.opacity"> <output id="climate-opacity-value">55%</output></label>
-        </div>
-        <p class="note" id="climate-note"></p>
-        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (지금 국경을 그때 자리로 돌린 것)</span></label>
-        <p class="note" id="borders-note"></p>
-        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
-        <p class="note" id="coast-note"></p>
-        <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
-        <p class="note" id="relief-note"></p>
-      </section>
-
     </aside>
   </main>
 

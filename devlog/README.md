@@ -69,3 +69,7 @@
 | wetherilli 009 | 2026-09-30 | [몰바이데에서 기온 층이 처음 켤 때 안 그려지던 것](20260930_wetherilli_009_mollweide_climate_first_paint.md) |
 | wetherilli 010 | 2026-09-30 | [병합 전에 판이 부딪히는지 본다](20260930_wetherilli_010_premerge_version_check.md) |
 | tupandactyl 001 | 2026-09-30 | [커서 목록을 계급이 아니라 산지의 분류군 수로 가른다](20260930_tupandactyl_001_hover_taxa_list.md) |
+| wetherilli 011 | 2026-09-30 | [패널을 양쪽으로, 찾기 칸이 빠진 절 치우기](20260930_wetherilli_011_two_panels.md) |
+| wetherilli 012 | 2026-09-30 | [축척 막대를 GSM 처럼 두껍게, 테마를 따라](20260930_wetherilli_012_thick_scale_bar.md) |
+| wetherilli 013 | 2026-09-30 | [분류군·국가를 한 칸에서 찾는다](20260930_wetherilli_013_one_find_box.md) |
+| wetherilli 014 | 2026-09-30 | [그림 단추를 도구 묶음으로, 거리 재기·링크·전체 보기](20260930_wetherilli_014_map_tools.md) |

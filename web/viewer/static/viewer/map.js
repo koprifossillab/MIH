@@ -448,6 +448,7 @@
   function redrawLines(f) {
     drawGrid();
     if (!f) return;
+    if (measure && measure.pts.length) { if (measure.age !== f.age) clearMeasure(); else drawMeasure(); }   // 잰 선(wetherilli 014)
     drawCoast(f);
     drawBorders(f, false);
   }
@@ -1024,6 +1025,7 @@
 
   // ── 산지 팝업 ─────────────────────────────────────────────────────
   function openCollection(latlng, row, col) {
+    if (measure.on) return;          // 거리를 재는 동안 누른 것은 점 찍기다(wetherilli 014)
     var no = row[col.collection_no];
     var interval = row[col.early_interval] + (row[col.late_interval] ? " – " + row[col.late_interval] : "");
     var env = row[col.environment];
@@ -1358,7 +1360,9 @@
       state.taxonRank = rank;
       drawTaxa();
     });
-    $("taxon-clear").hidden = false;
+    $("taxon-chip").hidden = false;
+    $("taxon-chip-name").textContent = name;
+    $("taxon-sec").hidden = false;
     $("taxon-status").textContent = tr("taxon.asking", { name: name, age: fmtAge(f.age) });
     drawFossils();
     // 결과를 그리고 나서 풀리는 약속을 돌려준다 — 차례로 보기(011)가 이것을 기다린다.
@@ -1541,9 +1545,9 @@
     $("coeval-row").hidden = true;
     $("coeval-note").textContent = "";
     taxonLayer.clearLayers();
-    $("taxon").value = "";
-    $("taxon-clear").hidden = true;
-    $("taxon-status").textContent = tr("taxon.hint");
+    $("taxon-chip").hidden = true;
+    $("taxon-status").textContent = "";
+    $("taxon-sec").hidden = true;       // 찾기 전에는 패널에 절을 두지 않는다 — 찾기 칸은 찾기 막대에 있다(wetherilli 011)
     drawFossils();
   }
 
@@ -1604,65 +1608,113 @@
     return out.sort(function (x, y) { return y.occs - x.occs; }).slice(0, 12);
   }
 
-  function renderSuggest(items, done) {
-    var list = $("taxon-list");
-    suggest.items = items;
+  // 한 칸에서 분류군과 국가를 함께 찾는다(wetherilli 013). 국가는 목록(index.json)에서 바로, 분류군은 PBDB 에서
+  // 늦게 온다 — 국가 후보를 위에 먼저 두고 분류군 후보가 오면 그 밑에 붙인다. 고른 것은 찾기 막대의 딱지로 남는다.
+  function countryMatches(text) {
+    var q = normName(text);
+    if (!q) return [];
+    return state.countries.filter(function (c) {
+      return normName(c.ko).indexOf(q) >= 0 || normName(c.en).indexOf(q) >= 0 || normName(c.cc) === q || normName(c.iso) === q ||
+        (c.aka || []).some(function (x) { return normName(x).indexOf(q) >= 0; });
+    }).slice(0, 5);
+  }
+  function normName(v) { return String(v || "").toLowerCase().replace(/\s+/g, ""); }
+
+  function renderSuggest(taxa, done) {
+    var list = $("find-list"), text = $("find").value.trim();
+    var countries = countryMatches(text).map(function (c) { return { kind: "country", c: c }; });
+    var waitTaxa = text.length >= 2;
+    suggest.items = countries.concat((taxa || []).map(function (it) { return { kind: "taxon", t: it }; }));
     suggest.active = -1;
-    var text = $("taxon").value.trim();
     var re = text ? new RegExp("(" + text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i") : null;
-    list.innerHTML = items.map(function (it, k) {
-      var name = esc(it.name);
-      if (re) name = name.replace(re, "<b>$1</b>");
-      return '<li role="option" id="sg-' + k + '" data-k="' + k + '"><span class="nm">' + name + "</span>" +
-        '<span class="meta">' + esc(it.rank) + (it.group ? " · " + esc(it.group) : "") + tr("suggest.occ", { n: fmtNum(it.occs) }) + "</span></li>";
-    }).join("") || '<li class="empty-sg">' + tr(done ? "suggest.none" : "suggest.wait") + "</li>";
-    list.hidden = false;
-    $("taxon").setAttribute("aria-expanded", "true");
+    var mark = function (v) { var e = esc(v); return re ? e.replace(re, "<b>$1</b>") : e; };
+    var html = "";
+    suggest.items.forEach(function (it, k) {
+      if (k === 0 && it.kind === "country") html += '<li class="sg-head" role="presentation">' + tr("suggest.countries") + "</li>";
+      if (it.kind === "taxon" && (k === 0 || suggest.items[k - 1].kind !== "taxon"))
+        html += '<li class="sg-head" role="presentation">' + tr("suggest.taxa") + "</li>";
+      var li = '<li role="option" id="sg-' + k + '" data-k="' + k + '">';
+      if (it.kind === "country") {
+        var c = it.c;
+        html += li + '<span class="nm-plain">' + mark(c.ko) + (c.en !== c.ko ? " <small>" + mark(c.en) + "</small>" : "") +
+          '</span><span class="meta">' + esc(c.cc) + tr("country.colls", { n: fmtNum(c.collections) }) + "</span></li>";
+      } else {
+        var t = it.t;
+        html += li + '<span class="nm">' + mark(t.name) + "</span>" +
+          '<span class="meta">' + esc(t.rank) + (t.group ? " · " + esc(t.group) : "") + tr("suggest.occ", { n: fmtNum(t.occs) }) + "</span></li>";
+      }
+    });
+    if (waitTaxa && !(taxa && taxa.length) && (!done || !countries.length)) {
+      html += '<li class="sg-head" role="presentation">' + tr("suggest.taxa") + "</li>" +
+        '<li class="empty-sg">' + tr(done ? "suggest.none" : "suggest.wait") + "</li>";
+    }
+    list.innerHTML = html;
+    list.hidden = !html;
+    $("find").setAttribute("aria-expanded", String(!!html));
   }
 
   function closeSuggest() {
     suggest.seq += 1;
     clearTimeout(suggest.timer);
-    $("taxon-list").hidden = true;
-    $("taxon").setAttribute("aria-expanded", "false");
-    $("taxon").removeAttribute("aria-activedescendant");
+    $("find-list").hidden = true;
+    $("find").setAttribute("aria-expanded", "false");
+    $("find").removeAttribute("aria-activedescendant");
   }
 
   function pickSuggest(k) {
     var it = suggest.items[k];
     if (!it) return;
-    $("taxon").value = it.name;
+    $("find").value = "";
     closeSuggest();
+    if (it.kind === "country") { setCountry(it.c.cc); return; }
     stopTour();
-    searchTaxon(it.name);
+    searchTaxon(it.t.name);
   }
 
   function moveActive(step) {
     var n = suggest.items.length;
     if (!n) return;
     suggest.active = (suggest.active + step + n) % n;
-    document.querySelectorAll("#taxon-list li").forEach(function (li, k) { li.classList.toggle("active", k === suggest.active); });
-    $("taxon").setAttribute("aria-activedescendant", "sg-" + suggest.active);
+    document.querySelectorAll("#find-list li[data-k]").forEach(function (li) { li.classList.toggle("active", +li.dataset.k === suggest.active); });
+    $("find").setAttribute("aria-activedescendant", "sg-" + suggest.active);
+  }
+
+  // 후보를 고르지 않고 찾기(Enter·단추): 국가 이름·코드와 똑같으면 국가, 아니면 분류군 이름으로 PBDB 에 묻는다
+  function submitFind() {
+    var text = $("find").value.trim();
+    closeSuggest();
+    if (!text) return;
+    var q = normName(text), exact = state.countries.filter(function (c) {
+      return normName(c.ko) === q || normName(c.en) === q || normName(c.cc) === q || normName(c.iso) === q ||
+        (c.aka || []).some(function (x) { return normName(x) === q; });
+    })[0];
+    $("find").value = "";
+    if (exact) { setCountry(exact.cc); return; }
+    stopTour();
+    searchTaxon(text);
   }
 
   function bindSuggest() {
-    var input = $("taxon");
+    var input = $("find");
     input.addEventListener("input", function () {
       clearTimeout(suggest.timer);
+      suggest.seq += 1;
       var text = input.value.trim();
-      if (text.length < 2) { closeSuggest(); return; }
-      suggest.timer = setTimeout(function () { renderSuggest([], false); suggestFetch(text); }, 250);
+      if (!text) { closeSuggest(); return; }
+      renderSuggest([], text.length < 2);
+      if (text.length >= 2) suggest.timer = setTimeout(function () { suggestFetch(text); }, 250);
     });
     input.addEventListener("keydown", function (e) {
-      if ($("taxon-list").hidden) return;
+      if ($("find-list").hidden) return;
       if (e.key === "ArrowDown") { moveActive(1); e.preventDefault(); }
       else if (e.key === "ArrowUp") { moveActive(-1); e.preventDefault(); }
       else if (e.key === "Enter" && suggest.active >= 0) { pickSuggest(suggest.active); e.preventDefault(); }
       else if (e.key === "Escape") { closeSuggest(); }
     });
-    $("taxon-list").addEventListener("mousedown", function (e) {
+    $("find-list").addEventListener("mousedown", function (e) {
       var li = e.target.closest("li[data-k]");
-      if (li) { e.preventDefault(); pickSuggest(+li.dataset.k); }
+      e.preventDefault();
+      if (li) pickSuggest(+li.dataset.k);
     });
     input.addEventListener("blur", function () { setTimeout(closeSuggest, 150); });
   }
@@ -1676,42 +1728,6 @@
   function initCountries(list) {
     state.countries = list;
     list.forEach(function (c) { state.countryBy[c.cc] = c; });
-    var input = $("country"), box = $("country-list"), active = -1, items = [];
-    var norm = function (s) { return String(s || "").toLowerCase().replace(/\s+/g, ""); };
-    var render = function () {
-      var q = norm(input.value);
-      items = !q ? [] : state.countries.filter(function (c) {
-        return norm(c.ko).indexOf(q) >= 0 || norm(c.en).indexOf(q) >= 0 || norm(c.cc) === q || norm(c.iso) === q ||
-          (c.aka || []).some(function (a) { return norm(a).indexOf(q) >= 0; });
-      }).slice(0, 12);
-      active = -1;
-      box.innerHTML = items.map(function (c, k) {
-        return '<li role="option" data-k="' + k + '"><span class="nm-plain">' + esc(c.ko) + (c.en !== c.ko ? ' <small>' + esc(c.en) + "</small>" : "") +
-          "</span><span class=\"meta\">" + esc(c.cc) + tr("country.colls", { n: fmtNum(c.collections) }) + "</span></li>";
-      }).join("") || (q ? '<li class="empty-sg">' + tr("country.none") + "</li>" : "");
-      box.hidden = !q;
-    };
-    var pick = function (k) {
-      var c = items[k];
-      if (!c) return;
-      box.hidden = true;
-      setCountry(c.cc);
-    };
-    input.addEventListener("input", render);
-    input.addEventListener("keydown", function (e) {
-      if (box.hidden) return;
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        active = (active + (e.key === "ArrowDown" ? 1 : -1) + items.length) % Math.max(items.length, 1);
-        box.querySelectorAll("li").forEach(function (li, k) { li.classList.toggle("active", k === active); });
-        e.preventDefault();
-      } else if (e.key === "Enter") { pick(active >= 0 ? active : 0); e.preventDefault(); }
-      else if (e.key === "Escape") { box.hidden = true; }
-    });
-    box.addEventListener("mousedown", function (e) {
-      var li = e.target.closest("li[data-k]");
-      if (li) { e.preventDefault(); pick(+li.dataset.k); }
-    });
-    input.addEventListener("blur", function () { setTimeout(function () { box.hidden = true; }, 150); });
     $("country-clear").addEventListener("click", function () { setCountry(null); map.flyTo(worldCenter(), worldZoom(), { duration: 0.6 }); });
     // 시점을 옮기면 나라가 움직인다 — 그 시점의 자리로 다시 당긴다.
     $("country-focus").addEventListener("click", function () { drawBorders(frame(), true); });
@@ -1719,17 +1735,17 @@
 
   function setCountry(cc) {
     state.country = cc;
-    $("country").value = cc ? countryName(cc) : "";
-    $("country-clear").hidden = !cc;
-    $("country-focus").hidden = !cc;
+    $("country-chip").hidden = !cc;
+    $("country-chip-name").textContent = cc ? countryName(cc) : "";
     noteCountry();
     drawBorders(frame(), true);
     if (state.taxon) searchTaxon(state.taxon); else redraw();
   }
 
   function noteCountry() {
+    // 패널의 국가 절을 치웠다(wetherilli 011) — 고른 나라의 풀이는 찾기 막대의 국가 딱지에 커서를 대면 보인다
     var c = state.countryBy[state.country];
-    $("country-note").textContent = !c ? "" :
+    $("country-chip").title = !c ? "" :
       tr("country.note", { name: c.ko, ocean: c.ocean ? tr("country.ocean") : "", n: fmtNum(c.collections) });
   }
 
@@ -1867,52 +1883,201 @@
   // 두 투영 모두 축척이 자리마다 다르다 — 정거원통은 가로가 cos φ 로 줄고, 몰바이데는 가로·세로가 모두 달라진다.
   // 그래서 **화면 가운데를 지나는 위선 위의 가로 거리**를 잰다. 두 투영에서 위선은 가로 직선이라 막대가 그 위선을 따른다.
   // Leaflet 의 L.control.scale 은 화면 왼쪽 끝에서 재서 몰바이데에서는 지구 밖(위경도 없음)을 잰다. 지구 밖이면 숨긴다.
-  var ScaleBar = L.Control.Scale.extend({
+  // 모양은 GSM 의 막대(OpenLayers ScaleLine bar)를 따른다 — 반투명 판 위에 두 칸이 번갈아 칠해진 두꺼운 막대, 밑에
+  // 0·가운데·끝 눈금 숫자. 색은 모두 테마 토큰이다(wetherilli 012). 그래서 L.Control.Scale 을 버리고 직접 그린다.
+  var ScaleBar = L.Control.extend({
+    options: { position: "bottomright", maxWidth: 150 },
+    onAdd: function (m) {
+      var box = L.DomUtil.create("div", "scalebar");
+      box.innerHTML = '<div class="scalebar-bar"><i></i><i></i></div>' +
+        '<div class="scalebar-ticks"><span>0</span><span></span><span></span></div>';
+      this._box = box;
+      m.on("move zoom resize viewreset", this._update, this);
+      m.whenReady(this._update, this);
+      return box;
+    },
+    onRemove: function (m) { m.off("move zoom resize viewreset", this._update, this); },
     _update: function () {
-      var m = this._map, size = m.getSize(), half = this.options.maxWidth / 2;
+      var m = this._map, size = m.getSize(), half = this.options.maxWidth / 2, box = this._box;
       var a = L.point(size.x / 2 - half, size.y / 2), b = L.point(size.x / 2 + half, size.y / 2);
-      var box = this.getContainer();
-      if (!box) { setTimeout(this._update.bind(this), 0); return; }   // onAdd 안의 whenReady — 틀이 아직 붙지 않았다
       if (!size.x || !onGlobe(a) || !onGlobe(b)) { box.style.visibility = "hidden"; return; }
       var la = m.containerPointToLatLng(a), lb = m.containerPointToLatLng(b);
       var dLon = ((lb.lng - la.lng) % 360 + 360) % 360;       // 가운데 경선을 돌려도 동쪽으로 잰 경도 차
       var meters = 6371008.8 * dLon * DEG * Math.cos(la.lat * DEG);
       if (!(meters > 0)) { box.style.visibility = "hidden"; return; }
+      // maxWidth 안에 드는 가장 큰 1·2·5 × 10ⁿ
+      var pow = Math.pow(10, Math.floor(Math.log(meters) / Math.LN10)), d = meters / pow;
+      var nice = pow * (d >= 5 ? 5 : d >= 2 ? 2 : 1);
+      var km = nice >= 1000, unit = km ? "km" : "m", v = km ? nice / 1000 : nice;
       box.style.visibility = "";
       box.title = tr("scale.title", { lat: la.lat.toFixed(0) });
-      this._updateScales(meters);
+      box.querySelector(".scalebar-bar").style.width = Math.round(this.options.maxWidth * nice / meters) + "px";
+      var t = box.querySelectorAll(".scalebar-ticks span");
+      t[1].textContent = fmtNum(v / 2);
+      t[2].textContent = fmtNum(v) + " " + unit;
     },
   });
-  new ScaleBar({ position: "bottomright", imperial: false, maxWidth: 120 }).addTo(map);
+  new ScaleBar().addTo(map);
 
   // ── 그림으로 내려받기(wetherilli 008) ──────────────────────────────
   // 지금 보이는 지도를 PNG 한 장으로. 지도는 창(pane)마다 캔버스(배경·기온·산지)·그림(정거원통 기온)·SVG(해안선·국경·
   // 경위선)로 그려져 있어, 화면에 놓인 자리(getBoundingClientRect) 그대로 겹 순서대로 한 캔버스에 옮긴다.
   // 밑에 띠를 붙여 시점·층서·평균 기온·투영·거르기·출처·주소·날짜를 적는다 — 그림만 떨어져 돌아다녀도 무엇인지 알게.
-  var exporter = L.control({ position: "topright" });
-  exporter.onAdd = function () {
-    var b = L.DomUtil.create("button", "map-btn");
-    b.type = "button";
-    b.id = "export";
-    b.title = tr("export.title");
-    b.innerHTML = '<span aria-hidden="true">⤓</span> ' + esc(tr("export"));
-    L.DomEvent.disableClickPropagation(b);
-    b.addEventListener("click", function () {
-      if (b.disabled) return;
-      b.disabled = true;
-      exportMap().catch(function (err) {
-        console.error(err);
-        b.title = tr("export.fail");
-      }).then(function () { b.disabled = false; });
-    });
-    return b;
+  // ── 도구 묶음(wetherilli 014) ──────────────────────────────────────
+  // GSM 의 지도 위 손잡이처럼 오른쪽 위에 세로로 붙인다 — 아이콘 밑에 이름. 그림 단추(008)가 혼자 떠 있던 자리다.
+  // 전체 보기 · 거리 재기 · 링크 복사 · 그림 | 지우기. 잰 결과는 묶음 왼쪽의 칸(.tool-out)에 적는다.
+  var ICON = {
+    world: '<circle class="stroke" cx="12" cy="12" r="8"/><path class="stroke" d="M4 12h16M12 4c-3 3-3 13 0 16M12 4c3 3 3 13 0 16"/>',
+    measure: '<path class="stroke dash" d="M6 18 18 6"/><circle cx="5" cy="19" r="2.3"/><circle cx="19" cy="5" r="2.3"/>',
+    link: '<path class="stroke" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path class="stroke" d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    export: '<rect class="stroke" x="4" y="4" width="16" height="13" rx="1.5"/><path class="stroke" d="m6.5 14 3.5-4 3 3 2-2 2.5 3"/><path class="stroke" d="M12 17v4M9.5 19l2.5 2 2.5-2"/>',
+    clear: '<path class="stroke" d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>',
   };
-  exporter.addTo(map);
+  var measure = { on: false, pts: [], age: null, layer: L.layerGroup().addTo(map), live: null };
+  var tools = L.control({ position: "topright" });
+  tools.onAdd = function () {
+    var box = L.DomUtil.create("div", "maptools");
+    box.setAttribute("role", "toolbar");
+    box.setAttribute("aria-label", tr("tool.cap"));
+    function btn(key, id, cls) {
+      return '<button type="button" class="mtool' + (cls ? " " + cls : "") + '" id="' + id + '" title="' + esc(tr(key + ".title")) + '">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[id.replace("tool-", "")] + "</svg><span>" + esc(tr(key)) + "</span></button>";
+    }
+    box.innerHTML = '<div class="tool-col">' +
+      '<div class="tool-cap">' + esc(tr("tool.cap")) + "</div>" +
+      btn("tool.world", "tool-world") + btn("tool.measure", "tool-measure") + btn("tool.link", "tool-link") +
+      btn("export", "tool-export") + '<span class="tool-sep" aria-hidden="true"></span>' +
+      btn("tool.clear", "tool-clear", "danger") + '</div><output class="tool-out" id="tool-out" hidden></output>';
+    L.DomEvent.disableClickPropagation(box);
+    L.DomEvent.disableScrollPropagation(box);
+    return box;
+  };
+  tools.addTo(map);
+  $("tool-measure").setAttribute("aria-pressed", "false");
+  $("tool-clear").disabled = true;
+  $("tool-world").addEventListener("click", function () { map.flyTo(worldCenter(), worldZoom(), { duration: 0.6 }); });
+  $("tool-link").addEventListener("click", function () {
+    var b = this;
+    copyText(location.href).then(function () { return tr("tool.link.done"); }, function () { return tr("copy.fail"); }).then(function (said) {
+      b.dataset.flash = said;
+      b.classList.add("flash");
+      clearTimeout(b._flash);
+      b._flash = setTimeout(function () { b.classList.remove("flash"); }, 1200);
+    });
+  });
+  $("tool-export").addEventListener("click", function () {
+    var b = this;
+    if (b.disabled) return;
+    b.disabled = true;
+    exportMap().catch(function (err) {
+      console.error(err);
+      b.title = tr("export.fail");
+    }).then(function () { b.disabled = false; });
+  });
+  $("tool-measure").addEventListener("click", function () { setMeasuring(!measure.on); });
+  $("tool-clear").addEventListener("click", function () { clearMeasure(); });
+
+  // 거리 재기 — 눌러 가며 잇고, 두 번 누르거나 Esc 로 끝낸다. 좌표는 그 시점의 고좌표라 **그때의 대권 거리**다.
+  // 시점을 옮기면 점들이 뜻을 잃어(땅이 움직였다) 지운다. 선은 대권을 따라 1° 남짓으로 쪼개 긋고 이음매에서 끊는다.
+  function setMeasuring(on) {
+    measure.on = on;
+    $("tool-measure").classList.toggle("on", on);
+    $("tool-measure").setAttribute("aria-pressed", String(on));
+    map.getContainer().classList.toggle("measuring", on);
+    if (on) map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
+    if (!on && measure.live) { measure.layer.removeLayer(measure.live); measure.live = null; }
+    if (on && !measure.pts.length) measure.age = frame() ? frame().age : null;
+    writeMeasure();
+  }
+  function clearMeasure() {
+    measure.pts = [];
+    measure.live = null;
+    measure.layer.clearLayers();
+    measure.age = frame() ? frame().age : null;
+    writeMeasure();
+  }
+  function arcKm(a, b) {
+    var p1 = a.lat * DEG, p2 = b.lat * DEG, dp = p2 - p1, dl = (b.lng - a.lng) * DEG;
+    var h = Math.sin(dp / 2) * Math.sin(dp / 2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) * Math.sin(dl / 2);
+    return 2 * 6371.0088 * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  // 대권 위의 점들([경도, 위도]) — 구면 선형 보간
+  function arcCoords(a, b) {
+    var d = arcKm(a, b) / 6371.0088, n = Math.max(1, Math.ceil(d / DEG)), out = [];
+    function v(p) { var la = p.lat * DEG, lo = p.lng * DEG; return [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)]; }
+    var A = v(a), B = v(b);
+    for (var k = 0; k <= n; k++) {
+      var t = k / n, s1 = d ? Math.sin((1 - t) * d) / Math.sin(d) : 1 - t, s2 = d ? Math.sin(t * d) / Math.sin(d) : t;
+      var x = s1 * A[0] + s2 * B[0], y = s1 * A[1] + s2 * B[1], z = s1 * A[2] + s2 * B[2];
+      out.push([Math.atan2(y, x) / DEG, Math.atan2(z, Math.sqrt(x * x + y * y)) / DEG]);
+    }
+    return out;
+  }
+  function arcLine(a, b, cls) {
+    var parts = splitLine(arcCoords(a, b), state.proj === "moll" ? Mollweide.lon0 : 0).map(function (line) {
+      return line.map(function (c) { return [c[1], c[0]]; });
+    });
+    return L.polyline(parts, { className: cls, interactive: false });
+  }
+  function drawMeasure() {
+    measure.layer.clearLayers();
+    measure.live = null;
+    for (var k = 1; k < measure.pts.length; k++) measure.layer.addLayer(arcLine(measure.pts[k - 1], measure.pts[k], "measure-line"));
+    measure.pts.forEach(function (p) {
+      measure.layer.addLayer(L.circleMarker(p, { radius: 4, className: "measure-pt", interactive: false }));
+    });
+  }
+  function writeMeasure(extra) {
+    var out = $("tool-out"), n = measure.pts.length, total = 0;
+    for (var k = 1; k < n; k++) total += arcKm(measure.pts[k - 1], measure.pts[k]);
+    if (extra) total += extra;
+    $("tool-clear").disabled = !n;
+    if (!measure.on && !n) { out.hidden = true; return; }
+    out.hidden = false;
+    out.innerHTML = n < 2 && !extra ? esc(tr("measure.start")) :
+      "<b>" + fmtNum(Math.round(total)) + " km</b> · " + esc(tr("measure.segs", { n: n - 1 + (extra ? 1 : 0) })) +
+      "<br><small>" + esc(tr("measure.about", { age: fmtAge(measure.age) })) + "</small>";
+  }
+  map.on("click", function (e) {
+    if (!measure.on || !onGlobe(e.containerPoint)) return;
+    if (!measure.pts.length) measure.age = frame().age;
+    measure.pts.push(L.latLng(e.latlng.lat, wrap180(e.latlng.lng)));
+    drawMeasure();
+    writeMeasure();
+  });
+  map.on("dblclick", function () {
+    if (!measure.on) return;
+    // 두 번 누르면 click 이 둘 먼저 와 같은 자리에 점이 겹친다 — 하나를 버리고 끝낸다
+    var n = measure.pts.length;
+    if (n > 1 && map.latLngToContainerPoint(measure.pts[n - 1]).distanceTo(map.latLngToContainerPoint(measure.pts[n - 2])) < 6) measure.pts.pop();
+    drawMeasure();
+    setMeasuring(false);
+  });
+  map.on("mousemove", function (e) {
+    if (!measure.on || !measure.pts.length) return;
+    if (measure.live) measure.layer.removeLayer(measure.live);
+    var last = measure.pts[measure.pts.length - 1], here = L.latLng(e.latlng.lat, wrap180(e.latlng.lng));
+    if (!onGlobe(e.containerPoint)) { measure.live = null; writeMeasure(); return; }
+    measure.live = arcLine(last, here, "measure-line live").addTo(measure.layer);
+    writeMeasure(arcKm(last, here));
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && measure.on) setMeasuring(false);
+  });
 
   function svgImage(svg) {
     var copy = svg.cloneNode(true);
     copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     copy.removeAttribute("style");   // Leaflet 이 자리를 잡는 transform — 그림 안에서 다시 먹어 선이 밀렸다
+    // 색을 CSS 로 칠한 선(잰 선, wetherilli 014)은 떼어 낸 SVG 에서 토큰을 못 읽는다 — 화면의 계산된 색을 적어 넣는다
+    var live = svg.querySelectorAll("path[class]"), dead = copy.querySelectorAll("path[class]");
+    Array.prototype.forEach.call(live, function (el, k) {
+      if (!/measure-/.test(el.getAttribute("class"))) return;
+      var cs = getComputedStyle(el);
+      ["stroke", "stroke-width", "stroke-dasharray", "stroke-opacity", "fill", "fill-opacity"].forEach(function (a) {
+        dead[k].setAttribute(a, cs.getPropertyValue(a));
+      });
+    });
     var url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)], { type: "image/svg+xml" }));
     return new Promise(function (resolve, reject) {
       var img = new Image();
@@ -1975,22 +2140,26 @@
     });
   }
 
-  // 축척 막대 — 화면의 막대(001)를 그 자리에 옮겨 그린다
+  // 축척 막대 — 화면의 막대(001·012)를 그 자리에 그 색 그대로 옮겨 그린다(판·두 칸·눈금 숫자)
   function drawExportScale(ctx, R, W, H) {
-    var line = map.getContainer().querySelector(".leaflet-control-scale-line");
-    if (!line || !line.offsetWidth || line.closest(".leaflet-control-scale").style.visibility === "hidden") return;
-    var r = line.getBoundingClientRect(), x = r.left - R.left, y = r.top - R.top;
-    ctx.fillStyle = "rgba(255,255,255,.8)";
-    ctx.fillRect(x, y, r.width, r.height);
-    ctx.strokeStyle = "#222";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x + 1, y); ctx.lineTo(x + 1, y + r.height - 1); ctx.lineTo(x + r.width - 1, y + r.height - 1); ctx.lineTo(x + r.width - 1, y);
-    ctx.stroke();
-    ctx.fillStyle = "#222";
-    ctx.font = "11px system-ui, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.fillText(line.textContent, x + 5, y + r.height / 2);
+    var box = map.getContainer().querySelector(".scalebar");
+    if (!box || !box.offsetWidth || box.style.visibility === "hidden") return;
+    function at(el) { var r = el.getBoundingClientRect(); return { x: r.left - R.left, y: r.top - R.top, w: r.width, h: r.height }; }
+    function fill(el) {
+      var r = at(el), cs = getComputedStyle(el), bw = parseFloat(cs.borderTopWidth) || 0;
+      if (bw) { ctx.fillStyle = cs.borderTopColor; ctx.fillRect(r.x, r.y, r.w, r.h); }
+      ctx.fillStyle = cs.backgroundColor;
+      ctx.fillRect(r.x + bw, r.y + bw, r.w - 2 * bw, r.h - 2 * bw);
+    }
+    fill(box);
+    box.querySelectorAll(".scalebar-bar, .scalebar-bar i").forEach(fill);
+    box.querySelectorAll(".scalebar-ticks span").forEach(function (el) {
+      var r = at(el), cs = getComputedStyle(el);
+      ctx.fillStyle = cs.color;
+      ctx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+      ctx.textBaseline = "middle";
+      ctx.fillText(el.textContent, r.x, r.y + r.h / 2);
+    });
   }
 
   // 밑 띠 — 밝은 바탕에 짙은 글씨로 고정한다(어두운 모드에서 받아도 인쇄·슬라이드에 그대로 쓰게)
@@ -2133,13 +2302,7 @@
     $("grid").addEventListener("change", function () {
       if (this.checked) gridLayer.addTo(map); else map.removeLayer(gridLayer);
     });
-    $("taxon-form").addEventListener("submit", function (e) {
-      e.preventDefault();
-      stopTour();
-      closeSuggest();
-      var name = $("taxon").value.trim();
-      if (name) searchTaxon(name); else clearTaxon();
-    });
+    $("find-form").addEventListener("submit", function (e) { e.preventDefault(); submitFind(); });
     $("taxon-clear").addEventListener("click", clearTaxon);
     $("edit-toggle").addEventListener("click", function () { setEditing(!state.editing); });
     bindSuggest();
