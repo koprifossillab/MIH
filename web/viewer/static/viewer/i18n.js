@@ -167,6 +167,7 @@
     "taxon.ph": "Part of a name — e.g. lobit, saur",
     "taxon.label": "Taxon name",
     "taxon.go": "Search",
+    "taxon.short": "Taxon",
     "taxon.hint": "Type two or more letters for suggestions from PBDB (start or middle of the name). Moving in time asks again.",
     "coeval": "Also show other localities of the same age",
     "coeval.small": "(genus and below)",

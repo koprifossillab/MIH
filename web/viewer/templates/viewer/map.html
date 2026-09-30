@@ -62,7 +62,31 @@
   </dialog>
 
   <main class="stage">
-    <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
+    <div class="mapcol">
+      <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
+      <!-- 찾기 막대(wetherilli 004) — 분류군과 국가. 후보 목록은 막대 위로 뜬다. 결과는 패널의 절에 적는다 -->
+      <div class="findbar" role="search">
+        <form id="taxon-form" class="find" autocomplete="off">
+          <label class="find-label" for="taxon" data-i18n="taxon.short">분류군</label>
+          <div class="combo">
+            <input type="search" id="taxon" placeholder="이름 일부 — 예: lobit, saur" data-i18n-attr="placeholder:taxon.ph;aria-label:taxon.label" autocomplete="off"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-list" aria-label="분류군 이름">
+            <ul id="taxon-list" class="suggest" role="listbox" hidden></ul>
+          </div>
+          <button type="button" id="taxon-clear" class="find-x" hidden title="분류군 지우기" aria-label="분류군 지우기" data-i18n-attr="title:taxon.clear;aria-label:taxon.clear">✕</button>
+          <button type="submit" class="find-go" data-i18n="taxon.go">찾기</button>
+        </form>
+        <div class="find">
+          <label class="find-label" for="country" data-i18n="country">국가</label>
+          <div class="combo">
+            <input type="search" id="country" placeholder="한글·영문 이름 또는 코드 — 예: 한국, China, US" data-i18n-attr="placeholder:country.ph;aria-label:country.label" autocomplete="off"
+                   role="combobox" aria-autocomplete="list" aria-controls="country-list" aria-label="국가">
+            <ul id="country-list" class="suggest" role="listbox" hidden></ul>
+          </div>
+          <button type="button" id="country-clear" class="find-x" hidden title="국가 지우기" aria-label="국가 지우기" data-i18n-attr="title:country.clear;aria-label:country.clear">✕</button>
+        </div>
+      </div>
+    </div>
 
     <aside class="panel" id="panel">
       <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel" aria-expanded="true">패널 접기 ▾</button>
@@ -124,14 +148,6 @@
 
       <section data-sec="taxon">
         <h2 data-i18n="taxon">분류군 찾기</h2>
-        <form id="taxon-form" class="taxon" autocomplete="off">
-          <div class="combo">
-            <input type="search" id="taxon" placeholder="이름 일부 — 예: lobit, saur" data-i18n-attr="placeholder:taxon.ph;aria-label:taxon.label" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-list" aria-label="분류군 이름">
-            <ul id="taxon-list" class="suggest" role="listbox" hidden></ul>
-          </div>
-          <button type="submit" data-i18n="taxon.go">찾기</button>
-        </form>
         <p class="note" id="taxon-status" data-i18n="taxon.hint">두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.</p>
         <div class="coeval" id="coeval-row" hidden>
           <label class="swatch"><input type="checkbox" id="coeval"> <span data-i18n="coeval">같은 시대의 다른 산지 기록도 보기</span> <small data-i18n="coeval.small">(속 이하)</small></label>
@@ -155,22 +171,13 @@
           <p class="note" id="tour-status" aria-live="polite"></p>
           <p class="note" id="dist-note"></p>
         </div>
-        <button type="button" id="taxon-clear" class="link" hidden data-i18n="taxon.clear">분류군 지우기</button>
       </section>
 
       <section data-sec="country">
         <h2 data-i18n="country">국가</h2>
-        <div class="taxon">
-          <div class="combo">
-            <input type="search" id="country" placeholder="한글·영문 이름 또는 코드 — 예: 한국, China, US" data-i18n-attr="placeholder:country.ph;aria-label:country.label" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-controls="country-list" aria-label="국가">
-            <ul id="country-list" class="suggest" role="listbox" hidden></ul>
-          </div>
-        </div>
         <p class="note" id="country-note" data-i18n="country.about">고르면 지금 그 나라 땅에서 나온 산지만 보이고, 분류군 찾기도 그 나라로 좁힌다.</p>
         <div class="links">
           <button type="button" id="country-focus" class="link" hidden data-i18n="country.focus">이 나라로 다시 가기</button>
-          <button type="button" id="country-clear" class="link" hidden data-i18n="country.clear">국가 지우기</button>
         </div>
       </section>
 
