@@ -18,4 +18,4 @@ node design/make_icons.js          # wegener_trace.json + meso.js → SVG 셋
 **사진의 출처**: Photo: Alfred Wegener Institute(알프레트 베게너 연구소, 브레머하펜). 베게너는 1930년에 죽었고 이 사진은
 그 전의 것이다. 연구자가 공공 영역이라며 준 것이다(2026-09-30). 초상을 쓰는 곳(대기 화면 밑 설명 등)에 이 표기를 남긴다.
 
-색은 잉크 `#3b2a1a` 와 종이 `#efe4cc` 한 벌이다(대기 화면과 같다).
+색은 잉크 `#3b2a1a` 와 종이 `#efe4cc` 한 벌이다(대기 화면과 같다). 제목의 펜 획은 `python design/make_title.py`(fonttools·brotli·scikit-image) → `title.json`.

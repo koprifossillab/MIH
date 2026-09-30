@@ -103,8 +103,8 @@
 
   // 뼈대 — 검은 몸 속에 흰 뼈(대기 화면에서 메달을 두른 뒤 떠오른다). o.bones 0…1 은 드러난 정도로, 머리에서 꼬리 쪽으로 번진다.
   // 연구자가 준 골격도(옆모습 복원 골격)를 줄여 따른다 — 등뼈 마디와 등 쪽 가시돌기, 꼬리의 아래 가시(혈관궁), 뒤로 누운
-  // 굵은 갈비뼈(메소사우루스는 갈비뼈가 두껍다), 어깨·골반뼈, 팔다리의 긴 뼈 하나 + 아래팔(다리) 두 뼈 + 부채꼴 발가락,
-  // 머리뼈의 긴 주둥이 윤곽·큰 눈구멍·측두창·아래턱
+  // 굵은 갈비뼈(메소사우루스는 갈비뼈가 두껍다), 팔다리의 긴 뼈 하나 + 아래팔(다리) 두 뼈 + 부채꼴 발가락,
+  // 머리뼈의 긴 주둥이 윤곽·큰 눈구멍·아래턱. 측두창과 어깨·골반뼈는 뺐다(연구자 — 작은 그림에서는 군더더기)
   function bones(ctx, P, L, lg, o) {
     var D = directions(P), last = P.length - 1, k = o.k || 1, col = o.boneColor || o.eye;
     function alpha(s) { return Math.max(0, Math.min(1, (o.bones - s * .55) / .45)); }
@@ -121,7 +121,7 @@
     ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineCap = "round"; ctx.lineJoin = "round";
     var thin = Math.max(.5, L * .0018 * k);
 
-    // 머리뼈 — 주둥이 위아래 윤곽, 머리 뒤(뒤통수) 곡선, 큰 눈구멍, 그 뒤의 측두창, 아래턱의 뒤쪽 가지
+    // 머리뼈 — 주둥이 위아래 윤곽, 머리 뒤(뒤통수) 곡선, 큰 눈구멍, 아래턱의 뒤쪽 가지
     var a0 = alpha(0);
     if (a0 > 0) {
       ctx.globalAlpha = a0;
@@ -136,8 +136,6 @@
       ctx.stroke();
       var ob = at(.112, -up(.112) * .18);                                      // 눈구멍
       ctx.lineWidth = thin * 1.3; ctx.beginPath(); ctx.arc(ob.x, ob.y, up(.112) * .5, 0, TAU); ctx.stroke();
-      var tf = at(.131, -up(.131) * .2);                                        // 측두창
-      ctx.lineWidth = thin; ctx.beginPath(); ctx.ellipse(tf.x, tf.y, L * .006, up(.131) * .3, tf.d, 0, TAU); ctx.stroke();
       seg(at(.085, dn(.085) * .1), at(SKULL - .004, dn(SKULL) * .35), thin);   // 아래턱 뒤쪽 가지
     }
 
@@ -172,14 +170,6 @@
       ctx.quadraticCurveTo(r0.x + r0.n[0] * rl * .7 - r0.tx * rl * .06, r0.y + r0.n[1] * rl * .7 - r0.ty * rl * .06, end.x, end.y);
       ctx.stroke();
     }
-
-    // 어깨뼈(오훼골판)·골반(장골) — 작은 판
-    [[.215, .5, .014, .007, .35], [.462, .25, .007, .015, 0]].forEach(function (g) {
-      var al = alpha(g[0]); if (!al) return;
-      ctx.globalAlpha = al;
-      var gp = at(g[0], dn(g[0]) * g[1]);
-      ctx.lineWidth = thin; ctx.beginPath(); ctx.ellipse(gp.x, gp.y, L * g[2] * k, L * g[3] * k, gp.d + g[4], 0, TAU); ctx.stroke();
-    });
 
     // 팔다리 — 위팔(넓적다리)뼈, 아래팔(종아리) 두 뼈, 부채꼴 발가락 다섯
     lg.forEach(function (l) {

@@ -23,7 +23,7 @@
   var W = 0, H = 0, dpr = 1, C = [0, 0], Rm = 0, ring = null, path = null;
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
-  var T_ENTER = .9, T_SWIM = 6.6, T_WRITE = 3.0, T_BONES = 2.0;
+  var T_ENTER = .9, T_SWIM = 6.6, T_WRITE = 2.4, T_BONES = 2.0;
   var T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + .2 + T_WRITE;
   var t0 = 0, raf = 0, mapReady = false, skipped = false, closed = false;
 
@@ -205,11 +205,56 @@
       // 헤엄칠 때는 목과 몸통 앞쪽(몸길이의 0.16)으로 머리 방향을 재 까닥임을 줄이고, 메달을 두르며 목 끝의 접선으로 옮긴다
       Meso.draw(ctx, b.P, ring.L, { fill: INK, eye: PAPER, beat: b.beat, tuck: b.settle, teeth: true, neck: .16 - .11 * b.settle });
     }
-    // 제목 — 왼쪽부터 펜으로 쓰듯. 끝이 번진 가림막을 옮긴다
+    // 제목 — 펜이 획을 따라 긋듯(title.json 을 받았으면), 아니면 왼쪽부터 번지는 가림막
     var w = skipped || reduce ? 1 : Math.max(0, Math.min(1, (t - T_SEATED - .2) / T_WRITE));
-    title.style.setProperty("--ink", (w * 118 - 8).toFixed(1) + "%");
+    if (pen) writePen(w); else title.style.setProperty("--ink", (w * 118 - 8).toFixed(1) + "%");
     if (t >= T_DONE || skipped || reduce) { box.classList.add("settled"); maybeClose(); }
     if (!closed && (t < T_DONE + 4 || puffs.length)) raf = requestAnimationFrame(frame);
+  }
+
+  // ── 펜으로 쓰는 제목 ─────────────────────────────────────────────
+  // design/make_title.py 가 만든 title.json: 글자 윤곽(d)과 획의 가운데 선들(strokes, 펜이 지나는 차례).
+  // 가운데 선들을 굵은 펜(pen)으로 차례로 그어 가림막을 만들고, 그 가림막으로 글자 면을 드러낸다.
+  // 펜은 전체 길이를 고른 빠르기로 간다 — 긴 획은 오래, 짧은 획은 잠깐
+  var pen = null;
+  function buildPen(t) {
+    var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 " + t.w + " " + t.h);
+    svg.setAttribute("aria-hidden", "true");
+    svg.style.width = (t.w / 256) + "em"; svg.style.height = (t.h / 256) + "em";   // 한 em = 글꼴 256 단위(make_title.py)
+    var id = "wd-pen-" + Math.random().toString(36).slice(2, 8);
+    var html = '<defs><mask id="' + id + '" maskUnits="userSpaceOnUse" x="0" y="0" width="' + t.w + '" height="' + t.h + '">' +
+      '<rect width="' + t.w + '" height="' + t.h + '" fill="#000"/>';
+    var lens = [];
+    t.strokes.forEach(function (st) {
+      var len = 0;
+      for (var i = 1; i < st.length; i++) len += Math.hypot(st[i][0] - st[i - 1][0], st[i][1] - st[i - 1][1]);
+      lens.push(len);
+      html += '<polyline points="' + st.map(function (p) { return p[0] + "," + p[1]; }).join(" ") + '" fill="none" stroke="#fff" stroke-width="' + t.pen +
+        '" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="' + (len + 1) + '" stroke-dashoffset="' + (len + 1) + '"/>';
+    });
+    html += '</mask></defs><path d="' + t.d + '" fill="' + INK + '" mask="url(#' + id + ')"/>';
+    svg.innerHTML = html;
+    title.appendChild(svg);
+    title.classList.add("pen-ready");
+    var total = lens.reduce(function (a, b) { return a + b; }, 0);
+    pen = { lines: svg.querySelectorAll("polyline"), lens: lens, total: total, last: -1 };
+  }
+  function writePen(w) {
+    if (w === pen.last) return;
+    pen.last = w;
+    var left = w * pen.total;
+    for (var i = 0; i < pen.lens.length; i++) {
+      var len = pen.lens[i], done = Math.max(0, Math.min(len, left));
+      // 아직 긋지 않은 획은 숨긴다 — 둥근 펜 끝이 길이 0 에서도 점을 찍는다
+      pen.lines[i].style.visibility = done > 0 ? "visible" : "hidden";
+      pen.lines[i].setAttribute("stroke-dashoffset", (len + 1 - done - (done >= len ? 1 : 0)).toFixed(1));
+      left -= len;
+    }
+  }
+  if (box.dataset.title && window.fetch) {
+    fetch(box.dataset.title).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (t) { if (t && !closed) buildPen(t); }).catch(function () { /* 가림막으로 쓴다 */ });
   }
 
   function maybeClose() {

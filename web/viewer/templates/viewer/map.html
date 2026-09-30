@@ -210,12 +210,12 @@
   <!-- 대기 화면(wetherilli 005 → tupandactyl 005) — 빈티지 종이 위에 베게너 초상 메달, 파이프 연기, 헤엄쳐 와 메달을 두르는
        메소사우루스, 펜으로 쓰듯 나타나는 제목(splash.js). 첫 배경이 그려지고 움직임이 끝나면 걷힌다. 누르면 건너뛴다.
        영어로 열 때 <body> 가 잠깐 가려져도 이것은 보인다 -->
-  <div class="splash" id="splash" role="status" aria-live="polite">
+  <div class="splash" id="splash" role="status" aria-live="polite" data-title="{% static 'viewer/title.json' %}?v={{ version }}">
     <canvas class="splash-paper" aria-hidden="true"></canvas>
     <div class="splash-head" aria-hidden="true"><span>Wegener's Dream</span><span>Tafel I.</span></div>
     <div class="splash-stage">
       <div class="splash-medal"><img src="{% static 'viewer/wegener.svg' %}?v={{ version }}" alt="알프레트 베게너" width="960" height="960"></div>
-      <h1 class="splash-title">Wegener's Dream</h1>
+      <h1 class="splash-title"><span class="splash-title-text">Wegener's Dream</span></h1>
       <p class="splash-sub"><span class="ko">베게너의 꿈 · 고지리 화석 지도</span><span class="en">Paleogeographic fossil map</span></p>
       <p class="splash-msg" id="splash-msg"><span class="ko">지도를 불러오는 중…</span><span class="en">Loading the map…</span></p>
       <button type="button" id="splash-retry" hidden></button>
