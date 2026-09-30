@@ -250,6 +250,12 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   background: color-mix(in srgb, var(--bg) 88%, transparent); z-index: 2000;
 }
 
+/* 축척 막대(wetherilli 001) — 출처 표기 위, 오른쪽 아래 */
+.leaflet-control-scale-line {
+  background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink);
+  border-color: var(--ink); font-variant-numeric: tabular-nums;
+}
+
 /* 팝업 */
 .leaflet-popup-content { font-size: 13px; line-height: 1.45; max-width: 320px; }
 .pop h3 { margin: 0 0 4px; font-size: 14px; }

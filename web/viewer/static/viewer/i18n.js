@@ -119,6 +119,9 @@
     "climate.nearest": ["가장 가까운 {age} 지도. ", "Nearest map, {age}. "],
     "climate.gmst": ["전 지구 평균 {t} ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.", "Global mean {t} °C. HadCM3L simulations nudged to proxy data."],
     "readout": ["기온 {t} ℃ · ", "{t} °C · "],
+    // 지도 도구
+    "scale.title": ["화면 가운데 위도({lat}°)의 위선을 따라 잰 가로 거리 — 축척은 위도마다 다르다",
+                    "East–west distance along the parallel at the map centre ({lat}°) — scale varies with latitude"],
     // 패널·출처
     "panel.close": ["패널 접기 ▾", "Hide panel ▾"],
     "panel.open": ["패널 펼치기 ▴", "Show panel ▴"],

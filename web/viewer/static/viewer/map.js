@@ -333,6 +333,7 @@
     center: [0, 0], zoom: 1, minZoom: 1, maxZoom: 7,
     maxBounds: EQ_MAX_BOUNDS, maxBoundsViscosity: 0.8,
     worldCopyJump: false, attributionControl: true,
+    zoomControl: false,   // 확대·축소는 휠·두 손가락·더블클릭·+/− 키로 한다 — 단추는 자리만 차지했다(wetherilli 001)
   });
   map.attributionControl.setPrefix(false);
   // 지구 전체가 들어오는 가장 큰 확대 — 두 투영 모두 확대 0 에서 512 × 256 픽셀이다.
@@ -1774,6 +1775,28 @@
     });
   });
   map.on("mouseout", function () { $("temp-readout").textContent = ""; });
+
+  // ── 축척 막대(wetherilli 001) ──────────────────────────────────────
+  // 두 투영 모두 축척이 자리마다 다르다 — 정거원통은 가로가 cos φ 로 줄고, 몰바이데는 가로·세로가 모두 달라진다.
+  // 그래서 **화면 가운데를 지나는 위선 위의 가로 거리**를 잰다. 두 투영에서 위선은 가로 직선이라 막대가 그 위선을 따른다.
+  // Leaflet 의 L.control.scale 은 화면 왼쪽 끝에서 재서 몰바이데에서는 지구 밖(위경도 없음)을 잰다. 지구 밖이면 숨긴다.
+  var ScaleBar = L.Control.Scale.extend({
+    _update: function () {
+      var m = this._map, size = m.getSize(), half = this.options.maxWidth / 2;
+      var a = L.point(size.x / 2 - half, size.y / 2), b = L.point(size.x / 2 + half, size.y / 2);
+      var box = this.getContainer();
+      if (!box) { setTimeout(this._update.bind(this), 0); return; }   // onAdd 안의 whenReady — 틀이 아직 붙지 않았다
+      if (!size.x || !onGlobe(a) || !onGlobe(b)) { box.style.visibility = "hidden"; return; }
+      var la = m.containerPointToLatLng(a), lb = m.containerPointToLatLng(b);
+      var dLon = ((lb.lng - la.lng) % 360 + 360) % 360;       // 가운데 경선을 돌려도 동쪽으로 잰 경도 차
+      var meters = 6371008.8 * dLon * DEG * Math.cos(la.lat * DEG);
+      if (!(meters > 0)) { box.style.visibility = "hidden"; return; }
+      box.style.visibility = "";
+      box.title = tr("scale.title", { lat: la.lat.toFixed(0) });
+      this._updateScales(meters);
+    },
+  });
+  new ScaleBar({ position: "bottomright", imperial: false, maxWidth: 120 }).addTo(map);
 
   // 고른 나라의 범위로 지도를 당긴다.
   // - 국경 조각들 가운데 가장 큰 조각을 잡고, 그 둘레(20°)의 조각만 함께 넣는다 — 알래스카·하와이,
