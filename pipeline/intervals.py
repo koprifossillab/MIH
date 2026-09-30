@@ -11,21 +11,49 @@
 연구자가 바로잡았다 — 절 여럿에 걸친 범위는 정의된 범위이고, 모호한 것은 절로 정해지지 않은 기록뿐이다.
 
 이름표에 없는 이름은 정해진 것으로 본다(2026-09-29 의 PBDB 산지에는 없는 이름이 없다). 가공할 때 센다.
+
+**제4기는 예외다**(tupandactyl 008) — 제4기(2.58 Ma 이후) 안의 이름은 등급이 세·기여도 정해진 기록으로 친다.
+"Early Pleistocene"·"Pleistocene"·"Holocene"·"Quaternary" 모두 지도 시점의 창(±2.5 Myr)과 길이가 비슷하거나 짧아,
+절로 적히지 않았어도 시점에 오르는 자리가 흐려지지 않는다. 연구자가 정한 범위다 — 신생대의 다른 세(Miocene 등)는 그대로 모호하다.
+경계(2.58 Ma)는 층서표(timescale.py)에서 읽는다.
 """
 import json
 
 from .common import manifest, source_path
 
 VAGUE_TYPES = ("epoch", "subepoch", "period", "era", "eon", "bin")
+QUATERNARY = "quaternary"          # 제4기 안의 이름에 붙이는 등급 — 모호하지 않다(VAGUE_TYPES 에 없다)
+
+
+def quaternary_base():
+    """제4기의 바닥 나이(Ma) — 층서표 한 곳에서."""
+    from .timescale import units
+    return next(u["base"] for u in units() if u["en"] == "Quaternary")
+
+
+def types_from(records, q_base=None):
+    """PBDB 시대 이름표 → {이름: 등급}. 제4기 안(바닥 나이 ≤ 제4기 바닥)의 세·기 이름은 QUATERNARY 로 바꾼다.
+    같은 이름이 두 등급으로 있으면(Holocene 은 epoch 이자 age) 모호하지 않은 쪽을 둔다."""
+    q_base = quaternary_base() if q_base is None else q_base
+    out = {}
+    for r in records:
+        name, kind = r["interval_name"], r.get("type") or ""
+        base = r.get("b_age")
+        if kind in VAGUE_TYPES and base is not None and float(base) <= q_base + 1e-9:
+            kind = QUATERNARY
+        if name in out and out[name] not in VAGUE_TYPES:
+            continue
+        out[name] = kind
+    return out
 
 
 def load_types():
-    """시대 이름 → 등급."""
+    """시대 이름 → 등급(제4기 예외를 입힌 것)."""
     path = source_path(manifest("pbdb")["intervals"]["path"])
     if not path.exists():
         raise SystemExit(f"{path} 가 없다 — 먼저 `python -m pipeline fetch`")
     records = json.loads(path.read_text(encoding="utf-8")).get("records") or []
-    return {r["interval_name"]: r.get("type") or "" for r in records}
+    return types_from(records)
 
 
 def vague_names(types):

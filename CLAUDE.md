@@ -46,7 +46,8 @@
   규칙은 `pipeline/intervals.py` 한 곳이고 등급은 PBDB `intervals/list`(`data/sources/pbdb/intervals.json`).
   **범위의 길이로 가르지 않는다** — "Norian–Rhaetian" 처럼 절 이름 둘로 정해진 범위는 정해진 기록이다
   (연구자, devlog 016). 뷰어는 속이 찬 **세모**로 그리고(고리는 안 보였다), `rules.vague_intervals` 로 PBDB 에
-  바로 물은 결과도 같은 규칙으로 가른다
+  바로 물은 결과도 같은 규칙으로 가른다. **제4기(2.58 Ma 이후) 안의 이름은 예외로 정해진 기록**이다 — "Pleistocene",
+  "Early Pleistocene" 은 지도 시점의 창과 길이가 비슷하다(연구자, tupandactyl 008). 신생대의 다른 세는 그대로 모호하다
 - **좌표는 시점마다 계산한다**: 산지의 지금 좌표를 지도 나이로 PALEOMAP v19o(해안선·국경과 같은 모델)로
   돌린다(`pipeline/reconstruct.py`, devlog 017). 그 나이에 판이 없을 때만 PBDB 고좌표(연대 중간값)이고
   `rotated = 0`. 분류군 찾기 결과는 같은 산지이면 산지 파일의 좌표로 옮긴다. PBDB 가 고좌표를 못 준 산지는 뺀다
