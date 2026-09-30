@@ -61,7 +61,7 @@
     opacity: 0.6,                           // 점 불투명도 — 겹친 점과 밑그림이 함께 보이게
     showWide: true,                         // 모호한 연대(절 단위로 정해지지 않은) 산지를 보일지(016)
     maxSpan: Infinity,                      // 연대 범위(max_ma − min_ma)가 이 이하인 산지만(018)
-    taxonRank: "", taxonLow: false,         // 찾은 분류군의 계급 — 과 이하이면 커서만 대도 산출 목록
+    taxonRank: "",                          // 찾은 분류군의 계급 — 상태 줄과 같은 시대 다른 산지(012)
     grids: {},                              // 기온 격자(파일 → {w, h, data, offset})
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
     dist: null,                             // 찾은 분류군의 산출 시대 분포(센 결과)
@@ -1112,9 +1112,10 @@
                   early_interval: 6, late_interval: 7, max_ma: 8, min_ma: 9, formation: 10, environment: 11, cc: 12,
                   precise: 13, rotated: 14 };
   var taxonSeq = 0;
-  // 과 이하 — 커서만 대도 산출 목록이 뜨는 계급. 그 위(목·강…)는 산지 하나에 수십~수백 건이라 요약만.
-  var LOW_RANKS = { family: 1, subfamily: 1, tribe: 1, subtribe: 1, genus: 1, subgenus: 1, species: 1, subspecies: 1 };
-  var TOOLTIP_MAX = 15;
+  // 커서를 댔을 때 — 계급과 상관없이, 이 산지에서 찾은 분류군 아래의 분류군(채택명)이 TIP_TAXA_MAX 종보다
+  // 적으면 목록을, 그 이상이면 "산출 n종 — 누르면 목록" 한 줄만 띄운다(tupandactyl 001). 전에는 계급(과 이하)으로
+  // 갈랐지만(006), 목 이상이어도 한 산지에 한두 종뿐인 일이 많고 속이어도 수십 종인 산지가 있다.
+  var TIP_TAXA_MAX = 5;
 
   function lookupRank(name) {
     return getJSON(PBDB + "taxa/single.json?name=" + encodeURIComponent(name) + "&vocab=pbdb")
@@ -1122,19 +1123,27 @@
       .catch(function () { return ""; });
   }
 
-  // 커서를 댔을 때의 내용. 과 이하이면 이 산지에서 찾은 분류군 아래의 산출을 모두(15 건까지) 적는다.
   function taxonTip(row) {
     var head = "<b>" + esc(row[COLUMNS.collection_name] || tr("pop.noname")) + "</b>";
-    if (!state.taxonLow) {
-      return head + "<small>" + tr("tip.count", { taxon: esc(state.taxon), n: row.occs.length }) + "</small>";
+    var taxa = {};
+    row.occs.forEach(function (o) { taxa[o.accepted] = 1; });
+    var n = Object.keys(taxa).length;
+    if (n >= TIP_TAXA_MAX) {
+      return head + "<small>" + tr("tip.count", { taxon: esc(state.taxon), n: n }) + "</small>";
     }
-    var items = row.occs.slice(0, TOOLTIP_MAX).map(function (o) {
-      var shown = "<i>" + esc(o.accepted) + "</i>";
-      if (o.identified && o.identified !== o.accepted) shown += " <small>(" + esc(o.identified) + ")</small>";
-      return "<li>" + shown + (o.rank && o.rank !== "species" ? " <small>" + esc(RANK_KO[o.rank] || o.rank) + "</small>" : "") + "</li>";
+    // 같은 이름(채택명·원 동정명)의 산출은 한 줄로 묶고 건수를 붙인다 — 한 종이 수십 건인 산지가 있다.
+    var lines = [], byKey = {};
+    row.occs.forEach(function (o) {
+      var key = o.accepted + "\u0000" + (o.identified || "");
+      if (byKey[key]) { byKey[key].n += 1; return; }
+      lines.push(byKey[key] = { o: o, n: 1 });
     });
-    if (row.occs.length > TOOLTIP_MAX) items.push("<li><small>" + tr("tip.more", { n: row.occs.length - TOOLTIP_MAX }) + "</small></li>");
-    return head + "<ul>" + items.join("") + "</ul>";
+    return head + "<ul>" + lines.map(function (l) {
+      var o = l.o, shown = "<i>" + esc(o.accepted) + "</i>";
+      if (o.identified && o.identified !== o.accepted) shown += " <small>(" + esc(o.identified) + ")</small>";
+      return "<li>" + shown + (o.rank && o.rank !== "species" ? " <small>" + esc(RANK_KO[o.rank] || o.rank) + "</small>" : "") +
+        (l.n > 1 ? " <small>" + tr("tip.times", { n: l.n }) + "</small>" : "") + "</li>";
+    }).join("") + "</ul>";
   }
 
   // ── 산출 시대 분포 ──────────────────────────────────────────────────
@@ -1347,7 +1356,6 @@
     lookupRank(name).then(function (rank) {
       if (seq !== taxonSeq) return;
       state.taxonRank = rank;
-      state.taxonLow = !!LOW_RANKS[rank];
       drawTaxa();
     });
     $("taxon-clear").hidden = false;
@@ -1513,7 +1521,7 @@
     $("taxon-status").textContent = tr("taxon.status", {
       name: state.taxon, rank: state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "",
       age: fmtAge(frame().age), n: fmtNum(shown), occ: fmtNum(occs),
-      country: state.country ? ", " + countryName(state.country) : "", hover: state.taxonLow ? tr("taxon.hover") : "" });
+      country: state.country ? ", " + countryName(state.country) : "", hover: tr("taxon.hover") });
     renderLegend();
   }
 
@@ -1526,7 +1534,6 @@
     state.taxon = "";
     state.taxa = null;
     state.taxonRank = "";
-    state.taxonLow = false;
     state.dist = null;
     state.distBase = null;
     renderDist();

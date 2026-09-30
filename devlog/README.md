@@ -68,3 +68,4 @@
 | wetherilli 008 | 2026-09-30 | [지도를 그림으로 내려받기](20260930_wetherilli_008_export_image.md) |
 | wetherilli 009 | 2026-09-30 | [몰바이데에서 기온 층이 처음 켤 때 안 그려지던 것](20260930_wetherilli_009_mollweide_climate_first_paint.md) |
 | wetherilli 010 | 2026-09-30 | [병합 전에 판이 부딪히는지 본다](20260930_wetherilli_010_premerge_version_check.md) |
+| tupandactyl 001 | 2026-09-30 | [커서 목록을 계급이 아니라 산지의 분류군 수로 가른다](20260930_tupandactyl_001_hover_taxa_list.md) |

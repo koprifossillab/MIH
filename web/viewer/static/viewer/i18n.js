@@ -69,8 +69,8 @@
     "pop.none": ["산출 기록이 없다.", "No occurrences recorded."],
     "pop.fail": ["PBDB 에 닿지 못했다 — 위 링크로 본다.", "Could not reach PBDB — use the link above."],
     // 분류군 찾기
-    "tip.count": ["{taxon} 산출 {n}건 — 누르면 목록", "{n} {taxon} occurrences — click for the list"],
-    "tip.more": ["외 {n}건 — 누르면 모두", "{n} more — click for all"],
+    "tip.count": ["{taxon} 산출 {n}종 — 누르면 목록", "{n} {taxon} taxa — click for the list"],
+    "tip.times": ["{n}건", "×{n}"],
     "rich": ["{unit} 에서 {taxon} 산출이 가장 많은 {age} 지도({n}건).", "{age} map — the most {taxon} occurrences in the {unit} ({n})."],
     "dist.total": ["산출 {n}건", "{n} occurrences"],
     "dist.filtered": [" · 고른 퇴적기원·연대 범위만", " · selected origins and age range only"],
