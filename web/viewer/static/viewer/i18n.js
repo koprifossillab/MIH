@@ -196,6 +196,8 @@
     "sources.about": "Background, coastlines, borders and fossil positions all use the PALEOMAP plate model. Each locality's present-day position is rotated <b>to the map's age</b> with the same plate model as the coastlines (v19o), so long-ranging localities sit where they were at every time. Only the rare locality with no plate at that age (under 0.1%) uses PBDB's paleo-coordinates (age midpoint) — the popup says so.",
     "data": "data",
     "lang": "Language",
+    "settings": "Settings · sources",
+    "close": "Close",
     "empty.title": "No data yet",
     "empty.run": "Run the pipeline first:",
   };

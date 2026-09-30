@@ -47,11 +47,35 @@ body {
 .now .unit { padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 13px; }
 .now .sep { color: var(--muted); }
 .now .label { color: var(--muted); }
-/* 언어 단추(027) — 머리말 오른쪽 */
-.lang { margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; align-self: center; }
-.lang button { border: 0; background: var(--bg); color: var(--muted); font: inherit; font-size: 12px; padding: 2px 9px; cursor: pointer; }
-.lang button + button { border-left: 1px solid var(--line); }
-.lang button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+/* 머리말 오른쪽 — 투영 단추와 설정(wetherilli 003) */
+.bar .tools { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; align-self: center; }
+/* 둘 가운데 하나를 고르는 붙은 단추 — 투영, 언어(027) */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg[hidden] { display: none; }
+.seg button { border: 0; background: var(--bg); color: var(--muted); font: inherit; font-size: 12px; padding: 2px 9px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible, .gear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gear {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--muted);
+  font-size: 15px; line-height: 1; padding: 3px 7px; cursor: pointer;
+}
+.gear:hover { color: var(--accent); border-color: var(--accent); }
+/* 설정 · 자료 창 */
+.sheet {
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); padding: 0 20px 16px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+}
+.sheet::backdrop { background: rgba(0, 0, 0, .35); }
+.sheet-head {
+  position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 8px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.sheet h2 { margin: 0; font-size: 15px; color: var(--accent); }
+.sheet h3 { margin: 16px 0 8px; font-size: 13px; color: var(--accent); }
+.sheet-close { border: 0; background: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px 6px; }
+.sheet-close:hover { color: var(--ink); }
 /* 영어로 열 때 한국어 원문을 잠깐도 보이지 않게(<head> 의 스크립트가 붙이고 map.js 가 뗀다) */
 .i18n-pending body { visibility: hidden; }
 /* 영어판: 층서표 줄머리(Era·Period …)가 한 글자보다 길다 */
@@ -130,12 +154,8 @@ body {
 
 .swatch { display: flex; align-items: center; gap: 6px; margin: 4px 0; cursor: pointer; }
 .swatch small { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
-.proj-row { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; }
-.proj-row[hidden] { display: none; }
-.proj-row h2 { margin-right: 4px; }
 .leaflet-container.moll { cursor: grab; }
 .leaflet-container.spinning { cursor: grabbing; }
-.proj-row label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #333; }
 .dot.m { background: var(--marine); }
 .dot.t { background: var(--land); }

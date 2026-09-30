@@ -425,7 +425,7 @@
     // 몰바이데에서는 Leaflet 의 끌기를 끄고 spin 이 받는다 — 가로는 돌리기, 세로는 옮기기(025)
     if (proj === "moll") map.dragging.disable(); else map.dragging.enable();
     map.getContainer().classList.toggle("moll", proj === "moll");
-    document.querySelectorAll('input[name="proj"]').forEach(function (r) { r.checked = r.value === proj; });
+    document.querySelectorAll("#proj-seg [data-proj]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.proj === proj)); });
     map._resetView(worldCenter(), worldZoom(), true);
     var f = frame();
     if (!f) return;
@@ -1951,8 +1951,8 @@
     document.querySelectorAll('input[name="color-by"]').forEach(function (radio) {
       radio.addEventListener("change", function () { if (radio.checked) { state.colorBy = radio.value; redraw(); } });
     });
-    document.querySelectorAll('input[name="proj"]').forEach(function (radio) {
-      radio.addEventListener("change", function () { if (radio.checked) setProjection(radio.value); });
+    document.querySelectorAll("#proj-seg [data-proj]").forEach(function (b) {
+      b.addEventListener("click", function () { setProjection(b.dataset.proj); });
     });
     $("grid").addEventListener("change", function () {
       if (this.checked) gridLayer.addTo(map); else map.removeLayer(gridLayer);
@@ -2016,7 +2016,7 @@
       initCountries(index.countries || []);
       if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다
       bind();
-      $("proj-row").hidden = !hasMollweide();
+      $("proj-seg").hidden = !hasMollweide();
       applyHash(true);
       // 같은 페이지에서 # 만 바뀐 주소로 가면(주소창에 붙여 넣기 등) 다시 불러오지 않는다 — 주소대로 다시 맞춘다.
       // history.replaceState(writeHash)는 hashchange 를 부르지 않는다.
@@ -2047,7 +2047,17 @@
     b.setAttribute("aria-pressed", String(b.dataset.lang === I18N.lang));
     b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
   });
-  document.documentElement.classList.remove("i18n-pending");   // <head> 가 가려 둔 것을 벗긴다
+  document.documentElement.classList.remove("i18n-pending");
+
+  // ── 설정 · 자료(wetherilli 003) ──────────────────────────────────────
+  // <dialog> 의 showModal — Esc 로 닫히고 뒤는 눌리지 않는다. 바깥(흐린 뒤)을 눌러도 닫는다.
+  (function initSettings() {
+    var sheet = $("settings");
+    if (!sheet.showModal) return;   // 아주 옛 브라우저 — 단추를 눌러도 아무 일이 없다
+    $("settings-open").addEventListener("click", function () { sheet.showModal(); });
+    $("settings-close").addEventListener("click", function () { sheet.close(); });
+    sheet.addEventListener("click", function (e) { if (e.target === sheet) sheet.close(); });
+  })();   // <head> 가 가려 둔 것을 벗긴다
 
   // ── 패널 접기(026) ────────────────────────────────────────────────
   // 절 제목을 누르면 그 절을 접는다. 좁은 창(760 px 아래)에서는 패널 전체도 막대 하나로 접는다.
