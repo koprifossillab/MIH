@@ -798,8 +798,9 @@
     box.innerHTML = '<svg viewBox="0 0 44 100" width="44" height="100" aria-hidden="true">' +
       '<rect class="tube" x="8" y="4" width="10" height="80" rx="5"/>' +
       '<circle class="tube" cx="13" cy="90" r="8"/>' +
-      '<rect x="10.5" y="' + y(t) + '" width="5" height="' + (90 - y(t)) + '" fill="' + rgb + '"/>' +
-      '<circle cx="13" cy="90" r="5.5" fill="' + rgb + '"/>' +
+      // 수은 — 기온 색에 짙은 테. 14 ℃ 무렵의 옅은 노랑도 밝은 판에서 보이게(tupandactyl 007)
+      '<rect class="mercury" x="10.5" y="' + y(t) + '" width="5" height="' + (90 - y(t)) + '" fill="' + rgb + '"/>' +
+      '<circle class="mercury" cx="13" cy="90" r="5.5" fill="' + rgb + '"/>' +
       '<g class="ticks">' + ticks + "</g>" + nowMark + "</svg>" +
       '<div class="thermo-read"><b>' + t.toFixed(1) + '</b><span>' + (EN ? "°C" : "℃") + "</span>" +
       "<small>" + tr("thermo.label") + "</small></div>";
@@ -2568,6 +2569,24 @@
     b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
   });
   document.documentElement.classList.remove("i18n-pending");
+
+  // ── 머리말 엠블럼(tupandactyl 007) ─────────────────────────────────
+  // 대기 화면의 끝 모습 — 베게너 초상 메달을 메소사우루스가 두르고 그 몸에 뼈대가 드러난 것. 가죽 머리말 위라 몸은 금박,
+  // 뼈는 가죽색으로 판다(금박 장정의 음각처럼). 자리 계산은 meso.js 의 엠블럼 값과 같다(emblem.svg 와 같은 틀)
+  (function drawBrandMark() {
+    var cv = $("brand-mark"), Meso = window.WegenerMeso;
+    if (!cv || !cv.getContext || !Meso) return;
+    var img = new Image();
+    img.onload = function () {
+      var css = cv.clientWidth || 52, dpr = Math.min(3, window.devicePixelRatio || 1), size = css * dpr;
+      cv.width = cv.height = Math.round(size);
+      var c = cv.getContext("2d"), probe = Meso.emblemRing(0, 0, 1), half = probe.R + .075 * probe.L;
+      var Rm = size / 2 / half, ring = Meso.emblemRing(size / 2, size / 2, Rm), iw = 2 * Rm * 480 / 472;
+      c.drawImage(img, size / 2 - iw / 2, size / 2 - iw / 2, iw, iw);
+      Meso.draw(c, ring.P, ring.L, { fill: "#d8b467", eye: "#3b2415", tuck: 1, teeth: size > 90, bones: 1, boneColor: "#3b2415" });
+    };
+    img.src = cv.dataset.medal;
+  })();
 
   // ── 화면 밝기(tupandactyl 006) ───────────────────────────────────────
   // 자동(컴퓨터 설정) · 밝게(양피지) · 어둡게(흑단). 고른 것은 브라우저에 기억하고 <html data-theme> 로 입힌다 —

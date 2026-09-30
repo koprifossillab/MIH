@@ -71,8 +71,8 @@ body {
   padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
 .brand { display: flex; align-items: center; gap: 2px 8px; flex-wrap: wrap; }
-.brand .brand-mark { width: 40px; height: 40px; flex: none; margin: -6px 0; }
-.brand strong { font: 400 25px/1 "La Belle Aurore", "Segoe Script", cursive; color: var(--accent); padding-top: 4px; }
+.brand .brand-mark { width: 58px; height: 58px; flex: none; }
+.brand strong { font: 400 27px/1 "La Belle Aurore", "Segoe Script", cursive; color: var(--accent); padding-top: 6px; }
 .brand .ver { margin-left: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .brand .sub { margin-left: 6px; color: var(--muted); }
 .now { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; flex: 1 1 0; min-width: 260px; }   /* 좁아지면 안에서 꺾여 오른쪽 단추가 제 줄에 남는다 */
@@ -418,14 +418,16 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   box-shadow: 0 1px 4px rgba(0, 0, 0, .3); cursor: default;
 }
 .thermo svg { display: block; }
-.thermo .tube { fill: var(--bg); stroke: var(--muted); stroke-width: 1; }
-.thermo .ticks line { stroke: var(--muted); stroke-width: 1; }
-.thermo .ticks text { fill: var(--muted); font: 9.5px var(--font); }
+/* 관은 짙은 유리 — 밝은 판에서 옅은 기온 색(14 ℃ 무렵의 노랑)도 또렷하게 떠오른다 */
+.thermo .tube { fill: #3a2c20; stroke: var(--ink); stroke-width: 1.2; }
+.thermo .mercury { stroke: color-mix(in srgb, var(--ink) 75%, transparent); stroke-width: 1; }
+.thermo .ticks line { stroke: var(--ink); stroke-width: 1; }
+.thermo .ticks text { fill: var(--ink); font: 600 9.5px var(--font); }
 .thermo line.now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
 .thermo-read { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; padding-bottom: 2px; }
-.thermo-read b { font-size: 18px; font-variant-numeric: tabular-nums; }
-.thermo-read span { font-size: 11px; color: var(--muted); }
-.thermo-read small { margin-top: 4px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.thermo-read b { font-size: 20px; font-weight: 700; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+.thermo-read span { font-size: 11.5px; color: var(--ink); }
+.thermo-read small { margin-top: 4px; font-size: 10.5px; color: color-mix(in srgb, var(--ink) 80%, transparent); white-space: nowrap; }
 
 /* 지도 위 단추 — 그림으로 내려받기(wetherilli 008) */
 /* 도구 묶음(wetherilli 014) — GSM 의 손잡이처럼 세로로, 아이콘 밑에 이름. 결과 칸은 왼쪽 */
@@ -573,7 +575,10 @@ button, input, select { font-family: inherit; }
 .bar::before, .bar::after { content: ""; position: absolute; left: 8px; right: 8px; border-top: 1px solid rgba(216, 180, 103, .5); pointer-events: none; }
 .bar::before { top: 4px; } .bar::after { bottom: 4px; }
 .brand strong { color: var(--gilt); text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
-.brand .brand-mark { filter: drop-shadow(0 0 1px rgba(216, 180, 103, .9)); }
+/* 위아래 여백이 같게 — 머리말의 칸들을 가운데로 맞춘다(연구자: 왼쪽 위로 밀지 말고) */
+.bar { align-items: center; padding: 9px 18px; }
+.brand { align-items: center; gap: 2px 10px; }
+.brand strong { text-shadow: 0 1px 0 rgba(0, 0, 0, .65), 0 -1px 0 rgba(255, 228, 170, .18); }
 .brand .ver, .brand .sub, .now .sep, .now .label { color: var(--gilt-dim); }
 .now .age { color: #f0dfb8; font-variant-numeric: lining-nums tabular-nums; }
 .now .unit { filter: saturate(.8) sepia(.12); color: #231a10; }
