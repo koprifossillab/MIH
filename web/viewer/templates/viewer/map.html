@@ -6,6 +6,7 @@
 <title>Wegener's Dream — 베게너의 꿈</title>
 <link rel="icon" href="{% static 'viewer/favicon.svg' %}?v={{ version }}" type="image/svg+xml">
 <link rel="stylesheet" href="{% static 'viewer/vendor/leaflet/leaflet.css' %}">
+<link rel="stylesheet" href="{% static 'viewer/vendor/fonts/fonts.css' %}?v={{ version }}">
 <link rel="stylesheet" href="{% static 'viewer/map.css' %}?v={{ version }}">
 <script>
   // 영어로 열 때 한국어 원문이 잠깐 보이지 않게 — i18n.js 가 문구를 바꾼 뒤 map.js 가 벗긴다(027)
@@ -13,6 +14,8 @@
     var en = /lang=en/.test(location.hash);
     if (!en && !/lang=ko/.test(location.hash)) { try { en = localStorage.getItem("wegener.lang") === "en"; } catch (e) {} }
     if (en) { document.documentElement.lang = "en"; document.documentElement.className += " i18n-pending lang-en"; }
+    // 고른 밝기(설정 창)를 그리기 전에 입힌다 — 없으면 컴퓨터 설정을 따른다(tupandactyl 006)
+    try { var th = localStorage.getItem("wegener.theme"); if (th === "light" || th === "dark") document.documentElement.dataset.theme = th; } catch (e) {}
   })();
 </script>
 </head>
@@ -55,6 +58,12 @@
         <button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button>
       </div>
     </section>
+    <section>
+      <h3 data-i18n="theme">화면 밝기</h3>
+      <div class="seg theme" role="group" aria-label="화면 밝기" data-i18n-attr="aria-label:theme">
+        <button type="button" data-theme-pick="auto" data-i18n="theme.auto">자동</button><button type="button" data-theme-pick="light" data-i18n="theme.light">밝게 · 양피지</button><button type="button" data-theme-pick="dark" data-i18n="theme.dark">어둡게 · 흑단</button>
+      </div>
+    </section>
     <!-- 읽는 법 — 패널에 늘 떠 있던 설명들(tupandactyl 002) -->
     <section class="guide">
       <h3 data-i18n="guide">읽는 법</h3>
@@ -88,7 +97,7 @@
       <div class="ticks"><span>540 Ma</span><span data-i18n="now">현재</span></div>
     </div>
     <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근" data-i18n-attr="title:younger;aria-label:younger">▶</button>
-    <label class="play" title="차례로 보기" data-i18n-attr="title:play"><input type="checkbox" id="play" aria-label="차례로 보기" data-i18n-attr="aria-label:play"> <span data-i18n="play">차례로 보기</span></label>
+    <label class="play" title="변천사 보기" data-i18n-attr="title:play"><input type="checkbox" id="play" aria-label="변천사 보기" data-i18n-attr="aria-label:play"> <span data-i18n="play">변천사 보기</span></label>
   </div>
 
   <main class="stage">
@@ -138,6 +147,7 @@
 
       <section data-sec="fossils">
         <h2 class="with-tool"><span class="title" data-i18n="fossils">화석 산지</span> <small id="fossil-count"></small></h2>
+        <label class="swatch everything" id="everything-row" hidden><input type="checkbox" id="everything"> <span data-i18n="everything">모든 시대의 산지를 오늘날 자리에</span></label>
         <div class="colorby" role="radiogroup" aria-label="포인트 색" data-i18n-attr="aria-label:colorby">
           <span data-i18n="colorby">포인트 색</span>
           <label><input type="radio" name="color-by" value="env" checked> <span data-i18n="colorby.env">퇴적기원</span></label>
@@ -191,9 +201,9 @@
           <label class="opacity"><span data-i18n="climate.opacity">기온 층 불투명도</span> <input type="range" id="climate-opacity" min="10" max="100" step="5" value="55" aria-label="기온 층 불투명도" data-i18n-attr="aria-label:climate.opacity"> <output id="climate-opacity-value">55%</output></label>
         </div>
         <p class="note" id="climate-note"></p>
-        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (지금 국경을 그때 자리로 돌린 것)</span></label>
+        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (당시 위치에 현재 국경을 맞춤)</span></label>
         <p class="note" id="borders-note"></p>
-        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
+        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 보정한 해안선</span></label>
         <p class="note" id="coast-note"></p>
         <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
         <!-- 지구본의 지형(wetherilli 017) — 지구본이고 가공물에 지형이 있을 때만 보인다 -->

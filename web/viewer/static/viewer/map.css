@@ -1,10 +1,17 @@
 :root {
-  --bg: #f4f1ea;
-  --panel: #fffdf8;
-  --ink: #1f2328;
-  --muted: #5d6470;
-  --line: #d8d2c4;
-  --accent: #8a4b14;
+  /* 빈티지 테마(tupandactyl 006) — 양피지 바탕, 세피아 잉크, 가죽 머리말, 원목 도구. 색은 이 토큰으로만 */
+  --bg: #e9dcbd;
+  --panel: #f2e7cc;
+  --ink: #2e2217;
+  --muted: #6d5c47;
+  --line: #cbb68f;
+  --accent: #7a4a1e;
+  --field: #f8f0dc;           /* 입력 칸 — 양피지보다 조금 밝게 */
+  --leather: #3b2415; --leather-hi: #5a3620; --gilt: #d8b467; --gilt-dim: #cdb58b;
+  --wood: #6b4524; --wood-lo: #4a2f18; --brass: #b08d57; --brass-hi: #e3c98f;
+  --parch-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .12 0 0 0 .09 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  --leather-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .1 0 0 0 0 .06 0 0 0 0 .03 0 0 0 .55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  --font: "Spectral", "Noto Serif KR", Georgia, "Batang", serif;   /* 라틴은 Spectral, 한글은 본명조로 넘어간다 */
   --marine: #ffd23f;
   --land: #e4572e;
   --other: #f5f5f5;
@@ -12,16 +19,39 @@
   --taxon: #2ee6a6;
   --warn: #9a5b00;          /* 팝업의 "모호한 연대" 같은 주의 글씨 */
 }
+/* 어두운 판(tupandactyl 006) — 흑단 원목 면과 짙은 가죽 머리말. 컴퓨터 설정을 따르되(자동), 설정 창에서 밝게·어둡게를
+   고르면 <html data-theme> 가 그것을 누른다 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #15171a;
-    --panel: #1d2024;
-    --ink: #e8e6e1;
-    --muted: #a3a9b3;
-    --line: #33373d;
-    --accent: #e0a060;
+  :root:not([data-theme="light"]) {
+    --bg: #120d0a;
+    --panel: #1c1510;
+    --ink: #ece2cf;
+    --muted: #b3a189;
+    --line: #3b2d21;
+    --accent: #d8a865;
+    --field: #271d15;
+    --leather: #150c07; --leather-hi: #2a170d; --gilt: #cfa95e; --gilt-dim: #b39a6c;
+    --wood: #2a1d14; --wood-lo: #120b07; --brass-hi: #d9bd84;
+    /* 흑단 결 — 가로로 길게 늘인 잡음이 나뭇결이 된다 */
+    --parch-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.004 .32' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .55 0 0 0 .035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --warn: #e6a64a;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --bg: #120d0a;
+    --panel: #1c1510;
+    --ink: #ece2cf;
+    --muted: #b3a189;
+    --line: #3b2d21;
+    --accent: #d8a865;
+    --field: #271d15;
+    --leather: #150c07; --leather-hi: #2a170d; --gilt: #cfa95e; --gilt-dim: #b39a6c;
+    --wood: #2a1d14; --wood-lo: #120b07; --brass-hi: #d9bd84;
+    /* 흑단 결 — 가로로 길게 늘인 잡음이 나뭇결이 된다 */
+    --parch-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.004 .32' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .55 0 0 0 .035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    --warn: #e6a64a;
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -32,7 +62,7 @@ html, body { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--ink);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  font: 14.5px/1.5 var(--font);
 }
 #app { height: 100%; display: flex; flex-direction: column; }
 
@@ -161,7 +191,7 @@ body {
 .strip-row + .strip-row { margin-top: 1px; }
 .strip-row span { position: absolute; top: 0; bottom: 0; cursor: pointer; }
 .strip-row span:hover { outline: 1px solid var(--ink); z-index: 1; }
-.strip-row.named { height: 16px; font: 600 11px/16px system-ui, sans-serif; }
+.strip-row.named { height: 16px; font: 600 11px/16px var(--font); font-variant-numeric: lining-nums; }
 .strip-row.named + .strip-row.named { font-weight: 500; font-size: 10.5px; }
 .strip-row.named span { overflow: hidden; white-space: nowrap; text-align: center; border-right: 1px solid rgba(255, 255, 255, .45); }
 
@@ -237,7 +267,7 @@ body {
 /* 지도 위 커서 자리의 기온 */
 .temp-readout {
   background: rgba(20, 22, 26, .78); color: #fff; padding: 2px 8px; border-radius: 4px;
-  font: 12px/1.6 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  font: 12px/1.6 var(--font); font-variant-numeric: lining-nums tabular-nums;
 }
 .temp-readout:empty { display: none; }
 /* 과 이하 분류군을 찾을 때 산지 위에 뜨는 산출 목록 */
@@ -329,7 +359,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 /* 고서의 한 페이지 — 종이는 splash.js 가 캔버스에 그린다(얼룩·여우 반점·책등 그늘). 머리글과 도판 설명은 옛 책의 짜임 */
 .splash-paper { position: absolute; inset: 0; width: 100%; height: 100%; }
 .splash-head { position: absolute; top: 28px; left: 11%; right: 7%; display: flex; justify-content: space-between; padding-bottom: 6px;
-  border-bottom: 3px double rgba(59, 42, 26, .55); font: 13px/1.2 "EB Garamond", Georgia, "Times New Roman", serif;
+  border-bottom: 3px double rgba(59, 42, 26, .55); font: 13px/1.2 "Spectral", "Noto Serif KR", Georgia, serif;
   letter-spacing: .28em; text-transform: uppercase; color: rgba(59, 42, 26, .78); }
 .splash-stage { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px; }
 /* 메달 — 둘레에 메소사우루스가 두를 자리를 비운다 */
@@ -347,14 +377,14 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .splash-title.pen-ready { -webkit-mask-image: none; mask-image: none; }
 .splash-title.pen-ready .splash-title-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .splash-title svg { display: inline-block; max-width: 86vw; height: auto !important; }
-.splash-sub { margin: 4px 0 0; font: 400 15px/1.5 "Nanum Myeongjo", "Batang", "AppleMyungjo", Georgia, serif; letter-spacing: .12em; color: var(--fade);
+.splash-sub { margin: 4px 0 0; font: 400 15px/1.5 "Noto Serif KR", "Spectral", Georgia, serif; letter-spacing: .12em; color: var(--fade);
   opacity: 0; transition: opacity 1.2s ease 1s; }
 .splash.settled .splash-sub { opacity: 1; }
-.splash-msg { margin: 18px 0 0; font: italic 13px/1.5 Georgia, "Nanum Myeongjo", "Batang", serif; color: var(--fade); letter-spacing: .04em; }
+.splash-msg { margin: 18px 0 0; font: italic 13px/1.5 "Spectral", "Noto Serif KR", Georgia, serif; color: var(--fade); letter-spacing: .04em; }
 .splash.map-ready .splash-msg { visibility: hidden; }
 .splash-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
 .splash-foot { position: absolute; left: 11%; right: 7%; bottom: 24px; text-align: center; color: var(--fade);
-  font: 13px/1.5 "EB Garamond", Georgia, "Nanum Myeongjo", "Batang", serif; }
+  font: 13px/1.5 "Spectral", "Noto Serif KR", Georgia, serif; }
 .splash-foot p { margin: 0; }
 .splash-foot .plate { color: rgba(59, 42, 26, .85); letter-spacing: .02em; }
 .splash-foot .sc { font-variant: small-caps; letter-spacing: .06em; }
@@ -368,7 +398,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .splash.failed { cursor: default; }
 .splash.failed .splash-msg { color: var(--sink); font-style: normal; visibility: visible; }
 #splash-retry { margin-top: 12px; border: 1px solid var(--sink); background: var(--sink); color: var(--paper); border-radius: 3px; padding: 5px 16px; cursor: pointer;
-  font: 14px Georgia, "Nanum Myeongjo", serif; letter-spacing: .06em; }
+  font: 14px "Spectral", "Noto Serif KR", Georgia, serif; letter-spacing: .06em; }
 @media (max-width: 560px) { .splash-head { left: 9%; right: 5%; letter-spacing: .16em; } .splash-foot { left: 9%; right: 5%; } }
 @media (prefers-reduced-motion: reduce) { .splash-medal, .splash-sub { transition: none; } }
 
@@ -386,7 +416,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .thermo svg { display: block; }
 .thermo .tube { fill: var(--bg); stroke: var(--muted); stroke-width: 1; }
 .thermo .ticks line { stroke: var(--muted); stroke-width: 1; }
-.thermo .ticks text { fill: var(--muted); font: 9px system-ui, sans-serif; }
+.thermo .ticks text { fill: var(--muted); font: 9.5px var(--font); }
 .thermo line.now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
 .thermo-read { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; padding-bottom: 2px; }
 .thermo-read b { font-size: 18px; font-variant-numeric: tabular-nums; }
@@ -440,10 +470,11 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   background: color-mix(in srgb, var(--panel) 86%, transparent); color: var(--ink);
   box-shadow: 0 1px 4px rgba(0, 0, 0, .3); pointer-events: auto; cursor: default;
 }
-.scalebar-bar { display: flex; height: 8px; border: 1px solid var(--accent); border-radius: 1px; box-sizing: border-box; }
-.scalebar-bar i { flex: 1; background: var(--accent); }
-.scalebar-bar i + i { background: var(--bg); }
-.scalebar-ticks { position: relative; height: 14px; margin-top: 2px; font: 600 10.5px system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); }
+/* 옛 지도의 축척(tupandactyl 007) — 잉크·종이가 번갈아 드는 네 칸, 두 줄 테 */
+.scalebar-bar { display: flex; height: 7px; border: 1px solid var(--ink); border-radius: 0; box-sizing: border-box; }
+.scalebar-bar i { flex: 1; background: var(--ink); }
+.scalebar-bar i:nth-child(even) { background: var(--panel); }
+.scalebar-ticks { position: relative; height: 14px; margin-top: 2px; font: 600 11px var(--font); font-variant-numeric: lining-nums tabular-nums; color: var(--ink); }
 .scalebar-ticks span { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
 .scalebar-ticks span:nth-child(1) { left: 0; }
 .scalebar-ticks span:nth-child(2) { left: 50%; }
@@ -523,3 +554,79 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   #app.panel-closed .mapcol { flex: 1; height: auto; }
   #app.panel-closed .panel { display: none; }
 }
+
+/* ── 빈티지 테마(tupandactyl 006) ─────────────────────────────────────
+   가죽 표지 머리말(금박 괘선·금박 제목), 양피지 시점 막대·패널·팝업·찾기 카드, 원목에 놋쇠를 박은 도구 묶음.
+   지도 자체(배경·해안선·포인트)는 자료라 색을 바꾸지 않는다. 층서 색은 조금 바래게만 한다 */
+button, input, select { font-family: inherit; }
+.leaflet-container { font-family: var(--font); }   /* 지도 위 온도계·축척·팝업도 본문 글씨체로(Leaflet 기본은 Helvetica) */
+.bar {
+  position: relative; border-bottom: 0; color: var(--gilt);
+  background: radial-gradient(120% 180% at 20% 0%, rgba(255, 220, 170, .1), transparent 60%), var(--leather-tex),
+              linear-gradient(180deg, var(--leather-hi), var(--leather));
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .5), 0 1px 0 rgba(216, 180, 103, .25);
+}
+.bar::before, .bar::after { content: ""; position: absolute; left: 8px; right: 8px; border-top: 1px solid rgba(216, 180, 103, .5); pointer-events: none; }
+.bar::before { top: 4px; } .bar::after { bottom: 4px; }
+.brand strong { color: var(--gilt); text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
+.brand .brand-mark { filter: drop-shadow(0 0 1px rgba(216, 180, 103, .9)); }
+.brand .ver, .brand .sub, .now .sep, .now .label { color: var(--gilt-dim); }
+.now .age { color: #f0dfb8; font-variant-numeric: lining-nums tabular-nums; }
+.now .unit { filter: saturate(.8) sepia(.12); color: #231a10; }
+.bar .seg { border-color: rgba(216, 180, 103, .6); border-radius: 4px; }
+.bar .seg button { background: transparent; color: #d9c49a; }
+.bar .seg button + button { border-left-color: rgba(216, 180, 103, .45); }
+.bar .seg button[aria-pressed="true"] { background: linear-gradient(#c9a45f, #9e7a3e); color: #2b1d10; }
+.bar .gear { background: transparent; border-color: rgba(216, 180, 103, .6); color: var(--gilt); border-radius: 4px; }
+.bar .gear:hover { color: #f3dca5; border-color: var(--gilt); }
+/* 양피지 면 */
+.timebar, .panel, .findfloat, .sheet, .thermo, .scalebar, .tool-out, .leaflet-popup-content-wrapper, .leaflet-tooltip.occ-tip, .suggest, .panel-bar {
+  background-image: var(--parch-tex), radial-gradient(90% 70% at 40% 30%, color-mix(in srgb, var(--panel) 92%, #fff 8%), var(--panel));
+  background-color: var(--panel);
+}
+.timebar { border-bottom: 1px solid var(--line); box-shadow: inset 0 -2px 3px rgba(80, 52, 22, .12); }
+.timebar input[type="range"], .opacity input, .panel input[type="checkbox"], .panel input[type="radio"], .timebar input[type="checkbox"] { accent-color: var(--accent); }
+.strip-row.named, .chip, .dist .chip { filter: saturate(.82) sepia(.1); }
+.timebar > button { background: var(--field); border-color: var(--line); color: var(--accent); }
+.panel { border-left: 1px solid var(--line); box-shadow: inset 2px 0 4px rgba(80, 52, 22, .1); }
+.panel h2 { font-weight: 600; letter-spacing: .02em; }
+.panel section + section { border-top: 3px double color-mix(in srgb, var(--accent) 35%, transparent); }
+.note { font-size: 12.5px; }
+/* 찾기 카드 — 좌우를 줄인다(연구자) */
+.findfloat { width: min(380px, calc(100% - 24px)); border: 1px solid var(--line); }
+.find input { background: var(--field); border-color: var(--line); }
+.find-go { background: linear-gradient(#c9a45f, #9e7a3e); border-color: #7d5a2c; color: #2b1d10; font-weight: 600; }
+.find-go:hover { color: #1a1008; border-color: #5c4020; }
+/* 원목 도구 묶음에 놋쇠 */
+.tool-col {
+  background: repeating-linear-gradient(92deg, transparent 0 7px, rgba(0, 0, 0, .08) 7px 8px, rgba(255, 255, 255, .04) 8px 11px),
+              linear-gradient(180deg, var(--wood), var(--wood-lo));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 230, 190, .25);
+}
+.tool-cap { color: #ead3a3; border-bottom-color: rgba(227, 201, 143, .35); }
+.mtool { color: #f1ddb2; }
+.mtool svg { color: var(--brass-hi); }
+.mtool:hover { color: #fff3d6; background: rgba(176, 141, 87, .3); }
+.mtool.on { color: #2b1d10; background: linear-gradient(#e0c287, #a8844c); border-color: #7d5a2c; }
+.mtool:disabled { color: #b9a37a; }
+.tool-sep { background: rgba(227, 201, 143, .3); }
+/* 팝업·설정 창 */
+.leaflet-popup-content-wrapper { border-radius: 4px; }
+.sheet { border-color: var(--line); }
+.sheet-head { background: transparent; }
+
+/* 축척 막대 — 양피지 판에 두 줄 테, 끌어 옮긴다(tupandactyl 007) */
+.scalebar { border-radius: 2px; border: 1px solid var(--line); box-shadow: inset 0 0 0 3px var(--panel), inset 0 0 0 4px color-mix(in srgb, var(--ink) 35%, transparent), 0 1px 4px rgba(0, 0, 0, .3);
+  padding: 9px 30px 5px 14px; }
+.scalebar-ticks { font-weight: 400; font-style: italic; }
+.movable { cursor: grab; touch-action: none; }
+.movable.dragging { cursor: grabbing; }
+/* 층서표 칩 — 책장에 꽂힌 책등처럼: 둥근 책등의 그늘, 위아래 금박 띠, 테두리 */
+.chrono .chip, .dist .chip {
+  border: 1px solid rgba(40, 25, 12, .55); border-radius: 2px 2px 1px 1px; padding: 2px 8px 3px;
+  background-image:
+    linear-gradient(180deg, transparent 2px, rgba(216, 180, 103, .85) 2px 3px, transparent 3px calc(100% - 4px), rgba(216, 180, 103, .85) calc(100% - 4px) calc(100% - 3px), transparent calc(100% - 3px)),
+    linear-gradient(90deg, rgba(0, 0, 0, .22), rgba(255, 255, 255, .16) 18%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, .12) 85%, rgba(0, 0, 0, .28));
+  box-shadow: 0 1px 1px rgba(40, 25, 12, .35);
+}
+.chrono .chip.on { outline-color: var(--accent); }

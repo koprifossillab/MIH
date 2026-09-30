@@ -23,7 +23,7 @@
   var W = 0, H = 0, dpr = 1, C = [0, 0], Rm = 0, ring = null, path = null;
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
-  var T_ENTER = .9, T_SWIM = 6.6, T_WRITE = 2.4, T_BONES = 2.0;
+  var T_ENTER = .15, T_SWIM = 6.6, T_WRITE = 2.4, T_BONES = 2.0;   // 들어오자마자 헤엄치기 시작한다(연구자)
   // 메달을 두르고 T_AFTER 뒤에 뼈대가 떠오르기 시작하고, 같은 순간 펜이 제목을 쓰기 시작한다(연구자: 둘의 시작을 맞춘다)
   var T_AFTER = .3, T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + T_AFTER + Math.max(T_WRITE, T_BONES);
   var t0 = 0, raf = 0, mapReady = false, skipped = false, closed = false;

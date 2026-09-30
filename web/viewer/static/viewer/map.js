@@ -523,7 +523,7 @@
       proj = "&proj=globe" + (v ? "&lon=" + v.lon.toFixed(1) + "&lat=" + v.lat.toFixed(1) + "&alt=" + Math.round(v.alt / 1000) : "");
     }
     try {
-      history.replaceState(null, "", "#age=" + f.age + proj + (EN ? "&lang=en" : ""));
+      history.replaceState(null, "", "#age=" + f.age + (state.all ? "&all=1" : "") + proj + (EN ? "&lang=en" : ""));
     } catch (e) { /* 미리보기 등 */ }
   }
   // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
@@ -717,7 +717,7 @@
         var n = state.dist && state.taxon ? state.dist.units[u.id] || 0 : null;
         b.className = "chip" + (picked[rank] && picked[rank].id === u.id ? " on" : "") + (here[u.id] ? " here" : "") +
           (n === 0 ? " none-found" : "");
-        b.style.background = u.color;
+        b.style.backgroundColor = u.color;   // 색만 — 책등의 그늘·금박 띠(CSS 배경 그림)를 지우지 않게
         b.style.color = ink(u.color);
         b.textContent = chipName(u);
         if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
@@ -811,6 +811,8 @@
 
   function show(i, opts) {
     opts = opts || {};
+    // 다른 시점으로 옮기면 "모든 시대 산지" 를 끄고 그 시대의 산지로 돌아간다
+    if (!opts.all && state.all) setEverything(false, true);
     state.i = Math.max(0, Math.min(state.frames.length - 1, i));
     state.focus = opts.focus || null;
     if (!opts.focus) $("chrono-note").textContent = "";
@@ -999,6 +1001,7 @@
   function loadFossils(f) {
     $("fossil-count").textContent = "";
     state.payload = null;
+    if (state.all) { loadEverything(); return; }
     if (!f.fossils || !f.fossils.file) { fossilLayer.clearLayers(); return; }
     var want = f.age;
     getJSON(dataUrl(f.fossils.file)).then(function (payload) {
@@ -1037,8 +1040,68 @@
     return col;
   }
 
+  // ── 모든 시대 산지(tupandactyl 007) ────────────────────────────────
+  // 첫 화면 — PBDB 의 모든 산지를 오늘날 자리에. 가공물(fossils/all.json, pipeline/everything.py)은 0.25° 칸으로 묶여
+  // 칸마다 산지 수·가장 많은 퇴적기원·연대 범위·연대 중간값을 준다. 점 크기는 산지 수(로그), 색은 퇴적기원 또는 시대(중간값).
+  // 퇴적기원은 맨 윗 갈래(해양·육상·미상)로만 거른다 — 칸에는 세부 환경이 없다. 나라·연대 거르기는 시점마다의 산지에만 건다.
+  var everything = null;
+  function loadEverything() {
+    if (everything) { drawFossils(); return; }
+    getJSON(dataUrl(state.everything.file)).then(function (payload) {
+      everything = payload;
+      if (state.all) drawFossils();
+    }).catch(function () { setEverything(false); });
+  }
+  function setEverything(on, quiet) {
+    state.all = !!on && !!state.everything;
+    $("everything").checked = state.all;
+    app.classList.toggle("all-eras", state.all);
+    if (quiet) return;
+    if (state.all) {
+      if (state.country) setCountry(null);
+      var zero = state.frames.findIndex(function (f) { return f.age === 0; });
+      show(zero < 0 ? state.i : zero, { all: true });
+    } else {
+      show(state.i);
+    }
+  }
+  function drawEverything() {
+    var col = columns(everything), shown = 0, cellsShown = 0, byTop = { m: 0, t: 0, o: 0 };
+    var on = {};
+    ["m", "t", "o"].forEach(function (k) { on[k] = termsUnder("top", k).some(function (t) { return state.enabled[t]; }); });
+    everything.rows.forEach(function (row) {
+      var env = row[col.env], n = row[col.n];
+      byTop[env] = (byTop[env] || 0) + n;
+      if (!on[env]) return;
+      shown += n; cellsShown += 1;
+      var color = state.colorBy === "age" ? ((periodOf(row[col.mid_ma], row[col.mid_ma]) || {}).color || UNKNOWN_COLOR) : state.topColor[env];
+      var r = 1.7 + 1.25 * Math.log(n) / Math.LN10;
+      L.circleMarker([row[col.lat], row[col.lng]], {
+        renderer: renderer, radius: r, weight: .5, color: "#ffffff", opacity: Math.min(1, state.opacity + .1),
+        fillColor: color, fillOpacity: state.opacity,
+      }).bindTooltip(tr("all.tip", { n: fmtNum(n), old: row[col.max_ma], young: row[col.min_ma] }), { direction: "top", opacity: .95 })
+        .on("click", function (e) { if (!measure.on) map.setView(e.latlng, Math.min(map.getMaxZoom(), map.getZoom() + 2)); })
+        .addTo(fossilLayer);
+    });
+    // 환경 칸의 수 — 맨 윗 갈래만 적는다(칸에는 세부 환경이 없다)
+    document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
+      var key = el.dataset.count, top = key.indexOf("top:") === 0 ? key.slice(4) : null;
+      el.textContent = top ? fmtNum(byTop[top] || 0) : "";
+      el.closest(".env").classList.toggle("zero", top ? !byTop[top] : false);
+    });
+    $("envtree").title = tr("env.count.coll");
+    spanNote(0, tr("what.coll"));
+    $("fossil-count").textContent = tr("fossil.everything", { n: fmtNum(shown) });
+    renderLegend();
+  }
+
   // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 산지 점은 찾기를 지우면 돌아온다.
   function drawFossils() {
+    if (state.all && !state.taxon) {
+      fossilLayer.clearLayers();
+      if (everything) drawEverything();
+      return;
+    }
     var payload = state.payload;
     fossilLayer.clearLayers();
     if (!payload) return;
@@ -1318,7 +1381,7 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "chip";
-      b.style.background = p.color;
+      b.style.backgroundColor = p.color;
       b.style.color = ink(p.color);
       b.innerHTML = esc(p.ko) + '<span class="cnt">' + fmtNum(d.units[p.id]) + "</span>";
       b.title = tr("dist.chip", { unit: p.full, n: fmtNum(d.units[p.id]) });
@@ -1777,6 +1840,7 @@
   }
 
   function setCountry(cc) {
+    if (cc && state.all) setEverything(false, true);   // 나라로 거르기는 시점마다의 산지에만 건다(tupandactyl 007)
     state.country = cc;
     $("country-chip").hidden = !cc;
     $("country-chip-name").textContent = cc ? countryName(cc) : "";
@@ -1954,9 +2018,13 @@
     options: { position: "bottomright", maxWidth: 150 },
     onAdd: function (m) {
       var box = L.DomUtil.create("div", "scalebar");
-      box.innerHTML = '<div class="scalebar-bar"><i></i><i></i></div>' +
+      // 옛 지도의 축척 — 잉크와 종이가 번갈아 드는 네 칸, 밑에 눈금 숫자(tupandactyl 007)
+      box.innerHTML = '<div class="scalebar-bar"><i></i><i></i><i></i><i></i></div>' +
         '<div class="scalebar-ticks"><span>0</span><span></span><span></span></div>';
       this._box = box;
+      L.DomEvent.disableClickPropagation(box);
+      L.DomEvent.disableScrollPropagation(box);
+      draggable(box, "wegener.scale", m.getContainer());
       m.on("move zoom resize viewreset", this._update, this);
       m.whenReady(this._update, this);
       return box;
@@ -1983,6 +2051,36 @@
     },
   });
   new ScaleBar().addTo(map);
+
+  // 지도 위 판을 끌어 옮긴다(축척 막대, tupandactyl 007) — 제자리에서 옮긴 만큼을 transform 으로 두고 브라우저에 기억한다.
+  // 지도 칸 밖으로는 나가지 않는다. Leaflet 의 컨트롤 자리(모서리)는 그대로라 창 크기가 바뀌어도 모서리를 따라간다
+  function draggable(el, key, bounds) {
+    var off = { x: 0, y: 0 };
+    try { off = JSON.parse(localStorage.getItem(key)) || off; } catch (e) { /* 막힌 저장소 */ }
+    function apply() {
+      el.style.transform = "translate(" + off.x + "px," + off.y + "px)";
+      var r = el.getBoundingClientRect(), b = bounds.getBoundingClientRect(), dx = 0, dy = 0;
+      if (r.left < b.left) dx = b.left - r.left; else if (r.right > b.right) dx = b.right - r.right;
+      if (r.top < b.top) dy = b.top - r.top; else if (r.bottom > b.bottom) dy = b.bottom - r.bottom;
+      if (dx || dy) { off.x += dx; off.y += dy; el.style.transform = "translate(" + off.x + "px," + off.y + "px)"; }
+    }
+    el.classList.add("movable");
+    el.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      var sx = e.clientX - off.x, sy = e.clientY - off.y;
+      el.setPointerCapture(e.pointerId); el.classList.add("dragging");
+      function move(ev) { off = { x: ev.clientX - sx, y: ev.clientY - sy }; apply(); }
+      function end() {
+        el.classList.remove("dragging");
+        el.removeEventListener("pointermove", move); el.removeEventListener("pointerup", end); el.removeEventListener("pointercancel", end);
+        try { localStorage.setItem(key, JSON.stringify(off)); } catch (e2) { /* 막힌 저장소 */ }
+      }
+      el.addEventListener("pointermove", move); el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+    });
+    window.addEventListener("resize", apply);
+    setTimeout(apply, 0);
+  }
 
   // ── 그림으로 내려받기(wetherilli 008) ──────────────────────────────
   // 지금 보이는 지도를 PNG 한 장으로. 지도는 창(pane)마다 캔버스(배경·기온·산지)·그림(정거원통 기온)·SVG(해안선·국경·
@@ -2262,7 +2360,7 @@
 
   // 밑 띠 — 밝은 바탕에 짙은 글씨로 고정한다(어두운 모드에서 받아도 인쇄·슬라이드에 그대로 쓰게)
   function drawExportStrip(ctx, f, W, H, STRIP) {
-    var FONT = 'system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    var FONT = '"Spectral", "Noto Serif KR", Georgia, serif';   // 화면과 같은 본문 글씨체(tupandactyl 006)
     ctx.fillStyle = "#fffdf8";
     ctx.fillRect(0, H, W, STRIP);
     ctx.fillStyle = "#d8d2c4";
@@ -2354,6 +2452,7 @@
     });
     $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
     $("coeval").addEventListener("change", drawTaxa);
+    $("everything").addEventListener("change", function () { stopTour(); setEverything(this.checked); });
     $("show-wide").addEventListener("change", function () {
       state.showWide = this.checked;
       if (state.taxon) computeDist();
@@ -2447,6 +2546,8 @@
         (index.rules.vague_intervals || []).forEach(function (name) { VAGUE[name] = true; });
       }
       BUILT = index.built_at || "";
+      state.everything = index.everything && index.everything.file ? index.everything : null;   // 모든 시대 산지(tupandactyl 007)
+      $("everything-row").hidden = !state.everything;
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
@@ -2515,9 +2616,15 @@
     if (proj !== state.proj) setProjection(proj);
     else if (proj === "moll") rotateTo(Mollweide.lon0);
     if (proj === "globe") state.globeView = null; else fitWorld();
+    // 주소에 시점이 없는 첫 화면은 홀로세(0 Ma) 지도에 모든 시대의 산지를 오늘날 자리로(tupandactyl 007).
+    // 주소의 all=1 도 같다 — 첫 화면에서 새로고침해도 그대로
+    state.all = !!state.everything && (/[#&]all=1/.test(hash) || (initial && !isFinite(wanted)));
+    if (state.all) wanted = 0;
+    $("everything").checked = state.all;
+    app.classList.toggle("all-eras", state.all);
     var first = state.frames.findIndex(function (f) { return f.age === wanted; });
-    if (first < 0) first = initial ? state.frames.findIndex(function (f) { return f.age === 250; }) : state.i;
-    show(first < 0 ? 0 : first);
+    if (first < 0) first = initial ? state.frames.findIndex(function (f) { return f.age === 0; }) : state.i;
+    show(first < 0 ? 0 : first, { all: state.all });
   }
 
   // ── 언어(027) ────────────────────────────────────────────────────
@@ -2526,6 +2633,26 @@
     b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
   });
   document.documentElement.classList.remove("i18n-pending");
+
+  // ── 화면 밝기(tupandactyl 006) ───────────────────────────────────────
+  // 자동(컴퓨터 설정) · 밝게(양피지) · 어둡게(흑단). 고른 것은 브라우저에 기억하고 <html data-theme> 로 입힌다 —
+  // <head> 의 스크립트가 그리기 전에 같은 값을 먼저 입힌다
+  (function initTheme() {
+    var root = document.documentElement, btns = document.querySelectorAll(".theme [data-theme-pick]");
+    function paint() {
+      var cur = root.dataset.theme || "auto";
+      btns.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.themePick === cur)); });
+    }
+    btns.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.dataset.themePick;
+        if (v === "auto") delete root.dataset.theme; else root.dataset.theme = v;
+        try { if (v === "auto") localStorage.removeItem("wegener.theme"); else localStorage.setItem("wegener.theme", v); } catch (e) { /* 막힌 저장소 */ }
+        paint();
+      });
+    });
+    paint();
+  })();
 
   // 읽는 법 — 산출 시대의 수를 어떻게 세는지. 기준 건수(OCC_LIMIT)가 여기 있어 문구를 JS 가 채운다(tupandactyl 003)
   $("guide-dist").textContent = tr("guide.dist", { limit: fmtNum(OCC_LIMIT) });
@@ -2545,11 +2672,23 @@
   // 자리는 지도 칸 안으로 가두고 브라우저에 기억한다(창 크기에 대한 비율). 후보 목록은 카드가 지도의 위쪽 절반에
   // 있으면 아래로, 아래쪽이면 위로 연다.
   (function initFindFloat() {
-    var KEY = "wegener.find", card = $("findfloat"), col = card.parentNode;
+    // 기본 자리는 지도 왼쪽 위, 온도계 오른쪽(tupandactyl 007) — 전에 끌어 둔 자리(옛 열쇠)는 새 기본을 위해 버린다
+    var KEY = "wegener.find.v2", card = $("findfloat"), col = card.parentNode;
     var pos = null;
     try { pos = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* 막힌 저장소 */ }
     function place() {
       var W = col.clientWidth, H = col.clientHeight;
+      if (!pos && W && H) {
+        var th = col.querySelector(".thermo"), c = col.getBoundingClientRect();
+        if (th && th.offsetWidth) {
+          var t = th.getBoundingClientRect();
+          card.style.left = Math.round(t.right - c.left + 10) + "px";
+          card.style.top = Math.round(t.top - c.top) + "px";
+          card.style.bottom = "auto";
+        } else if ((place.tries = (place.tries || 0) + 1) < 40) {
+          setTimeout(place, 250);                 // 온도계는 자료 목록을 받은 뒤에 생긴다 — 생길 때까지 기다린다
+        }
+      }
       if (pos && W && H) {
         var x = Math.max(0, Math.min(W - card.offsetWidth, pos.x * W));
         var y = Math.max(0, Math.min(H - card.offsetHeight, pos.y * H));
