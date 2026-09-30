@@ -72,6 +72,15 @@ def build(skip_relief=False):
     borders = {e["age"]: e["file"] for e in border_entries}
     print("고기후(Scotese 2021 지표 기온)")
     temps = climate.build([e["age"] for e in reliefs])
+    # 최근의 절 기온(PaleoClim, tupandactyl 010) — climate/pc_*.png·recent.json. 뷰어는 index.json 이 아니라 recent.json 을
+    # 따로 읽는다. 바뀌지 않는 원본이라 --no-relief 면 있는 것을 그대로 두고 없을 때만 굽는다(koprifossillab 033).
+    # 전에는 `pipeline paleoclim` 으로만 구워 가공 폴더에 없고 운영 폴더에만 있었다
+    if skip_relief and (DERIVED / "climate" / "recent.json").is_file():
+        print("최근 절 기온(PaleoClim) — 지난 것을 그대로 쓴다")
+    else:
+        print("최근 절 기온(PaleoClim)")
+        from . import paleoclim         # numpy·tifffile — 규칙 시험(CI)이 build 를 부르지 않아도 여기서만 부른다
+        paleoclim.build()
 
     scale = units()
     frames = []

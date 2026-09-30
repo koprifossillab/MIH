@@ -87,3 +87,4 @@
 | tupandactyl 008 | 2026-09-30 | [제4기 안의 시대 이름은 모호한 연대에서 뺀다](20260930_tupandactyl_008_quaternary_precise.md) |
 | tupandactyl 009 | 2026-09-30 | [최근 5 Ma 를 절 단위 시점으로, 기온 지도도 절 경계로](20260930_tupandactyl_009_recent_stages.md) |
 | tupandactyl 010 | 2026-09-30 | [최근의 절에 PaleoClim 기온 지도](20260930_tupandactyl_010_pleistocene_climate.md) |
+| koprifossillab 033 | 2026-09-30 | [PaleoClim 을 받기·가공·주간 점검의 흐름에 넣는다](20260930_koprifossillab_033_paleoclim_in_pipeline.md) |
