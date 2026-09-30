@@ -103,7 +103,7 @@ Windows 에서 작업할 때(첫 판을 만든 장비). `.gitattributes` 가 셸
 ### 3.5 git·GitHub 계정은 Linux 계정마다 제 것을 쓴다
 
 저장소에 `user.name`·`user.email` 을 따로 두지 않는다 — 각 Linux 계정이 자기 GitHub 계정으로 커밋·push 한다.
-대응표(devlog 글쓴이도 이것)는 CLAUDE.md "devlog". jschoi(Tupandactyl)는 아직 저장소 협업자가 아니다.
+대응표(devlog 글쓴이도 이것)는 CLAUDE.md "devlog". jschoi(Tupandactyl)도 저장소에 push 할 수 있다(09-30 확인).
 
 ### 3.6 paleoserver 에서 화면을 시험할 때
 
