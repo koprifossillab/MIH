@@ -91,8 +91,18 @@ body {
   display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center;
   padding: 7px 12px; border-top: 1px solid var(--line); background: var(--panel);
 }
-.find { display: flex; align-items: center; gap: 6px; flex: 1 1 260px; max-width: 440px; min-width: 0; }
-.find-label { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.find { display: flex; align-items: center; gap: 6px; flex: 1 1 300px; max-width: 520px; min-width: 0; }
+/* 고른 분류군·국가 딱지(wetherilli 013) — 둘을 함께 걸 수 있다 */
+.find-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fchip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 2px 2px 9px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  font-size: 12px; max-width: 280px;
+}
+.fchip[hidden] { display: none; }
+.fchip small { color: var(--accent); font-weight: 600; }
+.fchip b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#taxon-chip b { font-style: italic; }
 .find input {
   width: 100%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
   background: var(--bg); color: var(--ink); font: inherit;
@@ -106,10 +116,12 @@ body {
 .find-x:hover { color: var(--ink); }
 /* 막대의 후보 목록은 위로 연다 — 아래는 화면 끝이다 */
 .findbar .suggest { top: auto; bottom: calc(100% + 4px); right: 0; min-width: 280px; }
+/* 패널은 양쪽(wetherilli 011) — 왼쪽은 시점·겹쳐 보기, 오른쪽은 화석 산지 */
 .panel {
-  width: 320px; overflow-y: auto; padding: 4px 16px 16px;
+  width: 300px; flex: none; overflow-y: auto; padding: 4px 16px 16px;
   border-left: 1px solid var(--line); background: var(--panel);
 }
+.panel-left { border-left: 0; border-right: 1px solid var(--line); }
 .panel h2 { font-size: 13px; margin: 16px 0 8px; text-transform: none; color: var(--accent); }
 .panel h2 small { color: var(--muted); font-weight: 400; }
 .panel section + section { border-top: 1px solid var(--line); }
@@ -281,6 +293,8 @@ body {
 .suggest .nm b { font-style: italic; color: var(--accent); }
 .suggest .meta { color: var(--muted); font-size: 11px; }
 .suggest .empty-sg { color: var(--muted); cursor: default; }
+.suggest .sg-head { cursor: default; padding: 5px 10px 2px; font-size: 11px; font-weight: 600; color: var(--accent); background: none; }
+.suggest .sg-head:hover { background: none; }
 .links { display: flex; gap: 14px; }
 button.link { border: 0; background: none; color: var(--accent); padding: 0; cursor: pointer; text-decoration: underline; }
 
@@ -333,18 +347,60 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .thermo-read small { margin-top: 4px; font-size: 10px; color: var(--muted); white-space: nowrap; }
 
 /* 지도 위 단추 — 그림으로 내려받기(wetherilli 008) */
-.map-btn {
-  border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
-  background: color-mix(in srgb, var(--panel) 90%, transparent); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+/* 도구 묶음(wetherilli 014) — GSM 의 손잡이처럼 세로로, 아이콘 밑에 이름. 결과 칸은 왼쪽 */
+.maptools { display: flex; flex-direction: row-reverse; align-items: flex-start; gap: 8px; }
+.tool-col {
+  display: flex; flex-direction: column; gap: 3px; padding: 5px; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent); box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
 }
-.map-btn:hover { color: var(--accent); border-color: var(--accent); }
-.map-btn:disabled { opacity: .6; cursor: progress; }
+.tool-cap {
+  padding: 2px 0 4px; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-align: center;
+  color: var(--muted); border-bottom: 1px solid var(--line);
+}
+.mtool {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: 50px; height: 50px; padding: 0; border: 1px solid transparent; border-radius: 9px; background: transparent;
+  color: var(--muted); font: inherit; font-size: 10.5px; font-weight: 500; cursor: pointer;
+}
+.mtool svg { width: 22px; height: 22px; fill: currentColor; }
+.mtool svg .stroke { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mtool svg .dash { stroke-dasharray: 2.6 2.4; }
+.mtool:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.mtool.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+.mtool.danger:hover { color: #fff; background: #b23a3a; }
+.mtool:disabled { opacity: .35; cursor: default; background: transparent; color: var(--muted); }
+.mtool:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.mtool.flash::after {
+  content: attr(data-flash); position: absolute; right: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+  padding: 3px 8px; border-radius: 6px; background: var(--ink); color: var(--panel); font-size: 11px; white-space: nowrap;
+}
+.tool-sep { height: 1px; margin: 2px 6px; background: var(--line); }
+.tool-out {
+  max-width: 260px; padding: 8px 12px; border-radius: 9px; font-size: 12px; line-height: 1.5; color: var(--ink);
+  background: color-mix(in srgb, var(--panel) 90%, transparent); box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+  font-variant-numeric: tabular-nums;
+}
+.tool-out[hidden] { display: none; }
+.tool-out small { color: var(--muted); }
+.leaflet-container.measuring { cursor: crosshair; }
+.measure-line { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 6 4; fill: none; }
+.measure-line.live { stroke-opacity: .7; }
+.measure-pt { stroke: #fff; stroke-width: 1.5; fill: var(--accent); fill-opacity: 1; }
 
-/* 축척 막대(wetherilli 001) — 출처 표기 위, 오른쪽 아래 */
-.leaflet-control-scale-line {
-  background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink);
-  border-color: var(--ink); font-variant-numeric: tabular-nums;
+/* 축척 막대(wetherilli 012) — GSM 처럼 반투명 판 위의 두꺼운 두 칸 막대와 밑의 눈금 숫자. 색은 토큰만 */
+.scalebar {
+  padding: 7px 30px 4px 12px; border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent); color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3); pointer-events: auto; cursor: default;
 }
+.scalebar-bar { display: flex; height: 8px; border: 1px solid var(--accent); border-radius: 1px; box-sizing: border-box; }
+.scalebar-bar i { flex: 1; background: var(--accent); }
+.scalebar-bar i + i { background: var(--bg); }
+.scalebar-ticks { position: relative; height: 14px; margin-top: 2px; font: 600 10.5px system-ui, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); }
+.scalebar-ticks span { position: absolute; top: 0; white-space: nowrap; transform: translateX(-50%); }
+.scalebar-ticks span:nth-child(1) { left: 0; }
+.scalebar-ticks span:nth-child(2) { left: 50%; }
+.scalebar-ticks span:nth-child(3) { left: 100%; }
 
 /* 팝업·툴팁 — 색은 토큰으로만(wetherilli 006). Leaflet 기본은 흰 바탕에 고정 회색이라, 어두운 모드에서
    글자 토큰(밝은 회색)이 흰 바탕 위에 올라가거나 고정 #666 이 흐렸다 */
@@ -379,17 +435,24 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 }
 
 @media (max-width: 760px) {
+  /* 좁은 창의 도구 묶음 — 이름을 빼고 44px(누르기 좋은 가장 작은 크기) */
+  .mtool { width: 44px; height: 44px; }
+  .mtool span, .tool-cap { display: none; }
+  /* 지도 → 접기 막대 → 왼쪽 패널 → 오른쪽 패널 차례로 쌓는다. 두 패널이 지도 밑 남은 자리를 나눠 쓴다 */
   .stage { flex-direction: column; }
-  #map { min-height: 50vh; }
+  .mapcol { order: 0; flex: none; height: 55vh; }
+  #map { min-height: 0; }
   .findbar { padding: 6px 10px; }
-  .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 45vh; padding-top: 0; }
+  .panel-bar { order: 1; }
+  .panel-left { order: 2; }
+  .panel-right { order: 3; }
+  .panel { width: auto; flex: 1 1 auto; min-height: 0; border: 0; border-top: 1px solid var(--line); padding-top: 0; }
   .panel-bar {
-    display: block; position: sticky; top: 0; z-index: 2; width: calc(100% + 32px); margin: 0 -16px;
-    padding: 8px 16px; border: 0; border-bottom: 1px solid var(--line); background: var(--panel);
+    display: block; width: 100%; flex: none;
+    padding: 8px 16px; border: 0; border-top: 1px solid var(--line); background: var(--panel);
     color: var(--accent); font: inherit; font-weight: 600; text-align: left; cursor: pointer;
   }
   /* 패널을 접으면 막대만 남고 지도가 자리를 채운다 */
-  #app.panel-closed .panel { max-height: none; overflow: hidden; }
-  #app.panel-closed .panel > :not(.panel-bar) { display: none !important; }
-  #app.panel-closed .panel-bar { border-bottom: 0; }
+  #app.panel-closed .mapcol { flex: 1; height: auto; }
+  #app.panel-closed .panel { display: none; }
 }
