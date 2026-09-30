@@ -34,7 +34,7 @@ CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.1
 `/nfs/temp-share/WegenersDream/backup/` 에 같은 파일로 백업하고, PBDB 를 새로
 받아 `build --no-relief` 로 산지를 다시 가공해 운영에 옮긴다. 실패·산지 급감이면 운영은 지난 자료 그대로. **paleoadmin 의
 이 저장소 폴더가 `main` 이고 깨끗해야 가공한다** — feature 브랜치에 두고 월요일 새벽을 넘기면 백업만 하고 `fail` 이다.
-결과는 `/data/WegenersDream/logs/last_refresh.json`(koprifossillab 032).
+결과는 `/data/WegenersDream/logs/last_refresh.json`(koprifossillab 032). 백업의 모든 것(되살리기 포함)은 [docs/백업.md](docs/백업.md).
 
 **git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(Windows 작업 장비) — 09-29 PBDB 사본·`data/state`·가공물. 서버에
 09-30(UTC 09-29 20:37) PBDB 로 다시 가공한 것이 있어 가공물로는 옛것이다. 남은 뜻은 09-29 PBDB 사본(다시 받을 수
