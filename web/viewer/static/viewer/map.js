@@ -460,17 +460,22 @@
     redrawLines(frame());
   }
 
-  // 몰바이데에서 끌기: 가로로 움직인 만큼 가운데 경선을 돌리고(적도에서 손가락 밑의 땅이 따라오게),
-  // 세로는 지도를 옮긴다. 움직임은 한 프레임에 한 번만 반영한다. 끈 뒤에 오는 click 은 삼킨다 — 점을 누른 것으로
+  // 몰바이데에서 끌기: 지구(타원) 안을 눌러 끌면 가로로 움직인 만큼 가운데 경선을 돌리고(적도에서 손가락 밑의
+  // 땅이 따라오게) 세로는 지도를 옮긴다. 타원 밖을 눌러 끌면 가로·세로 모두 지도를 옮긴다(koprifossillab 029).
+  // 어느 쪽인지는 누른 자리로 정한다 — 끄는 도중 경계를 넘어도 바뀌지 않는다. 움직임은 한 프레임에 한 번만 반영한다. 끈 뒤에 오는 click 은 삼킨다 — 점을 누른 것으로
   // 보고 팝업을 열지 않게.
-  var spin = null, spinPending = { dx: 0, dy: 0, frame: 0 }, pointers = {};
+  var spin = null, spinPending = { dx: 0, dy: 0, frame: 0, rotate: true }, pointers = {};
   function applySpin() {
     spinPending.frame = 0;
     var dx = spinPending.dx, dy = spinPending.dy;
     spinPending.dx = spinPending.dy = 0;
     if (state.proj !== "moll") return;
-    if (dx) rotateTo(Mollweide.lon0 - dx * 360 / (512 * Math.pow(2, map.getZoom())));
-    if (dy) map.panBy([0, -dy], { animate: false });
+    if (spinPending.rotate) {
+      if (dx) rotateTo(Mollweide.lon0 - dx * 360 / (512 * Math.pow(2, map.getZoom())));
+      if (dy) map.panBy([0, -dy], { animate: false });
+    } else if (dx || dy) {
+      map.panBy([-dx, -dy], { animate: false });
+    }
   }
   (function bindSpin() {
     var box = map.getContainer();
@@ -478,7 +483,7 @@
       pointers[e.pointerId] = true;
       if (Object.keys(pointers).length > 1) { spin = null; return; }   // 두 손가락은 Leaflet 의 확대에 맡긴다
       if (state.proj !== "moll" || e.button !== 0 || e.target.closest(".leaflet-control")) return;
-      spin = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
+      spin = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false, rotate: onGlobe(map.mouseEventToContainerPoint(e)) };
     });
     window.addEventListener("pointermove", function (e) {
       if (!spin || e.pointerId !== spin.id) return;
@@ -489,7 +494,7 @@
         box.classList.add("spinning");
       }
       spin.x = e.clientX; spin.y = e.clientY;
-      spinPending.dx += dx; spinPending.dy += dy;
+      spinPending.dx += dx; spinPending.dy += dy; spinPending.rotate = spin.rotate;
       if (!spinPending.frame) spinPending.frame = requestAnimationFrame(applySpin);
     });
     function end(e) {
