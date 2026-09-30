@@ -49,7 +49,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var state = {
     frames: [], i: 0, taxon: "", playing: null,
-    proj: "eq",                             // 투영: eq(정거원통) · moll(몰바이데, 024)
+    proj: "eq",                             // 투영: eq(정거원통) · moll(몰바이데, 024) · globe(지구본, wetherilli P01)
     units: {}, kids: {}, focus: null,       // 층서표: 고른 단위(없으면 지금 지도의 절)
     periods: [],                            // 기 단위 — 시대 색에 쓴다
     tree: [], termTop: {}, termGroup: {},   // 퇴적 환경 나무
@@ -404,7 +404,52 @@
     }
   }
   drawGrid();
-  window.Wegener = { map: map, fossils: fossilLayer, taxa: taxonLayer, borders: borderLayer, state: state, relief: relief };   // 콘솔에서 들여다보기용
+
+  // 3D 지구본(wetherilli P01) — Leaflet 층을 비춘다. 층이 바뀔 때마다 알리도록 층의 더하기·빼기를 감싼다
+  // (점 만 개를 더해도 알림은 다음 그리기 틀에 한 번 모인다). 지구본을 고르기 전에는 아무것도 하지 않는다.
+  var globe = window.WegenerGlobe ? window.WegenerGlobe({
+    L: L, map: map, box: $("map"), base: $("app").dataset.cesiumBase,
+    layers: { fossils: fossilLayer, taxa: taxonLayer, lines: [gridLayer, coastLayer, borderLayer] },
+    frame: frame,
+    reliefUrl: function (f) { var files = f.relief_files || {}; return dataUrl(files["4096"] || files["2048"] || f.relief); },
+    climate: globeClimate, climateOpacity: function () { return climateLayer.options.opacity; },
+    onView: function () { if (state.proj === "globe" && frame()) writeHash(frame()); },
+    onLoading: function (on, err) {
+      $("map").classList.toggle("globe-loading", on);
+      $("map").dataset.loading = tr("globe.loading");
+      if (err) { console.error(err); setProjection("eq"); alert(tr("globe.fail")); }
+    },
+  }) : null;
+  function watchLayer(group, what) {
+    ["addLayer", "removeLayer", "clearLayers"].forEach(function (name) {
+      var orig = group[name];
+      group[name] = function () { var out = orig.apply(this, arguments); if (globe) globe.mark(what); return out; };
+    });
+  }
+  watchLayer(fossilLayer, "points");
+  watchLayer(taxonLayer, "points");
+  [gridLayer, coastLayer, borderLayer].forEach(function (g) { watchLayer(g, "lines"); });
+  map.on("layeradd layerremove", function (e) { if (globe && e.layer === gridLayer) globe.mark("lines"); });
+  (function () {
+    var setUrl = relief.setUrl;
+    relief.setUrl = function () { var out = setUrl.apply(this, arguments); if (globe) globe.mark("relief"); return out; };
+  })();
+  // 지구본에서 지도를 옮기는 것은 모두 코드다(나라로 가기·가장 많은 시점 등) — 그 자리로 카메라를 날린다.
+  // 창 크기만 바뀐 것(가운데·확대가 그대로)은 넘긴다.
+  var lastMove = "";
+  map.on("moveend", function () {
+    var c = map.getCenter(), z = map.getZoom(), key = c.lat.toFixed(3) + "," + c.lng.toFixed(3) + "," + z;
+    if (key === lastMove) return;
+    lastMove = key;
+    if (state.proj !== "globe" || !globe) return;
+    var b = map.getBounds();
+    globe.setView({ lon: c.lng, lat: c.lat, alt: spanAlt(Math.max(b.getEast() - b.getWest(), (b.getNorth() - b.getSouth()) * 2)) }, true);
+  });
+  // 평면 지도에서 보이는 가로 폭(도)을 지구본의 카메라 높이(m)로 — 시야 60° 로 내려다보면 화면 폭 ≈ 높이 × 1.15.
+  // 반구보다 넓게 보던 것이면 0(지구 전체가 들어오는 높이, globe.js)
+  function spanAlt(spanDeg) { return spanDeg >= 150 ? 0 : spanDeg * 111195 / 1.15; }
+
+  window.Wegener = { map: map, fossils: fossilLayer, taxa: taxonLayer, borders: borderLayer, state: state, relief: relief, globe: globe };   // 콘솔에서 들여다보기용
 
   // 배경 해상도: EPSG:4326 에서 세계 폭은 512·2^zoom 픽셀이다. zoom 2 까지는 2048,
   // 그보다 확대하면 4096 을 부른다(6 분 격자가 3601 칸이라 그 이상은 얻을 것이 없다).
@@ -418,17 +463,41 @@
   function hasMollweide() { return state.frames.length > 0 && !!(state.frames[0].relief_files || {})["moll-2048"]; }
 
   // 투영을 바꾼다. 지도를 새로 만들지 않고 좌표계만 바꿔 다시 그린다 — 층들은 viewreset 에서 새 좌표계로 다시 투영된다.
+  // 지구본(P01)에서도 밑의 Leaflet 지도는 정거원통으로 살아 있다 — 층을 비추는 데 쓰고, 창만 숨긴다.
+  var LEAFLET_HANDLERS = ["dragging", "scrollWheelZoom", "doubleClickZoom", "boxZoom", "keyboard", "touchZoom"];
   function setProjection(proj) {
-    if (proj !== "moll") proj = "eq";
+    if (proj !== "moll" && proj !== "globe") proj = "eq";
+    if (proj === "globe" && !globe) proj = "eq";
     if (proj === state.proj) return;
+    var wasMoll = state.proj === "moll", wasGlobe = state.proj === "globe";
     state.proj = proj;
-    map.options.crs = proj === "moll" ? MOLL : L.CRS.EPSG4326;
-    map.setMaxBounds(proj === "moll" ? null : EQ_MAX_BOUNDS);   // 몰바이데는 위경도 사각형으로 가둘 수 없다
-    // 몰바이데에서는 Leaflet 의 끌기를 끄고 spin 이 받는다 — 가로는 돌리기, 세로는 옮기기(025)
-    if (proj === "moll") map.dragging.disable(); else map.dragging.enable();
-    map.getContainer().classList.toggle("moll", proj === "moll");
     document.querySelectorAll("#proj-seg [data-proj]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.proj === proj)); });
-    map._resetView(worldCenter(), worldZoom(), true);
+    if (proj === "globe") {
+      if (measure.on) setMeasuring(false);
+      clearMeasure();
+      map.closePopup();
+      LEAFLET_HANDLERS.forEach(function (h) { if (map[h]) map[h].disable(); });
+      map.getContainer().classList.add("globe-on");
+      $("tool-measure").disabled = true;
+      // 주소가 준 카메라 자리가 없으면 지금 보던 평면 지도의 가운데·넓이로 연다
+      var c = map.getCenter(), b = map.getBounds();
+      globe.setView(state.globeView || { lon: c.lng, lat: c.lat, alt: spanAlt(Math.max(b.getEast() - b.getWest(), (b.getNorth() - b.getSouth()) * 2)) });
+      state.globeView = null;
+      globe.open().catch(function () { /* onLoading 이 정거원통으로 되돌린다 */ });
+    } else if (wasGlobe) {
+      globe.close();
+      map.getContainer().classList.remove("globe-on");
+      LEAFLET_HANDLERS.forEach(function (h) { if (map[h]) map[h].enable(); });
+      $("tool-measure").disabled = false;
+    }
+    if (wasMoll !== (proj === "moll")) {
+      map.options.crs = proj === "moll" ? MOLL : L.CRS.EPSG4326;
+      map.setMaxBounds(proj === "moll" ? null : EQ_MAX_BOUNDS);   // 몰바이데는 위경도 사각형으로 가둘 수 없다
+      // 몰바이데에서는 Leaflet 의 끌기를 끄고 spin 이 받는다 — 가로는 돌리기, 세로는 옮기기(025)
+      if (proj === "moll") map.dragging.disable(); else if (proj === "eq") map.dragging.enable();
+      map.getContainer().classList.toggle("moll", proj === "moll");
+      map._resetView(worldCenter(), worldZoom(), true);
+    }
     var f = frame();
     if (!f) return;
     relief.setUrl(reliefUrl(f));
@@ -437,10 +506,15 @@
     writeHash(f);
   }
   function writeHash(f) {
-    var lon0 = Math.round(Mollweide.lon0 * 10) / 10;
+    var lon0 = Math.round(Mollweide.lon0 * 10) / 10, proj = "";
+    if (state.proj === "moll") proj = "&proj=moll" + (lon0 ? "&lon=" + lon0 : "");
+    if (state.proj === "globe") {
+      // 지구본은 카메라 자리(경도·위도·높이 km)까지 담는다 — 링크를 받은 사람이 같은 쪽을 본다
+      var v = globe.view() || state.globeView;
+      proj = "&proj=globe" + (v ? "&lon=" + v.lon.toFixed(1) + "&lat=" + v.lat.toFixed(1) + "&alt=" + Math.round(v.alt / 1000) : "");
+    }
     try {
-      history.replaceState(null, "", "#age=" + f.age + (state.proj === "moll" ? "&proj=moll" + (lon0 ? "&lon=" + lon0 : "") : "") +
-        (EN ? "&lang=en" : ""));
+      history.replaceState(null, "", "#age=" + f.age + proj + (EN ? "&lang=en" : ""));
     } catch (e) { /* 미리보기 등 */ }
   }
   // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
@@ -1013,7 +1087,8 @@
     el.innerHTML = html;
     var box = el.querySelector(".taxa-box");
     el.querySelector(".copy").addEventListener("click", function () { copyCoords(this); });
-    var popup = L.popup({ maxWidth: 340 }).setLatLng(latlng).setContent(el).openOn(map);
+    var popup = state.proj === "globe" ? globe.popup(latlng, el)
+      : L.popup({ maxWidth: 340 }).setLatLng(latlng).setContent(el).openOn(map);
     // 그때 그 자리의 지표 기온 — 기온 층을 켜지 않아도 적는다.
     var f = frame();
     if (f.climate) {
@@ -1770,6 +1845,7 @@
   }
 
   function drawClimate(f) {
+    if (globe) globe.mark("climate");
     var on = $("climate").checked, info = f.climate;
     $("temp-legend").hidden = !on;
     $("climate-note").textContent = !info ? tr("climate.none") :
@@ -1820,13 +1896,34 @@
     return (mollClimateCache[key] = c);
   }
 
+  // 지구본의 기온 층(P01) — 정거원통 720×360 에 칸마다 가장 가까운 격자값. 켜지 않았으면 null.
+  var eqClimateCache = {};
+  function globeClimate(f) {
+    var info = f.climate;
+    if (!info || !$("climate").checked) return Promise.resolve(null);
+    return loadGrid(info).then(function (grid) {
+      if (eqClimateCache[info.file]) return eqClimateCache[info.file];
+      var w = 720, h = 360, c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      var ctx = c.getContext("2d"), out = ctx.createImageData(w, h);
+      for (var r = 0; r < h; r++) {
+        for (var q = 0; q < w; q++) {
+          var rgb = tempColor(tempAt(grid, 90 - (r + 0.5) / 2, (q + 0.5) / 2 - 180)), k = (r * w + q) * 4;
+          out.data[k] = rgb[0]; out.data[k + 1] = rgb[1]; out.data[k + 2] = rgb[2]; out.data[k + 3] = 255;
+        }
+      }
+      ctx.putImageData(out, 0, 0);
+      return (eqClimateCache[info.file] = c);
+    }).catch(function () { return null; });
+  }
+
   // 커서 자리의 기온 — 기온 층을 켰을 때만.
   var readout = L.control({ position: "bottomleft" });
   readout.onAdd = function () { var div = L.DomUtil.create("div", "temp-readout"); div.id = "temp-readout"; return div; };
   readout.addTo(map);
   map.on("mousemove", function (e) {
     var f = frame(), box = $("temp-readout");
-    if (!f || !f.climate || !$("climate").checked || !onGlobe(e.containerPoint)) { box.textContent = ""; return; }
+    if (!f || !f.climate || !$("climate").checked || state.proj === "globe" || !onGlobe(e.containerPoint)) { box.textContent = ""; return; }
     loadGrid(f.climate).then(function (grid) {
       box.textContent = tr("readout", { t: tempAt(grid, e.latlng.lat, e.latlng.lng).toFixed(0) }) +
         e.latlng.lat.toFixed(1) + "°, " + e.latlng.lng.toFixed(1) + "°";
@@ -1910,7 +2007,10 @@
   tools.addTo(map);
   $("tool-measure").setAttribute("aria-pressed", "false");
   $("tool-clear").disabled = true;
-  $("tool-world").addEventListener("click", function () { map.flyTo(worldCenter(), worldZoom(), { duration: 0.6 }); });
+  $("tool-world").addEventListener("click", function () {
+    if (state.proj === "globe") { globe.home(); return; }
+    map.flyTo(worldCenter(), worldZoom(), { duration: 0.6 });
+  });
   $("tool-link").addEventListener("click", function () {
     var b = this;
     copyText(location.href).then(function () { return tr("tool.link.done"); }, function () { return tr("copy.fail"); }).then(function (said) {
@@ -2054,6 +2154,14 @@
     ctx.fillStyle = getComputedStyle(box).backgroundColor || "#06162f";
     ctx.fillRect(0, 0, W, H);
     // 겹 순서: 배경(380) < 기온(390) < 선(400, overlayPane) < 산지(450)
+    if (state.proj === "globe") {
+      // 지구본은 Cesium 캔버스 한 장이다 — 그린 바로 그 틀에서 옮겨 담은 것을 깐다(P01)
+      return globe.snapshot().then(function (shot) {
+        ctx.drawImage(shot, 0, 0, W, H);
+        drawExportStrip(ctx, f, W, H, STRIP);
+        return saveCanvas(out, f);
+      });
+    }
     var els = [];
     ["base", "climate", "overlayPane", "fossils"].forEach(function (name) {
       map.getPane(name).querySelectorAll("canvas, img, svg").forEach(function (el) {
@@ -2079,19 +2187,22 @@
       ctx.globalAlpha = 1;
       drawExportScale(ctx, R, W, H);
       drawExportStrip(ctx, f, W, H, STRIP);
-      return new Promise(function (resolve, reject) {
-        out.toBlob(function (blob) {
-          if (!blob) { reject(new Error("toBlob")); return; }
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "wegenersdream_" + String(f.age).replace(".", "_") + "Ma" + (state.proj === "moll" ? "_moll" : "") + ".png";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-          resolve();
-        }, "image/png");
-      });
+      return saveCanvas(out, f);
+    });
+  }
+  function saveCanvas(out, f) {
+    return new Promise(function (resolve, reject) {
+      out.toBlob(function (blob) {
+        if (!blob) { reject(new Error("toBlob")); return; }
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "wegenersdream_" + String(f.age).replace(".", "_") + "Ma" + (state.proj === "eq" ? "" : "_" + state.proj) + ".png";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        resolve();
+      }, "image/png");
     });
   }
 
@@ -2129,7 +2240,7 @@
       .map(function (u) { return u.rank === "epoch" ? chipName(u) : u.ko; }).join(" › ");
     var head = fmtAge(f.age) + (units ? "  " + units : "") + (f.label ? " · " + f.label : "") +
       (f.climate ? " · " + tr("export.gmst", { t: f.climate.gmst.toFixed(1) }) : "");
-    var filters = [tr(state.proj === "moll" ? "export.moll" : "export.eq")];
+    var filters = [tr(state.proj === "moll" ? "export.moll" : state.proj === "globe" ? "export.globe" : "export.eq")];
     if (state.taxon) filters.push(tr("export.taxon", { name: state.taxon }));
     if (state.country) filters.push(tr("export.country", { name: countryName(state.country) }));
     if (state.colorBy === "age") filters.push(tr("export.colorAge"));
@@ -2241,6 +2352,7 @@
     $("climate-opacity").addEventListener("input", function () {
       climateLayer.setOpacity(+this.value / 100);
       climateMoll.setOpacity(+this.value / 100);
+      if (globe) globe.climateOpacity(+this.value / 100);
       $("climate-opacity-value").textContent = this.value + "%";
     });
     $("point-opacity").addEventListener("input", function () {
@@ -2309,7 +2421,8 @@
       initCountries(index.countries || []);
       if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다
       bind();
-      $("proj-seg").hidden = !hasMollweide();
+      $("proj-seg").hidden = !hasMollweide() && !globe;
+      document.querySelector('#proj-seg [data-proj="moll"]').hidden = !hasMollweide();
       applyHash(true);
       // 같은 페이지에서 # 만 바뀐 주소로 가면(주소창에 붙여 넣기 등) 다시 불러오지 않는다 — 주소대로 다시 맞춘다.
       // history.replaceState(writeHash)는 hashchange 를 부르지 않는다.
@@ -2351,11 +2464,18 @@
     if (!initial && langWanted && langWanted !== I18N.lang) { location.reload(); return; }   // 언어는 다시 불러와야 바뀐다
     var wanted = parseFloat((hash.match(/age=([\d.]+)/) || [])[1]);
     var lonWanted = parseFloat((hash.match(/lon=(-?[\d.]+)/) || [])[1]);
-    Mollweide.lon0 = isFinite(lonWanted) ? wrap180(lonWanted) : 0;
-    var proj = hasMollweide() && /proj=moll/.test(hash) ? "moll" : "eq";
+    var latWanted = parseFloat((hash.match(/lat=(-?[\d.]+)/) || [])[1]);
+    var altWanted = parseFloat((hash.match(/alt=([\d.]+)/) || [])[1]);
+    var proj = hasMollweide() && /proj=moll/.test(hash) ? "moll" : globe && /proj=globe/.test(hash) ? "globe" : "eq";
+    Mollweide.lon0 = proj === "moll" && isFinite(lonWanted) ? wrap180(lonWanted) : 0;
+    if (proj === "globe") {
+      state.globeView = { lon: isFinite(lonWanted) ? lonWanted : 0, lat: isFinite(latWanted) ? latWanted : 15,
+                          alt: isFinite(altWanted) ? altWanted * 1000 : 0 };
+      if (state.proj === "globe") globe.setView(state.globeView, true);
+    }
     if (proj !== state.proj) setProjection(proj);
     else if (proj === "moll") rotateTo(Mollweide.lon0);
-    fitWorld();
+    if (proj === "globe") state.globeView = null; else fitWorld();
     var first = state.frames.findIndex(function (f) { return f.age === wanted; });
     if (first < 0) first = initial ? state.frames.findIndex(function (f) { return f.age === 250; }) : state.i;
     show(first < 0 ? 0 : first);
