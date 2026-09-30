@@ -41,9 +41,16 @@ exec 9>"$HOME_DIR/.weekly_refresh.lock"
 flock -n 9 || { echo "$(date -Is) 이미 돌고 있다 — 건너뜀"; exit 0; }
 
 STEP=start
+# 결과는 두 곳에 — 사람이 보는 logs/last_refresh.json, 그리고 컨테이너가 마운트한 state/refresh.json 을 /healthz 가 읽는다
+# (koprifossillab 034). state 쪽은 임시 파일에 쓰고 바꿔 끼운다 — 반쯤 쓴 것을 읽지 않게.
 status() {   # status <ok|fail|skip> <설명>
-    printf '{"at": "%s", "result": "%s", "step": "%s", "note": "%s", "backup": "%s", "nas": "%s"}\n' \
-        "$(date -Is)" "$1" "$STEP" "$2" "${ARCHIVE:-}" "$NAS_RESULT" > "$LOGS/last_refresh.json"
+    local line
+    line=$(printf '{"at": "%s", "result": "%s", "step": "%s", "note": "%s", "backup": "%s", "nas": "%s"}' \
+        "$(date -Is)" "$1" "$STEP" "$2" "${ARCHIVE:-}" "$NAS_RESULT")
+    echo "$line" > "$LOGS/last_refresh.json"
+    if [ -d "$SRV/state" ]; then
+        echo "$line" > "$SRV/state/.refresh.json.part" && mv "$SRV/state/.refresh.json.part" "$SRV/state/refresh.json"
+    fi
     echo "$(date -Is) [$1] $STEP — $2"
 }
 fail() { status fail "$1"; exit 1; }
@@ -52,7 +59,14 @@ echo "== $(date -Is) WegenersDream 주간 갱신 ($MODE) =="
 
 # ── 1. 백업 ────────────────────────────────────────────────────────────
 STEP=backup
+# 이미 있으면 덮어쓰지 않는다 — WegenersDream.<날짜>.2.tar.gz, .3 … (koprifossillab 034). 같은 날 다시 돌려 그날 아침의 백업
+# (갱신 전 PBDB 사본 — 다시 받을 수 없다)을 덮어쓴 일이 있었다. NAS 도 같은 이름으로 간다
 ARCHIVE=$BACKUPS/WegenersDream.$DAY.tar.gz
+n=2
+while [ -e "$ARCHIVE" ] || [ -e "$NAS/$(basename "$ARCHIVE")" ]; do
+    ARCHIVE=$BACKUPS/WegenersDream.$DAY.$n.tar.gz
+    n=$((n + 1))
+done
 TMP=$ARCHIVE.part
 tar -czf "$TMP" \
     --transform "s,^${SRV#/}/data,srv-data," \
