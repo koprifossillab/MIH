@@ -6,7 +6,7 @@
 
 - 층서표(대·기·세·절)로 시점을 고르고, 밀대로 넘기거나 차례로 본다
 - 산지를 퇴적기원(해양·육상)·퇴적 환경·연대 범위·국가로 거르고, 점을 퇴적기원 또는 시대 색으로 칠한다
-- 지도 밑 찾기 칸 하나로 분류군·국가를 찾는다. 분류군을 찾으면(PBDB 에 바로 묻는다) 그 시점의 산출 산지·산출 시대 분포·같은 시대의 다른 산지를 보인다
+- 지도 위에 떠 있는 찾기 칸 하나로 분류군·국가를 찾는다. 분류군을 찾으면(PBDB 에 바로 묻는다) 그 시점의 산출 산지·산출 시대 분포·같은 시대의 다른 산지를 보인다
 - 지표 기온, 지금 국경을 그때 자리로 돌린 선, 화석으로 고친 해안선, 경위선을 겹친다
 - 투영은 정거원통·몰바이데. 몰바이데에서는 지구를 끌어 가운데 경선을 돌린다
 - 한국어·English. 시점·투영·가운데 경선·언어는 주소(`#age=250&proj=moll&lon=-65&lang=en`)로 나눈다
@@ -77,14 +77,14 @@ CI(`.github/workflows/test.yml`)가 PR·push 마다 둘 다 돌리고 이미지�
 
 ```bash
 # 이미지: 서버에서 굽거나, 릴리스된 판을 Docker Hub 에서 받는다
-WEGENER_TAG=v0.16.1 docker compose -f deploy/docker-compose.yml build web
-#   또는: cd /srv/WegenersDream && WEGENER_TAG=v0.16.1 docker compose pull
+WEGENER_TAG=v0.18.0 docker compose -f deploy/docker-compose.yml build web
+#   또는: cd /srv/WegenersDream && WEGENER_TAG=v0.18.0 docker compose pull
 
 # 가공물이 바뀌었으면 — index.json 을 맨 나중에 바꾼다(컨테이너가 없는 파일을 가리키지 않게)
 rsync -a --exclude index.json data/derived/ /srv/WegenersDream/data/
 rsync -a data/derived/index.json /srv/WegenersDream/data/index.json
 
-cd /srv/WegenersDream && WEGENER_TAG=v0.16.1 docker compose up -d web
+cd /srv/WegenersDream && WEGENER_TAG=v0.18.0 docker compose up -d web
 deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 ```
 

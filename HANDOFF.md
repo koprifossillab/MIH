@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.17.0` (09-30, PR #1~#14) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `0.18.0` (09-30, PR #1~#15) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
 (CLAUDE.md "커밋과 PR"). **병합 직전에 `deploy/host/premerge.sh <PR>`**(충돌·뒤처짐·판·CI, wetherilli 010).
@@ -17,10 +17,11 @@
 몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
 `build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
 
-**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.17.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.18.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
-운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 있어 명칭 고치기가 열쇠로 열린다(비밀키는 비워 두어 `state/secret_key` 를 쓴다).
+운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
+완전히 닫으려면 그 열쇠를 지운다. 비밀키는 비워 두어 `state/secret_key` 를 쓴다.
 배포 순서(이미지 → 가공물은 `index.json` 을 맨 나중에 → `up -d` → `smoke.sh`)는 README "운영". 릴리스 태그(`v*`)마다
 CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.15.3 부터, koprifossillab 031) — v0.16.0 부터 운영은
 `docker compose pull` 로 그 이미지를 받는다. 이 서버의 `paleoadmin` 그룹 계정(sclee 등)도 docker·운영 `.env` 를 쓸 수 있다.
@@ -44,18 +45,20 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 ### 뷰어 — Django 5.2, DB 없음 (`web/`)
 
 - 화면 하나(`/`), 가공물 내주기(`/data/…` — `.json`·`.webp`·`.png` 만), 상태(`/healthz`),
-  명칭 덮어쓰기(`/labels` GET·POST, 003·0.3.0)
+  명칭 덮어쓰기(`/labels` GET·POST, 003·0.3.0 — 화면에서 고치는 UI 는 0.18.0 에서 지웠고 GET 으로 읽어 입히기만 한다)
 - 지도는 Leaflet 1.9.4(저장소에 담음). 투영은 정거원통(EPSG:4326)·몰바이데(직접 짠 좌표계, 024) — 몰바이데는
   끌어서 가운데 경선을 돌린다(025, 지구 밖을 끌면 옮기기 029). 배경은 2048·4096 두 벌을 확대 정도로 고른다(002)
 - 한국어·영어(027) — 문구는 `viewer/static/viewer/i18n.js`, 자료의 이름은 index.json 의 `en`. 패널은 절마다 접히고
   좁은 창에서는 통째로 접힌다(026)
-- 화면 배치(wetherilli 001~014): 패널이 양쪽 — 왼쪽에 시점·겹쳐 보기, 오른쪽에 화석 산지(찾은 분류군 절은 찾은 뒤에만).
-  머리말 오른쪽에 투영 붙은 단추와 ⚙ 설정 · 자료 창(언어·출처·판). 지도 왼쪽 위에 전 지구 평균 기온 온도계, 오른쪽 위에
-  도구 묶음(전체·거리·링크·그림 | 지우기), 오른쪽 아래에 두꺼운 축척 막대, 지도 바로 아래에 "분류군 또는 국가" 찾기 칸
-  하나와 고른 것의 딱지. 확대·축소 단추는 없다(휠·키). 첫 배경이 올 때까지 대기 화면
+- 화면 배치(wetherilli 001~014, tupandactyl 002): 머리말 밑 한 줄에 창 폭을 채운 시점 막대(기·세 띠에 영어 이름, 좁으면
+  규칙으로 만든 약자)와 "차례로 보기". 패널이 양쪽 — 왼쪽에 층서표 칩·겹쳐 보기, 오른쪽에 화석 산지(퇴적 환경은 처음에
+  퇴적기원 셋만, 찾은 분류군 절은 찾은 뒤에만). 머리말 오른쪽에 투영 붙은 단추와 ⚙ 설정 · 자료 창(언어·읽는 법·출처·판).
+  지도 왼쪽 위에 전 지구 평균 기온 온도계, 오른쪽 위에 도구 묶음(전체·거리·링크·다운로드 | 지우기), 오른쪽 아래에 두꺼운
+  축척 막대, 지도 위에 끌어 옮기는 "분류군 또는 국가" 찾기 카드와 고른 것의 딱지. 확대·축소 단추는 없다(휠·키).
+  첫 배경이 올 때까지 대기 화면
 - 주소 `#age=…&proj=moll&lon=…&lang=en` 이 시점·투영·가운데 경선·언어를 담는다. 옮기기·확대는 담지 않는다(030)
 - 브라우저가 PBDB 를 곧장 부른다(CORS). 무엇을 부르는지는 CLAUDE.md "PBDB 에 바로 묻는 것"
-- 개발: `WEGENER_DEBUG=1` 로 `web/manage.py runserver`. 명칭 고치기는 개발에서 열쇠 없이 열린다
+- 개발: `WEGENER_DEBUG=1` 로 `web/manage.py runserver`
 
 ### 파이프라인 (`pipeline/`, `python -m pipeline fetch|build|all`)
 
@@ -91,7 +94,8 @@ CI(`.github/workflows/test.yml`)가 둘 다 돌리고, PR 에서는 "판 확인"
 
 환경 이름의 기본은 `pipeline/environments.py`, 화면에서 고친 것은 `<STATE_DIR>/labels.json` 의 덮어쓰기다.
 0.4.0 에서 연구자가 고친 이름을 기본으로 옮기고 표를 비웠다(003). 옮기기 전 표는
-`data/state/labels.before-0.4.json`(로컬, 커밋 안 함). 운영에서는 `WEGENER_EDITOR_KEY` 가 없으면 고치기가 닫힌다.
+`data/state/labels.before-0.4.json`(로컬, 커밋 안 함). 운영 `state/` 에는 `labels.json` 이 없다(09-30 확인). 화면에서 고치는
+UI 는 0.18.0 에서 지웠다 — 이름을 바꿀 일이 생기면 environments.py 를 고치고 가공물을 다시 만든다.
 
 ### 3.3 개발 서버의 템플릿 캐시
 
@@ -139,3 +143,4 @@ playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPR
 | 0.16.0 | 축척 막대·온도계·투영 단추·설정 창·찾기 막대·대기 화면·팝업 색·좌표 복사·그림 내려받기, 병합 전 판 확인 | wetherilli 001~010 |
 | 0.16.1 | 분류군 찾기의 커서 목록을 계급과 상관없이, 산지의 분류군이 5종 이상이면 요약 | tupandactyl 001 |
 | 0.17.0 | 패널 양쪽, 찾기 칸 하나(분류군·국가), 두꺼운 축척 막대, 도구 묶음(거리 재기·링크·전체·그림) | wetherilli 011~014 |
+| 0.18.0 | 시점 막대 맨 위(영어 이름), 떠 있는 찾기 카드, 환경 나무 접기, 설명문은 설정 창의 "읽는 법", "다운로드", 명칭 고치기 끔 | tupandactyl 002 |
