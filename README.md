@@ -114,6 +114,7 @@ deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 | CesiumJS 1.145.0 | Apache-2.0 | `web/viewer/static/viewer/vendor/cesium/LICENSE.md` |
 | 글꼴 La Belle Aurore·본명조(Noto Serif KR)·Spectral | SIL OFL 1.1 | `web/viewer/static/viewer/vendor/fonts/OFL-*.txt` |
 | 베게너 사진(대기 화면 초상의 원본) | Photo: Alfred Wegener Institute | `design/README.md` |
+| pygplates 1.0(가공에만) | **GPL-2.0-only**(COPYING 이 "not any later version" 이라 적는다) | `requirements-pipeline.txt` — 저장소·이미지에 담지 않고 쓰는 사람이 설치한다. AGPL-3.0 과 맞지 않아 **파이프라인과 한 꾸러미로 묶어 배포하지 않는다** |
 | 자료(PaleoDEM·PaleoCoastlines·PBDB·기온·Natural Earth) | CC BY 4.0·퍼블릭 도메인 | 위 "겹" 표, `sources/*.json` — 저장소에 담지 않고 파이프라인이 받는다 |
 | 자료(PaleoClim — 최근 절의 기온) | **CC BY-NC-SA 4.0** | `sources/paleoclim.json`. 저장소에 담지 않는다. 이것으로 구운 기온 그림(`climate/pc_*.png`)과 그것이 든 화면 그림도 같은 조건 — **상업적으로 쓸 수 없다**. 연구자가 이 조건으로 쓰기로 정했다(2026-09-30). 빙기 최성기·최종간빙기 압축본에는 조건 문서가 없어 PaleoClim 의 조건으로 본다 |
 
