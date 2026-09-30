@@ -19,7 +19,6 @@
 <div id="app"
      data-data-base="{% url 'viewer:data' 'x' %}"
      data-labels-url="{% url 'viewer:labels' %}"
-     data-csrf="{{ csrf_token }}"
      data-version="{{ version }}">
 
   <header class="bar">
@@ -53,37 +52,47 @@
         <button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button>
       </div>
     </section>
+    <!-- 읽는 법 — 패널에 늘 떠 있던 설명들(tupandactyl 002) -->
+    <section class="guide">
+      <h3 data-i18n="guide">읽는 법</h3>
+      <p class="note" data-i18n="fossils.about">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
+      <p class="note" data-i18n="env.count">퇴적 환경 옆의 수는 지금 지도의 산지 수다. 분류군을 찾는 동안에는 그 분류군의 산출 건수다.</p>
+      <p class="note" data-i18n="span.about">연대 범위(max − min)가 고른 값 이하인 기록만 보인다. 시대 이름의 등급(▲)과 따로 본다 — 등급은 어떻게 매겼는지, 범위는 시간이 얼마나 불확실한지다.</p>
+      <p class="note" data-i18n="vague.about">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
+      <p class="note" data-i18n="chrono.about">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
+    </section>
     <section class="sources">
       <h3 data-i18n="sources">자료</h3>
       <ul id="sources"></ul>
       <p class="note" data-i18n-html="sources.about">배경·해안선·국경·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 산지의 지금 좌표를 <b>지도 시점의 나이로</b> 해안선과 같은 판 모델(v19o)로 돌린 것이라, 범위가 넓은 산지도 시점마다 그때 자리에 그려진다. 그 나이에 판이 없는 드문 산지(0.1% 미만)만 PBDB 고좌표(연대 중간값)를 쓴다 — 팝업에 적는다.</p>
+      <p class="note" id="relief-note"></p>
       <p class="note">Wegener's Dream {{ version }}{% if built_at %} · <span data-i18n="data">자료</span> {{ built_at|slice:":10" }}{% endif %}</p>
     </section>
   </dialog>
 
+  <!-- 시점 막대 — 머리말 밑 한 줄을 꽉 채운다(tupandactyl 002). 기·세 띠에 영어 이름을 띠 폭에 맞춰(길면 약자) 적는다 -->
+  <div class="timebar" id="timebar" role="group" aria-label="시점" data-i18n-attr="aria-label:time">
+    <button type="button" id="older" title="더 옛날 (←)" aria-label="더 옛날" data-i18n-attr="title:older;aria-label:older">◀</button>
+    <div class="track">
+      <div class="strip" id="strip" aria-hidden="true">
+        <div class="strip-row named" id="strip-period"></div>
+        <div class="strip-row named" id="strip-epoch"></div>
+      </div>
+      <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점" data-i18n-attr="aria-label:slider">
+      <div class="strip"><div class="strip-row taxon-row" id="strip-taxon" hidden></div></div>
+      <div class="ticks"><span>540 Ma</span><span data-i18n="now">현재</span></div>
+    </div>
+    <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근" data-i18n-attr="title:younger;aria-label:younger">▶</button>
+    <label class="play" title="차례로 보기" data-i18n-attr="title:play"><input type="checkbox" id="play" aria-label="차례로 보기" data-i18n-attr="aria-label:play"> <span data-i18n="play">차례로 보기</span></label>
+  </div>
+
   <main class="stage">
-    <!-- 패널을 양쪽으로 나눈다(wetherilli 011) — 왼쪽은 시점과 겹쳐 보기(층), 오른쪽은 화석 산지.
+    <!-- 패널을 양쪽으로 나눈다(wetherilli 011) — 왼쪽은 층서표와 겹쳐 보기(층), 오른쪽은 화석 산지.
          좁은 창에서는 지도 밑에 차례로 쌓이고, 접기 막대 하나가 둘을 함께 접는다 -->
     <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel-left panel" aria-expanded="true">패널 접기 ▾</button>
     <aside class="panel panel-left" id="panel-left">
       <section data-sec="time">
-        <h2 data-i18n="time">시점</h2>
-        <div class="timeline">
-          <button type="button" id="older" title="더 옛날 (←)" aria-label="더 옛날" data-i18n-attr="title:older;aria-label:older">◀</button>
-          <div class="track">
-            <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점" data-i18n-attr="aria-label:slider">
-            <div class="strip" id="strip" aria-hidden="true">
-              <div class="strip-row" id="strip-period"></div>
-              <div class="strip-row" id="strip-epoch"></div>
-              <div class="strip-row taxon-row" id="strip-taxon" hidden></div>
-            </div>
-          </div>
-          <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근" data-i18n-attr="title:younger;aria-label:younger">▶</button>
-        </div>
-        <div class="ticks"><span>540 Ma</span><span data-i18n="now">현재</span></div>
-        <label class="play"><input type="checkbox" id="play"> <span data-i18n="play">차례로 보기</span></label>
-
-        <h3 data-i18n="chrono.pick">층서표로 고르기</h3>
+        <h2 data-i18n="chrono.pick">층서표로 고르기</h2>
         <div class="chrono" id="chrono">
           <div class="chrono-row"><span class="rank" data-i18n="rank.era">대</span><div class="chips" data-rank="era"></div></div>
           <div class="chrono-row"><span class="rank" data-i18n="rank.period">기</span><div class="chips" data-rank="period"></div></div>
@@ -91,7 +100,6 @@
           <div class="chrono-row"><span class="rank" data-i18n="rank.age">절</span><div class="chips" data-rank="age"></div></div>
         </div>
         <p class="note" id="chrono-note"></p>
-        <p class="note" data-i18n="chrono.about">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
       </section>
 
       <section data-sec="overlay">
@@ -108,14 +116,15 @@
         <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
         <p class="note" id="coast-note"></p>
         <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
-        <p class="note" id="relief-note"></p>
       </section>
     </aside>
 
     <div class="mapcol">
       <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
-      <!-- 찾기 막대(wetherilli 004) — 후보 목록은 막대 위로 뜬다. 분류군 결과만 패널의 절에 적는다(011) -->
-      <div class="findbar">
+      <!-- 찾기 카드(wetherilli 004 → tupandactyl 002) — 지도 위에 떠 있고 끌어서 옮긴다. 후보 목록은 카드가 지도 위쪽에
+           있으면 아래로, 아래쪽에 있으면 위로 연다. 분류군 결과만 패널의 절에 적는다(011) -->
+      <div class="findfloat" id="findfloat">
+        <span class="grip" id="find-grip" title="끌어서 옮기기" aria-hidden="true" data-i18n-attr="title:find.move">⠿</span>
         <!-- 분류군과 국가를 한 칸에서 찾는다(wetherilli 013). 후보는 국가(바로) → 분류군(PBDB) 차례.
              고른 것은 옆의 딱지로 남고, 둘은 함께 걸 수 있다 -->
         <form id="find-form" class="find" role="search" autocomplete="off">
@@ -141,13 +150,7 @@
     <!-- 오른쪽 패널 — 화석 산지와 찾은 분류군(wetherilli 011) -->
     <aside class="panel panel-right" id="panel">
       <section data-sec="fossils">
-        <h2 class="with-tool"><span class="title" data-i18n="fossils">화석 산지</span> <small id="fossil-count"></small>
-          <button type="button" id="edit-toggle" class="tool" hidden aria-pressed="false">✎ 명칭 고치기</button></h2>
-        <div class="editbar" id="editbar" hidden>
-          <p class="note">이름 옆 ✎ 를 눌러 고친다. 비우고 저장하면 기본 이름으로 돌아간다. 고친 이름은 서버에 저장되어 모두에게 보인다.</p>
-          <label class="keyrow" id="key-row" hidden>편집 열쇠 <input type="password" id="editor-key" autocomplete="off"></label>
-          <p class="note" id="edit-status" aria-live="polite"></p>
-        </div>
+        <h2 class="with-tool"><span class="title" data-i18n="fossils">화석 산지</span> <small id="fossil-count"></small></h2>
         <div class="colorby" role="radiogroup" aria-label="점 색" data-i18n-attr="aria-label:colorby">
           <span data-i18n="colorby">점 색</span>
           <label><input type="radio" name="color-by" value="env" checked> <span data-i18n="colorby.env">퇴적기원</span></label>
@@ -160,12 +163,8 @@
         </div>
         <label class="opacity"><span data-i18n="span">연대 범위</span> <input type="range" id="max-span" min="0" max="10" step="1" value="10" aria-label="연대 범위 상한" data-i18n-attr="aria-label:span.max"> <output id="span-value">제한 없음</output></label>
         <p class="note" id="span-note" aria-live="polite"></p>
-        <p class="note" data-i18n="span.about">연대 범위(max − min)가 고른 값 이하인 기록만 보인다. 시대 이름의 등급(▲)과 따로 본다 — 등급은 어떻게 매겼는지, 범위는 시간이 얼마나 불확실한지다.</p>
-        <p class="note" data-i18n="vague.about">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
         <div class="legend" id="legend" aria-live="polite"></div>
-        <p class="note env-count-note" id="env-count-note" data-i18n="env.count">수: 산지 수(지금 지도)</p>
         <div class="envtree" id="envtree"></div>
-        <p class="note" data-i18n="fossils.about">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       </section>
 
       <!-- 찾은 분류군의 결과만 — 찾기 칸은 지도 밑 찾기 막대에 있다. 찾기 전에는 숨긴다(wetherilli 011) -->
