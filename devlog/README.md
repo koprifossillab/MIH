@@ -82,3 +82,4 @@
 | wetherilli 017 | 2026-09-30 | [지구본에 지형을 세운다 (뷰어)](20260930_wetherilli_017_globe_terrain.md) |
 | tupandactyl 005 | 2026-09-30 | [빈티지 대기 화면: 베게너 초상, 파이프 연기, 메달을 두르는 메소사우루스](20260930_tupandactyl_005_vintage_splash.md) |
 | tupandactyl 006 | 2026-09-30 | [사이트 전체를 빈티지풍으로: 가죽 머리말, 양피지, 원목, 본명조 + Spectral](20260930_tupandactyl_006_vintage_theme.md) |
+| tupandactyl 007 | 2026-09-30 | [첫 화면에 모든 시대의 산지, 끌어 옮기는 옛 지도 축척, 책등 칩](20260930_tupandactyl_007_all_eras_landing.md) |

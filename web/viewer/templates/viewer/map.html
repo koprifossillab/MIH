@@ -97,7 +97,7 @@
       <div class="ticks"><span>540 Ma</span><span data-i18n="now">현재</span></div>
     </div>
     <button type="button" id="younger" title="더 최근 (→)" aria-label="더 최근" data-i18n-attr="title:younger;aria-label:younger">▶</button>
-    <label class="play" title="차례로 보기" data-i18n-attr="title:play"><input type="checkbox" id="play" aria-label="차례로 보기" data-i18n-attr="aria-label:play"> <span data-i18n="play">차례로 보기</span></label>
+    <label class="play" title="변천사 보기" data-i18n-attr="title:play"><input type="checkbox" id="play" aria-label="변천사 보기" data-i18n-attr="aria-label:play"> <span data-i18n="play">변천사 보기</span></label>
   </div>
 
   <main class="stage">
@@ -147,6 +147,7 @@
 
       <section data-sec="fossils">
         <h2 class="with-tool"><span class="title" data-i18n="fossils">화석 산지</span> <small id="fossil-count"></small></h2>
+        <label class="swatch everything" id="everything-row" hidden><input type="checkbox" id="everything"> <span data-i18n="everything">모든 시대의 산지를 오늘날 자리에</span></label>
         <div class="colorby" role="radiogroup" aria-label="포인트 색" data-i18n-attr="aria-label:colorby">
           <span data-i18n="colorby">포인트 색</span>
           <label><input type="radio" name="color-by" value="env" checked> <span data-i18n="colorby.env">퇴적기원</span></label>
@@ -200,9 +201,9 @@
           <label class="opacity"><span data-i18n="climate.opacity">기온 층 불투명도</span> <input type="range" id="climate-opacity" min="10" max="100" step="5" value="55" aria-label="기온 층 불투명도" data-i18n-attr="aria-label:climate.opacity"> <output id="climate-opacity-value">55%</output></label>
         </div>
         <p class="note" id="climate-note"></p>
-        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (지금 국경을 그때 자리로 돌린 것)</span></label>
+        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (당시 위치에 현재 국경을 맞춤)</span></label>
         <p class="note" id="borders-note"></p>
-        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
+        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 보정한 해안선</span></label>
         <p class="note" id="coast-note"></p>
         <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
         <!-- 지구본의 지형(wetherilli 017) — 지구본이고 가공물에 지형이 있을 때만 보인다 -->
