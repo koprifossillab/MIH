@@ -89,6 +89,13 @@ cd /srv/WegenersDream && WEGENER_TAG=v0.20.1 docker compose up -d web
 deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 ```
 
+**매주 월요일 02:30** paleoadmin 의 cron 이 [deploy/host/weekly_refresh.sh](deploy/host/weekly_refresh.sh) 를 돌린다 — 운영 자료·PBDB
+원본·state(비밀키 빼고)를 `/data/WegenersDream/backups/WegenersDream.<YYYYMMDD>.tar.gz` 와 NAS(`/nfs/temp-share/WegenersDream/backup/`)에
+같은 파일로 백업하고, PBDB 를 새로 받아 산지를 다시
+가공해 운영에 옮긴다(실패하면 지난 자료 그대로). 등록은 `(crontab -l; cat deploy/host/crontab.WegenersDream) | crontab -`.
+되살리기는 그 tar 를 풀어 `srv-data/` → `/srv/WegenersDream/data`, `state/` → `/srv/WegenersDream/state`,
+`pbdb/` → `data/sources/pbdb` 로.
+
 ## 인용
 
 화면의 ⚙ 설정 · 자료 창과 `index.json` 의 `sources` 에 다섯 자료의 인용이 있다. 그림을 쓸 때

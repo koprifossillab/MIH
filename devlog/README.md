@@ -83,4 +83,5 @@
 | tupandactyl 005 | 2026-09-30 | [빈티지 대기 화면: 베게너 초상, 파이프 연기, 메달을 두르는 메소사우루스](20260930_tupandactyl_005_vintage_splash.md) |
 | tupandactyl 006 | 2026-09-30 | [사이트 전체를 빈티지풍으로: 가죽 머리말, 양피지, 원목, 본명조 + Spectral](20260930_tupandactyl_006_vintage_theme.md) |
 | tupandactyl 007 | 2026-09-30 | [첫 화면에 모든 시대의 산지, 끌어 옮기는 옛 지도 축척, 책등 칩](20260930_tupandactyl_007_all_eras_landing.md) |
+| koprifossillab 032 | 2026-09-30 | [매주 월요일 새벽: 운영 자료 백업과 PBDB 갱신](20260930_koprifossillab_032_weekly_refresh.md) |
 | tupandactyl 008 | 2026-09-30 | [제4기 안의 시대 이름은 모호한 연대에서 뺀다](20260930_tupandactyl_008_quaternary_precise.md) |

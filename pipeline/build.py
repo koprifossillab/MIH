@@ -113,7 +113,6 @@ def build(skip_relief=False):
                       "units": scale},
         "environments": tree_for_index(env_counts),
         "countries": countries.country_list(country_names),
-        "everything": fossil_meta.pop("everything", None),     # 모든 시대 산지를 오늘날 자리에(everything.py)
         "pbdb": fossil_meta,
         "sources": [cite("paleodem"), cite("paleocoastlines"), cite("paleotemp"), cite("pbdb"), cite("countries")],
     }
