@@ -644,3 +644,13 @@ button, input, select { font-family: inherit; }
 .chrono .chip, .dist .chip { text-shadow: 0 0 2px rgba(255, 255, 255, .55); }
 .chrono .chip.light-ink, .dist .chip.light-ink { text-shadow: 0 1px 1.5px rgba(0, 0, 0, .7); }
 .chrono .chip.on { outline-color: var(--accent); }
+
+/* 시점 막대 밑 "최근 5 Ma" 칩(tupandactyl 009) — 절이 막대 끝에 몰려 밀대로 고르기 어렵다. 책등 칩과 같은 결 */
+.ticks { align-items: center; }
+.ticks .recent { display: inline-flex; align-items: center; gap: 3px; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; margin-right: 10px; }
+.recent-cap { font-size: 11px; font-style: italic; color: var(--muted); margin-right: 4px; }
+.rchip { border: 1px solid rgba(40, 25, 12, .5); border-radius: 2px; padding: 0 6px; font: 600 11px/1.6 var(--font); cursor: pointer;
+  background-image: linear-gradient(90deg, rgba(0, 0, 0, .16), rgba(0, 0, 0, 0) 14%, rgba(0, 0, 0, 0) 86%, rgba(0, 0, 0, .18)); }
+.rchip:hover { outline: 1px solid var(--accent); }
+.rchip.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rchip:focus-visible { outline: 2px solid var(--accent); }
