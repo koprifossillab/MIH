@@ -90,7 +90,8 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 `build --no-relief` 는 배경을 다시 그리지 않는다(30 초 남짓). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
 Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값을 `receipt.json` 에 남긴다.
 
-**지금 가공물(paleoserver·운영)은 2026-09-29 20:37 UTC 에 받은 PBDB(채집지 278,398)로 만든 것이다.**
+**지금 가공물(paleoserver·운영)은 2026-09-30 08:04 UTC 에 받은 PBDB(채집지 278,399)로 만든 것이다** — 매주 월요일 02:30(KST)
+cron 이 새로 받는다(koprifossillab 032). 언제 받은 것인지는 `/healthz` 의 `pbdb_retrieved_at`.
 
 ### 시험
 
