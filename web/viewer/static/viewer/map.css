@@ -43,7 +43,7 @@ body {
 .brand strong { font-size: 18px; letter-spacing: .04em; color: var(--accent); }
 .brand .ver { margin-left: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .brand .sub { margin-left: 6px; color: var(--muted); }
-.now { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.now { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; flex: 1 1 0; min-width: 260px; }   /* 좁아지면 안에서 꺾여 오른쪽 단추가 제 줄에 남는다 */
 .now .age { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .now .units { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .now .unit { padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 13px; }
