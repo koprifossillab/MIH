@@ -21,7 +21,9 @@ function medal(id) {
     `<circle cx="480" cy="480" r="452" fill="none" stroke="${INK}" stroke-width="2.5"/>` +
     `<g clip-path="url(#${id})" fill-rule="evenodd">` +
     `<path d="${trace.figure}" fill="${INK}" fill-opacity=".16" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>` +
-    `<path d="${trace.dark}" fill="${INK}"/></g>`;
+    `<path d="${trace.shirt}" fill="${PAPER}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>` +
+    `<path d="${trace.dark}" fill="${INK}"/>` +
+    `<path d="${trace.jaw}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/></g>`;
 }
 const head = (vb, w) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${w}" height="${w}">`;
 

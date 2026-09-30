@@ -67,9 +67,22 @@
     return out;
   }
 
+  // 머리뼈는 휘지 않는다(연구자) — 등뼈의 머리 쪽 SKULL 마디를 목과 이어지는 자리에서 곧게 앞으로 편다.
+  // 방향은 목(머리뼈 뒤 몇 마디)이 향하는 쪽. 몸이 길을 따라 휘어도 주둥이는 곧은 막대로 남는다
+  var SKULL = .14;
+  function rigid(P) {
+    var last = P.length - 1, J = Math.round(SKULL * last), K = Math.min(last, J + 5);
+    var Q = P[J], ux = Q[0] - P[K][0], uy = Q[1] - P[K][1], d = Math.hypot(ux, uy) || 1, step = d / (K - J);
+    ux /= d; uy /= d;
+    var out = P.slice();
+    for (var i = 0; i < J; i++) out[i] = [Q[0] + ux * step * (J - i), Q[1] + uy * step * (J - i)];
+    return out;
+  }
+
   // ── 캔버스에 그리기 ──────────────────────────────────────────────
   // o: { fill, eye, beat(−1…1, 다리 젓기), tuck(0…1, 다리 붙이기), teeth(bool) }
   function draw(ctx, P, L, o) {
+    P = rigid(P);
     ctx.save();
     ctx.lineJoin = "round"; ctx.lineCap = "round";
     var lg = limbs(P, L, o.beat || 0, o.tuck || 0, o.k);
@@ -82,6 +95,66 @@
     ctx.fillStyle = o.fill; ctx.fill();
     lg.filter(function (l) { return !l.far; }).forEach(function (l) { paddle(ctx, l, o.fill, 1); });
     face(ctx, P, L, o);
+    if (o.bones > 0) bones(ctx, P, L, lg, o);
+    ctx.restore();
+  }
+
+  // 뼈대 — 검은 몸 속에 흰 뼈(대기 화면에서 메달을 두른 뒤 떠오른다). o.bones 0…1 은 드러난 정도로, 머리에서 꼬리 쪽으로 번진다.
+  // 등뼈 마디, 몸통의 굵은 갈비뼈(메소사우루스는 갈비뼈가 두껍다), 머리뼈의 턱·눈구멍, 다리의 긴 뼈와 발가락
+  function bones(ctx, P, L, lg, o) {
+    var D = directions(P), last = P.length - 1, k = o.k || 1, col = o.boneColor || o.eye;
+    function alpha(s) { var a = (o.bones - s * .55) / .45; return Math.max(0, Math.min(1, a)); }
+    function pt(i, off) { var n = belly(D[i]); return [P[i][0] + n[0] * off, P[i][1] + n[1] * off]; }
+    ctx.save();
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    // 머리뼈 — 위아래 턱의 안쪽 선, 머리 뒤쪽의 둥근 윤곽, 눈구멍
+    var J = Math.round(SKULL * last), a0 = alpha(0);
+    if (a0 > 0) {
+      ctx.globalAlpha = a0; ctx.lineWidth = Math.max(.6, L * .0022 * k);
+      ctx.beginPath();
+      for (var i = 1; i <= J; i++) { var sU = i / last, q = pt(i, -table(UP, sU) * L * k * .5); if (i === 1) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]); }
+      ctx.stroke();
+      ctx.beginPath();
+      for (i = 1; i <= J; i++) { var sD = i / last, r = pt(i, table(DN, sD) * L * k * .45); if (i === 1) ctx.moveTo(r[0], r[1]); else ctx.lineTo(r[0], r[1]); }
+      ctx.stroke();
+      var ie = Math.round(.115 * last), eo = pt(ie, -table(UP, .115) * L * k * .45);
+      ctx.beginPath(); ctx.arc(eo[0], eo[1], Math.max(1, L * .0095 * k), 0, TAU); ctx.stroke();
+      var ib = Math.round(.128 * last), cb = P[ib];
+      ctx.beginPath(); ctx.ellipse(cb[0], cb[1], L * .022, table(UP, .128) * L * k * .7, D[ib], 0, TAU); ctx.stroke();
+    }
+    // 등뼈 마디 — 목에서 꼬리 끝까지 작아지며
+    for (var s = SKULL + .006; s < .985; s += .0115) {
+      var a = alpha(s); if (!a) continue;
+      var j = Math.round(s * last), c = pt(j, -table(UP, s) * L * k * .12), len = L * .0072 * (1 - .55 * s), wid = Math.min(L * .011, (table(UP, s) + table(DN, s)) * L * k * .32);
+      ctx.globalAlpha = a;
+      ctx.save(); ctx.translate(c[0], c[1]); ctx.rotate(D[j]);
+      ctx.beginPath(); ctx.ellipse(0, 0, len * .5, wid * .5, 0, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    // 갈비뼈 — 등뼈에서 배 쪽으로, 꼬리 쪽으로 조금 누운 굵은 곡선
+    ctx.lineWidth = Math.max(.8, L * .0042 * k);
+    for (s = .19; s < .47; s += .0135) {
+      a = alpha(s); if (!a) continue;
+      j = Math.round(s * last);
+      var n = belly(D[j]), tx = Math.cos(D[j]), ty = Math.sin(D[j]), dn = table(DN, s) * L * k, c0 = pt(j, -table(UP, s) * L * k * .12);
+      ctx.globalAlpha = a;
+      ctx.beginPath(); ctx.moveTo(c0[0], c0[1]);
+      ctx.quadraticCurveTo(P[j][0] + n[0] * dn * .45 - tx * L * .004, P[j][1] + n[1] * dn * .45 - ty * L * .004,
+                           P[j][0] + n[0] * dn * .78 + tx * L * .012, P[j][1] + n[1] * dn * .78 + ty * L * .012);
+      ctx.stroke();
+    }
+    // 다리 — 긴 뼈 하나와 부채처럼 퍼진 발가락 넷
+    ctx.lineWidth = Math.max(.6, L * .0024 * k);
+    lg.forEach(function (l) {
+      var sl = l.len > L * .07 ? .47 : .23, al = alpha(sl) * (l.far ? .45 : 1); if (!al) return;
+      ctx.globalAlpha = al;
+      var ex = l.x + Math.cos(l.a) * l.len * .42, ey = l.y + Math.sin(l.a) * l.len * .42;
+      ctx.beginPath(); ctx.moveTo(l.x + Math.cos(l.a) * l.len * .06, l.y + Math.sin(l.a) * l.len * .06); ctx.lineTo(ex, ey); ctx.stroke();
+      for (var f = -1.5; f <= 1.5; f++) {
+        var fa = l.a + f * .16;
+        ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + Math.cos(fa) * l.len * .48, ey + Math.sin(fa) * l.len * .48); ctx.stroke();
+      }
+    });
     ctx.restore();
   }
   function paddle(ctx, l, fill, alpha) {
@@ -141,6 +214,7 @@
     return "M" + pts.map(function (p) { return p[0].toFixed(2) + " " + p[1].toFixed(2); }).join("L") + "Z";
   }
   function svg(P, L, o) {
+    P = rigid(P);
     var out = [];
     limbs(P, L, 0, o.tuck == null ? 1 : o.tuck, o.k).forEach(function (l) {
       out.push('<ellipse cx="' + (l.len / 2).toFixed(2) + '" cy="0" rx="' + (l.len / 2).toFixed(2) + '" ry="' + l.wid.toFixed(2) +
@@ -161,6 +235,6 @@
     return { R: R, L: L, P: ring(cx, cy, R, L, EMBLEM.head) };
   }
 
-  var api = { N: N, EMBLEM: EMBLEM, emblemRing: emblemRing, draw: draw, outline: outline, curled: curled, ring: ring, bbox: bbox, svg: svg, directions: directions, belly: belly, width: function (s) { return table(DN, s); } };
+  var api = { N: N, EMBLEM: EMBLEM, emblemRing: emblemRing, rigid: rigid, draw: draw, outline: outline, curled: curled, ring: ring, bbox: bbox, svg: svg, directions: directions, belly: belly, width: function (s) { return table(DN, s); } };
   if (typeof module === "object" && module.exports) module.exports = api; else root.WegenerMeso = api;
 })(this);

@@ -3,6 +3,8 @@
  * 곧 걷고, 아직이면 끝난 뒤에 걷는다. 누르거나 Esc·Enter·Space 로 건너뛴다. 화면 움직임 줄이기를 켠 사람에게는
  * 끝 모습(두른 메소사우루스·제목)만 보인다.
  *
+ * 메달을 두른 뒤에는 검은 몸 속에 흰 뼈대가 머리부터 꼬리 쪽으로 떠오른다(화석이 되듯).
+ *
  * 헤엄은 "길 따라가기" 로 만든다 — 머리가 물결치는 길을 가고 몸의 각 마디는 머리가 지나간 자리를 밟는다. 바다뱀·뱀장어가
  * 헤엄치는 방식이라 몸 전체가 한 물결로 꿈틀거린다. 거기에 꼬리로 갈수록 커지는 작은 물결을 한 겹 더 얹어(물을 미는
  * 미끄러짐) 뻣뻣하지 않게 한다. 길의 끝은 메달을 도는 원이라, 머리가 한 바퀴 돌면 몸이 저절로 메달을 두른다.
@@ -21,7 +23,7 @@
   var W = 0, H = 0, dpr = 1, C = [0, 0], Rm = 0, ring = null, path = null;
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
-  var T_ENTER = .9, T_SWIM = 4.8, T_WRITE = 3.0;
+  var T_ENTER = .9, T_SWIM = 4.8, T_WRITE = 3.0, T_BONES = 2.0;
   var T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + .2 + T_WRITE;
   var t0 = 0, raf = 0, mapReady = false, skipped = false, closed = false;
 
@@ -143,7 +145,9 @@
     box.classList.toggle("lit", t > .15);                                     // 메달이 떠오른다(CSS)
     if (!skipped && !reduce) { emit(t, dt); drawSmoke(dt); }
     if (t >= T_SEATED || skipped || reduce) {
-      Meso.draw(ctx, ring.P, ring.L, { fill: INK, eye: PAPER, tuck: 1, teeth: true });
+      // 메달을 두르고 나면 검은 몸 속에 흰 뼈대가 머리부터 꼬리 쪽으로 떠오른다
+      var bone = skipped || reduce ? 1 : smooth((t - T_SEATED - .3) / T_BONES);
+      Meso.draw(ctx, ring.P, ring.L, { fill: INK, eye: PAPER, tuck: 1, teeth: true, bones: bone, boneColor: PAPER });
     } else if (t > T_ENTER) {
       var b = body(t);
       Meso.draw(ctx, b.P, ring.L, { fill: INK, eye: PAPER, beat: b.beat, tuck: b.settle, teeth: true });
