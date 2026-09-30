@@ -3,6 +3,13 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 0.26.1 — 2026-09-30 · `feature/healthz-refresh`
+
+- **`/healthz` 가 주간 갱신·백업을 본다** — `refresh`(마지막 결과), 그리고 지형·PaleoClim 파일(`missing_terrain`·`paleoclim`).
+  지난 갱신이 실패했거나 NAS 백업이 실패했거나 8 일 넘게 소식이 없거나 목록의 파일이 없으면 `degraded` 와 `problems` (koprifossillab 034)
+- 주간 스크립트가 결과를 `/srv/WegenersDream/state/refresh.json` 에도 쓴다. 같은 날 다시 돌려도 백업을 덮어쓰지 않는다(`.2` …) (koprifossillab 034)
+- 가공물은 다시 만들 필요 없다
+
 ## 0.26.0 — 2026-09-30 · `feature/pleistocene-climate`
 
 - **최근의 절에 PaleoClim 기온 지도** — Scotese(2021) 격자가 없는 절에 그 절 안의 기후 스냅숏을 붙인다: 플라이스토세 후기 ←

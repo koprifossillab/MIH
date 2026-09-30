@@ -5,6 +5,7 @@
 import json
 import shutil
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from django.test import SimpleTestCase, override_settings
@@ -85,6 +86,70 @@ class HealthTest(DataDirMixin, SimpleTestCase):
     def test_no_data_is_503(self):
         (self.dir / "index.json").unlink()
         self.assertEqual(self.client.get("/healthz").status_code, 503)
+
+
+class HealthRefreshTest(DataDirMixin, SimpleTestCase):
+    """주간 갱신·백업 결과와 지형·PaleoClim 파일(koprifossillab 034)."""
+    def setUp(self):
+        super().setUp()
+        self.state = self.dir / "state"
+        self.state.mkdir()
+        override = override_settings(STATE_DIR=self.state)
+        override.enable()
+        self.addCleanup(override.disable)
+
+    def refresh(self, **fields):
+        at = (datetime.now(timezone.utc) - timedelta(days=fields.pop("days_ago", 0))).isoformat()
+        body = {"at": at, "result": "ok", "step": "deploy", "note": "", "backup": "x.tar.gz", "nas": "ok", **fields}
+        (self.state / "refresh.json").write_text(json.dumps(body), encoding="utf-8")
+
+    def health(self):
+        return self.client.get("/healthz").json()
+
+    def test_no_refresh_file_is_not_a_problem(self):
+        body = self.health()
+        self.assertEqual(body["status"], "ok")
+        self.assertIsNone(body["refresh"])
+
+    def test_recent_ok_refresh(self):
+        self.refresh(days_ago=2)
+        body = self.health()
+        self.assertEqual(body["status"], "ok")
+        self.assertEqual(body["refresh"]["result"], "ok")
+
+    def test_failed_refresh_is_degraded(self):
+        self.refresh(result="fail", step="check-repo", note="저장소가 main 이 아니다")
+        body = self.health()
+        self.assertEqual(body["status"], "degraded")
+        self.assertIn("check-repo", body["problems"][0])
+
+    def test_nas_failure_is_degraded(self):
+        self.refresh(nas="fail")
+        self.assertEqual(self.health()["status"], "degraded")
+
+    def test_stale_refresh_is_degraded(self):
+        self.refresh(days_ago=9)
+        body = self.health()
+        self.assertEqual(body["status"], "degraded")
+        self.assertIn("8 일", body["problems"][0])
+
+    def test_listed_terrain_and_paleoclim_files_must_exist(self):
+        index = json.loads((self.dir / "index.json").read_text(encoding="utf-8"))
+        index["frames"][0]["terrain"] = {"file": "terrain/2500.webp"}
+        (self.dir / "index.json").write_text(json.dumps(index), encoding="utf-8")
+        (self.dir / "climate").mkdir()
+        (self.dir / "climate" / "recent.json").write_text(json.dumps(
+            {"snapshots": [{"id": "lgm", "file": "climate/pc_lgm.png"}]}), encoding="utf-8")
+        body = self.health()
+        self.assertEqual(body["status"], "degraded")
+        self.assertEqual(body["missing_terrain"], 1)
+        self.assertEqual(body["paleoclim"], {"snapshots": 1, "missing": 1})
+        (self.dir / "terrain").mkdir()
+        (self.dir / "terrain" / "2500.webp").write_bytes(b"x")
+        (self.dir / "climate" / "pc_lgm.png").write_bytes(b"x")
+        body = self.health()
+        self.assertEqual(body["status"], "ok")
+        self.assertEqual(body["paleoclim"], {"snapshots": 1, "missing": 0})
 
 
 class LabelsTest(DataDirMixin, SimpleTestCase):

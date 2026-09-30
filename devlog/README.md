@@ -88,3 +88,4 @@
 | tupandactyl 009 | 2026-09-30 | [최근 5 Ma 를 절 단위 시점으로, 기온 지도도 절 경계로](20260930_tupandactyl_009_recent_stages.md) |
 | tupandactyl 010 | 2026-09-30 | [최근의 절에 PaleoClim 기온 지도](20260930_tupandactyl_010_pleistocene_climate.md) |
 | koprifossillab 033 | 2026-09-30 | [PaleoClim 을 받기·가공·주간 점검의 흐름에 넣는다](20260930_koprifossillab_033_paleoclim_in_pipeline.md) |
+| koprifossillab 034 | 2026-09-30 | [/healthz 가 주간 갱신·백업과 지형·PaleoClim 을 본다](20260930_koprifossillab_034_healthz_refresh.md) |
