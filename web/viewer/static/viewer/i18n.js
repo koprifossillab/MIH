@@ -44,6 +44,8 @@
     // 산지
     "fossil.taxonOnly": ["분류군 찾기 결과만 보인다", "showing taxon search results only"],
     "fossil.all": ["{n}곳", "{n}"],
+    "legend.mid": ["색 = 산지 연대의 중간값이 드는 기 (범위가 긴 산지는 다른 기로 칠해진다)", "Colour = period of each locality's mid-age (long-ranging localities take another period's colour)"],
+    "legend.allMid": ["색 = 칸 안 산지 연대 중간값의 기", "Colour = period of the cell's median mid-age"],
     "fossil.everything": ["모든 시대 {n}곳 · 오늘날 자리", "{n} from all eras · present-day positions"],
     "all.tip": ["산지 {n}곳 · {old}–{young} Ma · 누르면 확대", "{n} localities · {old}–{young} Ma · click to zoom"],
     "fossil.some": ["{n} / {total}곳", "{n} / {total}"],

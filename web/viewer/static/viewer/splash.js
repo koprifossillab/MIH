@@ -23,6 +23,7 @@
   var W = 0, H = 0, dpr = 1, C = [0, 0], Rm = 0, ring = null, path = null;
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
+  var SPEED = 1.3;                                // 모든 움직임을 이만큼 빨리(연구자 — 시간표는 그대로 두고 시계만 빠르게)
   var T_ENTER = .15, T_SWIM = 6.6, T_WRITE = 2.4, T_BONES = 2.0;   // 들어오자마자 헤엄치기 시작한다(연구자)
   // 메달을 두르고 T_AFTER 뒤에 뼈대가 떠오르기 시작하고, 같은 순간 펜이 제목을 쓰기 시작한다(연구자: 둘의 시작을 맞춘다)
   var T_AFTER = .3, T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + T_AFTER + Math.max(T_WRITE, T_BONES);
@@ -196,7 +197,7 @@
   // ── 그리기 ───────────────────────────────────────────────────────
   var last = 0;
   function frame(now) {
-    var t = skipped ? 99 : (now - t0) / 1000, dt = Math.min(.05, Math.max(0, t - last)); last = t;
+    var t = skipped ? 99 : (now - t0) / 1000 * SPEED, dt = Math.min(.05, Math.max(0, t - last)); last = t;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
     box.classList.toggle("lit", t > .15);                                     // 메달이 떠오른다(CSS)
     if (!skipped && !reduce) { emit(t, dt); drawSmoke(dt); }

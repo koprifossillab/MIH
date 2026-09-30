@@ -719,6 +719,7 @@
           (n === 0 ? " none-found" : "");
         b.style.backgroundColor = u.color;   // 색만 — 책등의 그늘·금박 띠(CSS 배경 그림)를 지우지 않게
         b.style.color = ink(u.color);
+        b.classList.toggle("light-ink", ink(u.color) === "#ffffff");   // 흰 글자 — 짙은 그림자를 준다(CSS)
         b.textContent = chipName(u);
         if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
         b.title = u.full + (EN ? "" : " · " + u.en) + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? tr("chip.now") : "") +
@@ -1383,6 +1384,7 @@
       b.className = "chip";
       b.style.backgroundColor = p.color;
       b.style.color = ink(p.color);
+      b.classList.toggle("light-ink", ink(p.color) === "#ffffff");
       b.innerHTML = esc(p.ko) + '<span class="cnt">' + fmtNum(d.units[p.id]) + "</span>";
       b.title = tr("dist.chip", { unit: p.full, n: fmtNum(d.units[p.id]) });
       b.addEventListener("click", function () { goToRichest(p); });
@@ -2430,12 +2432,20 @@
     var add = function (maxMa, minMa) { var p = periodOf(maxMa, minMa); if (p) seen[p.id] = p; };
     if (state.taxon && state.taxa) {
       state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
+    } else if (state.all && everything) {
+      var ec = columns(everything);
+      everything.rows.forEach(function (row) { add(row[ec.mid_ma], row[ec.mid_ma]); });
     } else if (state.payload) {
       var col = columns(state.payload);
       state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col), row[col.max_ma], row[col.min_ma])) add(row[col.max_ma], row[col.min_ma]); });
     }
-    box.innerHTML = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst).map(function (p) {
-      return '<span class="leg"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
+    // 색은 산지 연대 범위의 **중간값이 드는 기**다. 범위가 긴 산지는 지금 시점을 걸쳐도 중간값이 다른 기에 들어,
+    // 지금의 기가 아닌 기도 범례에 뜬다(연구자가 물었다) — 그래서 범례 머리에 기준을 적고, 지금 시점의 기를 앞에 굵게 둔다
+    var now = state.all ? null : periodOf(frame().age, frame().age);
+    var list = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst);
+    if (now && seen[now.id]) list = [now].concat(list.filter(function (p) { return p.id !== now.id; }));
+    box.innerHTML = '<span class="leg-head">' + tr(state.all ? "legend.allMid" : "legend.mid") + "</span>" + list.map(function (p) {
+      return '<span class="leg' + (now && p.id === now.id ? " now" : "") + '"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
     }).join("");
   }
 
