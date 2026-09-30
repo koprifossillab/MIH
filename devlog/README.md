@@ -58,3 +58,13 @@
 | koprifossillab 029 | 2026-09-30 | [몰바이데에서 지구 밖을 끌면 지도를 옮긴다](20260930_koprifossillab_029_mollweide_drag_outside.md) |
 | koprifossillab 030 | 2026-09-30 | [몰바이데에서 지구가 옆으로 밀려 남던 것, 돌리는 동안의 세로 이동](20260930_koprifossillab_030_mollweide_view_reset.md) |
 | koprifossillab 031 | 2026-09-30 | [릴리스 태그마다 Docker Hub 에 이미지를 올린다](20260930_koprifossillab_031_dockerhub_push_setup.md) |
+| wetherilli 001 | 2026-09-30 | [확대·축소 단추를 치우고 축척 막대를 단다](20260930_wetherilli_001_zoom_buttons_scale_bar.md) |
+| wetherilli 002 | 2026-09-30 | [전 지구 평균 기온을 온도계로](20260930_wetherilli_002_gmst_thermometer.md) |
+| wetherilli 003 | 2026-09-30 | [투영 단추를 머리말로, 언어·자료는 설정 창으로](20260930_wetherilli_003_header_projection_settings.md) |
+| wetherilli 004 | 2026-09-30 | [분류군·국가 찾기를 지도 아래 막대로](20260930_wetherilli_004_find_bar.md) |
+| wetherilli 005 | 2026-09-30 | [대기 화면과 읽기 실패 안내](20260930_wetherilli_005_splash_load_failure.md) |
+| wetherilli 006 | 2026-09-30 | [팝업 색을 토큰으로, 고좌표는 눌러서 복사](20260930_wetherilli_006_popup_tokens_copy.md) |
+| wetherilli 007 | 2026-09-30 | [번역이 빠진 문구를 잡는 시험](20260930_wetherilli_007_i18n_missing_key_test.md) |
+| wetherilli 008 | 2026-09-30 | [지도를 그림으로 내려받기](20260930_wetherilli_008_export_image.md) |
+| wetherilli 009 | 2026-09-30 | [몰바이데에서 기온 층이 처음 켤 때 안 그려지던 것](20260930_wetherilli_009_mollweide_climate_first_paint.md) |
+| wetherilli 010 | 2026-09-30 | [병합 전에 판이 부딪히는지 본다](20260930_wetherilli_010_premerge_version_check.md) |

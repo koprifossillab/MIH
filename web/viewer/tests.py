@@ -135,3 +135,47 @@ class PrefixTest(SimpleTestCase):
         # 접두사는 wegenerweb/urls.py 가 import 될 때 한 번 붙는다. 앱 urls 는 모른다.
         from viewer import urls
         self.assertTrue(all(not str(p.pattern).startswith("WegenersDream") for p in urls.urlpatterns))
+
+
+class I18nTest(SimpleTestCase):
+    """화면 문구의 한·영 짝이 빠지지 않았는지(wetherilli 007). 뷰어에는 JS 실행기가 없어 글자로 읽는다.
+
+    - map.js 의 `tr("열쇠")`(조건식 `tr(x ? "a" : "b")` 포함)는 i18n.js 의 `T` 에 있어야 한다
+    - `T` 의 칸은 모두 ["한국어", "영어"] 두 문자열이다
+    - 템플릿의 `data-i18n`·`data-i18n-html`·`data-i18n-attr` 열쇠는 `DOM_EN` 에 있어야 한다
+    """
+    STATIC = Path(__file__).parent / "static" / "viewer"
+    TEMPLATE = Path(__file__).parent / "templates" / "viewer" / "map.html"
+    STR = r'"(?:[^"\\]|\\.)*"'
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        import re
+        cls.re = re
+        source = (cls.STATIC / "i18n.js").read_text(encoding="utf-8")
+        t_block = source[source.index("var T = {"):source.index("\n  };", source.index("var T = {"))]
+        dom_block = source[source.index("var DOM_EN = {"):source.index("\n  };", source.index("var DOM_EN = {"))]
+        cls.t_keys = set(re.findall(r'^\s*"([\w.]+)":', t_block, re.M))
+        cls.t_pairs = set(re.findall(r'"([\w.]+)":\s*\[\s*' + cls.STR + r'\s*,\s*' + cls.STR + r'\s*\]', t_block))
+        cls.dom_keys = set(re.findall(r'^\s*"([\w.]+)":\s*"', dom_block, re.M))
+
+    def test_t_entries_are_pairs(self):
+        self.assertTrue(self.t_keys)
+        self.assertEqual(self.t_keys - self.t_pairs, set(), "[한국어, 영어] 두 문자열이 아닌 칸")
+
+    def test_map_js_keys_exist(self):
+        js = (self.STATIC / "map.js").read_text(encoding="utf-8")
+        used = set(self.re.findall(r'\btr\(\s*"([\w.]+)"', js))
+        for a, b in self.re.findall(r'\btr\([^()]*?\?\s*"([\w.]+)"\s*:\s*"([\w.]+)"\s*\)', js):
+            used.update((a, b))
+        self.assertTrue(used)
+        self.assertEqual(used - self.t_keys, set(), "i18n.js 의 T 에 없는 열쇠")
+
+    def test_template_keys_exist(self):
+        html = self.TEMPLATE.read_text(encoding="utf-8")
+        used = set(self.re.findall(r'data-i18n(?:-html)?="([\w.]+)"', html))
+        for attrs in self.re.findall(r'data-i18n-attr="([^"]+)"', html):
+            used.update(pair.split(":")[1] for pair in attrs.split(";"))
+        self.assertTrue(used)
+        self.assertEqual(used - self.dom_keys, set(), "i18n.js 의 DOM_EN 에 없는 열쇠")

@@ -40,6 +40,19 @@ jobs:
         env:
           WEGENER_SECRET_KEY: ci-only-not-a-secret
 
+  # 병합 전 판 확인(wetherilli 010) — PR 의 판·CHANGELOG·태그가 main 과 부딪히지 않는가. PR 머리(merge 커밋이 아니라)를 본다.
+  version:
+    name: 판 확인
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - run: git fetch --no-tags origin ${{ github.base_ref }}
+      - run: python deploy/check_version.py --base origin/${{ github.base_ref }}
+
   build:
     name: 이미지 굽기
     needs: test

@@ -32,21 +32,64 @@
       <span id="now-units" class="units"></span>
       <span id="now-label" class="label"></span>
     </div>
-    <div class="lang" role="group" aria-label="언어" data-i18n-attr="aria-label:lang">
-      <button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button>
+    <div class="tools">
+      <div class="seg" id="proj-seg" role="group" aria-label="투영" data-i18n-attr="aria-label:proj" hidden>
+        <button type="button" data-proj="eq" aria-pressed="true" data-i18n="proj.eq">정거원통</button><button type="button" data-proj="moll" aria-pressed="false" data-i18n="proj.moll">몰바이데</button>
+      </div>
+      <button type="button" class="gear" id="settings-open" aria-haspopup="dialog" aria-controls="settings"
+              title="설정 · 자료" aria-label="설정 · 자료" data-i18n-attr="title:settings;aria-label:settings">⚙</button>
     </div>
   </header>
 
+  <!-- 설정 · 자료(wetherilli 003) — 언어, 출처(참고문헌), 판 -->
+  <dialog id="settings" class="sheet" aria-labelledby="settings-title">
+    <div class="sheet-head">
+      <h2 id="settings-title" data-i18n="settings">설정 · 자료</h2>
+      <button type="button" class="sheet-close" id="settings-close" aria-label="닫기" data-i18n-attr="aria-label:close">✕</button>
+    </div>
+    <section>
+      <h3 data-i18n="lang">언어</h3>
+      <div class="seg lang" role="group" aria-label="언어" data-i18n-attr="aria-label:lang">
+        <button type="button" data-lang="ko" lang="ko">한국어</button><button type="button" data-lang="en" lang="en">English</button>
+      </div>
+    </section>
+    <section class="sources">
+      <h3 data-i18n="sources">자료</h3>
+      <ul id="sources"></ul>
+      <p class="note" data-i18n-html="sources.about">배경·해안선·국경·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 산지의 지금 좌표를 <b>지도 시점의 나이로</b> 해안선과 같은 판 모델(v19o)로 돌린 것이라, 범위가 넓은 산지도 시점마다 그때 자리에 그려진다. 그 나이에 판이 없는 드문 산지(0.1% 미만)만 PBDB 고좌표(연대 중간값)를 쓴다 — 팝업에 적는다.</p>
+      <p class="note">Wegener's Dream {{ version }}{% if built_at %} · <span data-i18n="data">자료</span> {{ built_at|slice:":10" }}{% endif %}</p>
+    </section>
+  </dialog>
+
   <main class="stage">
-    <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
+    <div class="mapcol">
+      <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
+      <!-- 찾기 막대(wetherilli 004) — 분류군과 국가. 후보 목록은 막대 위로 뜬다. 결과는 패널의 절에 적는다 -->
+      <div class="findbar" role="search">
+        <form id="taxon-form" class="find" autocomplete="off">
+          <label class="find-label" for="taxon" data-i18n="taxon.short">분류군</label>
+          <div class="combo">
+            <input type="search" id="taxon" placeholder="이름 일부 — 예: lobit, saur" data-i18n-attr="placeholder:taxon.ph;aria-label:taxon.label" autocomplete="off"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-list" aria-label="분류군 이름">
+            <ul id="taxon-list" class="suggest" role="listbox" hidden></ul>
+          </div>
+          <button type="button" id="taxon-clear" class="find-x" hidden title="분류군 지우기" aria-label="분류군 지우기" data-i18n-attr="title:taxon.clear;aria-label:taxon.clear">✕</button>
+          <button type="submit" class="find-go" data-i18n="taxon.go">찾기</button>
+        </form>
+        <div class="find">
+          <label class="find-label" for="country" data-i18n="country">국가</label>
+          <div class="combo">
+            <input type="search" id="country" placeholder="한글·영문 이름 또는 코드 — 예: 한국, China, US" data-i18n-attr="placeholder:country.ph;aria-label:country.label" autocomplete="off"
+                   role="combobox" aria-autocomplete="list" aria-controls="country-list" aria-label="국가">
+            <ul id="country-list" class="suggest" role="listbox" hidden></ul>
+          </div>
+          <button type="button" id="country-clear" class="find-x" hidden title="국가 지우기" aria-label="국가 지우기" data-i18n-attr="title:country.clear;aria-label:country.clear">✕</button>
+        </div>
+      </div>
+    </div>
 
     <aside class="panel" id="panel">
       <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel" aria-expanded="true">패널 접기 ▾</button>
-      <section class="proj-row" id="proj-row" role="radiogroup" aria-label="투영" data-i18n-attr="aria-label:proj" hidden>
-        <h2 data-i18n="proj">투영</h2>
-        <label><input type="radio" name="proj" value="eq" checked> <span data-i18n="proj.eq">정거원통</span></label>
-        <label><input type="radio" name="proj" value="moll"> <span data-i18n="proj.moll">몰바이데</span></label>
-      </section>
       <section data-sec="time">
         <h2 data-i18n="time">시점</h2>
         <div class="timeline">
@@ -105,14 +148,6 @@
 
       <section data-sec="taxon">
         <h2 data-i18n="taxon">분류군 찾기</h2>
-        <form id="taxon-form" class="taxon" autocomplete="off">
-          <div class="combo">
-            <input type="search" id="taxon" placeholder="이름 일부 — 예: lobit, saur" data-i18n-attr="placeholder:taxon.ph;aria-label:taxon.label" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="taxon-list" aria-label="분류군 이름">
-            <ul id="taxon-list" class="suggest" role="listbox" hidden></ul>
-          </div>
-          <button type="submit" data-i18n="taxon.go">찾기</button>
-        </form>
         <p class="note" id="taxon-status" data-i18n="taxon.hint">두 글자 이상 치면 PBDB 에서 후보를 찾는다(앞부분·중간 모두). 시점을 옮기면 다시 묻는다.</p>
         <div class="coeval" id="coeval-row" hidden>
           <label class="swatch"><input type="checkbox" id="coeval"> <span data-i18n="coeval">같은 시대의 다른 산지 기록도 보기</span> <small data-i18n="coeval.small">(속 이하)</small></label>
@@ -136,22 +171,13 @@
           <p class="note" id="tour-status" aria-live="polite"></p>
           <p class="note" id="dist-note"></p>
         </div>
-        <button type="button" id="taxon-clear" class="link" hidden data-i18n="taxon.clear">분류군 지우기</button>
       </section>
 
       <section data-sec="country">
         <h2 data-i18n="country">국가</h2>
-        <div class="taxon">
-          <div class="combo">
-            <input type="search" id="country" placeholder="한글·영문 이름 또는 코드 — 예: 한국, China, US" data-i18n-attr="placeholder:country.ph;aria-label:country.label" autocomplete="off"
-                   role="combobox" aria-autocomplete="list" aria-controls="country-list" aria-label="국가">
-            <ul id="country-list" class="suggest" role="listbox" hidden></ul>
-          </div>
-        </div>
         <p class="note" id="country-note" data-i18n="country.about">고르면 지금 그 나라 땅에서 나온 산지만 보이고, 분류군 찾기도 그 나라로 좁힌다.</p>
         <div class="links">
           <button type="button" id="country-focus" class="link" hidden data-i18n="country.focus">이 나라로 다시 가기</button>
-          <button type="button" id="country-clear" class="link" hidden data-i18n="country.clear">국가 지우기</button>
         </div>
       </section>
 
@@ -172,16 +198,20 @@
         <p class="note" id="relief-note"></p>
       </section>
 
-      <section class="sources" data-sec="sources">
-        <h2 data-i18n="sources">자료</h2>
-        <ul id="sources"></ul>
-        <p class="note" data-i18n-html="sources.about">배경·해안선·국경·화석 좌표는 모두 PALEOMAP 판 모델 틀이다. 화석 좌표는 산지의 지금 좌표를 <b>지도 시점의 나이로</b> 해안선과 같은 판 모델(v19o)로 돌린 것이라, 범위가 넓은 산지도 시점마다 그때 자리에 그려진다. 그 나이에 판이 없는 드문 산지(0.1% 미만)만 PBDB 고좌표(연대 중간값)를 쓴다 — 팝업에 적는다.</p>
-        <p class="note">Wegener's Dream {{ version }}{% if built_at %} · <span data-i18n="data">자료</span> {{ built_at|slice:":10" }}{% endif %}</p>
-      </section>
     </aside>
   </main>
 
-  {% if not has_data %}
+  {% if has_data %}
+  <!-- 대기 화면(wetherilli 005) — 첫 배경 그림이 그려지면 걷힌다. 영어로 열 때 <body> 가 잠깐 가려져도 이것은 보인다 -->
+  <div class="splash" id="splash" role="status" aria-live="polite">
+    <div class="splash-card">
+      <div class="splash-brand"><strong>Wegener's Dream</strong> <span>베게너의 꿈</span></div>
+      <div class="splash-spin" aria-hidden="true"></div>
+      <p class="splash-msg" id="splash-msg"><span class="ko">지도를 불러오는 중…</span><span class="en">Loading the map…</span></p>
+      <button type="button" id="splash-retry" hidden></button>
+    </div>
+  </div>
+  {% else %}
   <div class="empty" role="alert">
     <h2 data-i18n="empty.title">자료가 아직 없다</h2>
     <p><span data-i18n="empty.run">파이프라인을 먼저 돌린다:</span> <code>python -m pipeline all</code></p>

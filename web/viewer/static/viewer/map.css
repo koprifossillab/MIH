@@ -10,6 +10,7 @@
   --other: #f5f5f5;
   --coast: #ff3da8;
   --taxon: #2ee6a6;
+  --warn: #9a5b00;          /* 팝업의 "모호한 연대" 같은 주의 글씨 */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -19,6 +20,7 @@
     --muted: #a3a9b3;
     --line: #33373d;
     --accent: #e0a060;
+    --warn: #e6a64a;
   }
 }
 
@@ -41,24 +43,69 @@ body {
 .brand strong { font-size: 18px; letter-spacing: .04em; color: var(--accent); }
 .brand .ver { margin-left: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .brand .sub { margin-left: 6px; color: var(--muted); }
-.now { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.now { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; flex: 1 1 0; min-width: 260px; }   /* 좁아지면 안에서 꺾여 오른쪽 단추가 제 줄에 남는다 */
 .now .age { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .now .units { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .now .unit { padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 13px; }
 .now .sep { color: var(--muted); }
 .now .label { color: var(--muted); }
-/* 언어 단추(027) — 머리말 오른쪽 */
-.lang { margin-left: auto; display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; align-self: center; }
-.lang button { border: 0; background: var(--bg); color: var(--muted); font: inherit; font-size: 12px; padding: 2px 9px; cursor: pointer; }
-.lang button + button { border-left: 1px solid var(--line); }
-.lang button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+/* 머리말 오른쪽 — 투영 단추와 설정(wetherilli 003) */
+.bar .tools { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; align-self: center; }
+/* 둘 가운데 하나를 고르는 붙은 단추 — 투영, 언어(027) */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg[hidden] { display: none; }
+.seg button { border: 0; background: var(--bg); color: var(--muted); font: inherit; font-size: 12px; padding: 2px 9px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button:focus-visible, .gear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gear {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--muted);
+  font-size: 15px; line-height: 1; padding: 3px 7px; cursor: pointer;
+}
+.gear:hover { color: var(--accent); border-color: var(--accent); }
+/* 설정 · 자료 창 */
+.sheet {
+  width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); padding: 0 20px 16px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--ink);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+}
+.sheet::backdrop { background: rgba(0, 0, 0, .35); }
+.sheet-head {
+  position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 8px; background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.sheet h2 { margin: 0; font-size: 15px; color: var(--accent); }
+.sheet h3 { margin: 16px 0 8px; font-size: 13px; color: var(--accent); }
+.sheet-close { border: 0; background: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 2px 6px; }
+.sheet-close:hover { color: var(--ink); }
 /* 영어로 열 때 한국어 원문을 잠깐도 보이지 않게(<head> 의 스크립트가 붙이고 map.js 가 뗀다) */
 .i18n-pending body { visibility: hidden; }
 /* 영어판: 층서표 줄머리(Era·Period …)가 한 글자보다 길다 */
 .lang-en .chrono-row .rank { width: 44px; }
 
 .stage { flex: 1; display: flex; min-height: 0; }
-#map { flex: 1; min-width: 0; background: #06162f; }
+.mapcol { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#map { flex: 1; min-height: 0; background: #06162f; }
+/* 찾기 막대(wetherilli 004) — 지도 바로 아래. GSM 의 좌표 막대 자리 */
+.findbar {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center;
+  padding: 7px 12px; border-top: 1px solid var(--line); background: var(--panel);
+}
+.find { display: flex; align-items: center; gap: 6px; flex: 1 1 260px; max-width: 440px; min-width: 0; }
+.find-label { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.find input {
+  width: 100%; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink); font: inherit;
+}
+/* 브라우저의 검색 칸 ✕ 는 글자만 지우고 거르기는 남긴다 — 우리 ✕(.find-x)만 둔다 */
+.find input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.find input:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.find-go { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; }
+.find-go:hover { border-color: var(--accent); color: var(--accent); }
+.find-x { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 4px; font-size: 13px; }
+.find-x:hover { color: var(--ink); }
+/* 막대의 후보 목록은 위로 연다 — 아래는 화면 끝이다 */
+.findbar .suggest { top: auto; bottom: calc(100% + 4px); right: 0; min-width: 280px; }
 .panel {
   width: 320px; overflow-y: auto; padding: 4px 16px 16px;
   border-left: 1px solid var(--line); background: var(--panel);
@@ -130,12 +177,8 @@ body {
 
 .swatch { display: flex; align-items: center; gap: 6px; margin: 4px 0; cursor: pointer; }
 .swatch small { color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
-.proj-row { display: flex; align-items: baseline; gap: 12px; padding-bottom: 10px; }
-.proj-row[hidden] { display: none; }
-.proj-row h2 { margin-right: 4px; }
 .leaflet-container.moll { cursor: grab; }
 .leaflet-container.spinning { cursor: grabbing; }
-.proj-row label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #333; }
 .dot.m { background: var(--marine); }
 .dot.t { background: var(--land); }
@@ -173,7 +216,7 @@ body {
 .occ-tip b { display: block; margin-bottom: 2px; }
 .occ-tip ul { margin: 0; padding-left: 16px; }
 .occ-tip li i { font-style: italic; }
-.occ-tip small { color: #666; }
+.occ-tip small { color: var(--muted); }
 .colorby { display: flex; gap: 10px; align-items: center; font-size: 13px; margin: 2px 0 6px; }
 .colorby > span { color: var(--muted); font-size: 12px; }
 .colorby label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
@@ -185,7 +228,7 @@ body {
 .shape.solid { background: var(--ink); opacity: .75; border: 1px solid #fff; }
 .shape.tri { width: 11px; height: 10px; border-radius: 0; background: var(--ink); opacity: .75;
              clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-.pop .wide-note { color: #9a5b00; }
+.pop .wide-note { color: var(--warn); }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-bottom: 4px; }
 .legend:empty { display: none; }
 .legend .leg { display: inline-flex; align-items: center; gap: 4px; }
@@ -245,24 +288,100 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .sources li { margin-bottom: 6px; }
 .sources a { color: var(--accent); }
 
+/* 대기 화면(wetherilli 005) */
+.splash {
+  position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center;
+  background: var(--bg); transition: opacity .3s ease; visibility: visible;
+}
+.splash.done { opacity: 0; pointer-events: none; }
+.splash-card { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px; text-align: center; max-width: 420px; }
+.splash-brand strong { font-size: 22px; letter-spacing: .04em; color: var(--accent); }
+.splash-brand span { margin-left: 6px; color: var(--muted); }
+.splash-spin {
+  width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent);
+  animation: splash-spin .9s linear infinite;
+}
+@keyframes splash-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .splash-spin { animation-duration: 3s; } }
+.splash-msg { margin: 0; color: var(--muted); }
+.splash .en { display: none; }
+.lang-en .splash .en { display: inline; }
+.lang-en .splash .ko { display: none; }
+.splash.failed .splash-spin { display: none; }
+.splash.failed .splash-msg { color: var(--ink); }
+#splash-retry { border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; padding: 5px 14px; cursor: pointer; font: inherit; }
+
 .empty {
   position: fixed; inset: 0; display: grid; place-content: center; text-align: center;
   background: color-mix(in srgb, var(--bg) 88%, transparent); z-index: 2000;
 }
 
-/* 팝업 */
+/* 전 지구 평균 기온 온도계(wetherilli 002) — 왼쪽 위 */
+.thermo {
+  display: flex; align-items: flex-end; gap: 2px; padding: 6px 8px 6px 4px; border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent); color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3); cursor: default;
+}
+.thermo svg { display: block; }
+.thermo .tube { fill: var(--bg); stroke: var(--muted); stroke-width: 1; }
+.thermo .ticks line { stroke: var(--muted); stroke-width: 1; }
+.thermo .ticks text { fill: var(--muted); font: 9px system-ui, sans-serif; }
+.thermo line.now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
+.thermo-read { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; padding-bottom: 2px; }
+.thermo-read b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.thermo-read span { font-size: 11px; color: var(--muted); }
+.thermo-read small { margin-top: 4px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+/* 지도 위 단추 — 그림으로 내려받기(wetherilli 008) */
+.map-btn {
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+.map-btn:hover { color: var(--accent); border-color: var(--accent); }
+.map-btn:disabled { opacity: .6; cursor: progress; }
+
+/* 축척 막대(wetherilli 001) — 출처 표기 위, 오른쪽 아래 */
+.leaflet-control-scale-line {
+  background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink);
+  border-color: var(--ink); font-variant-numeric: tabular-nums;
+}
+
+/* 팝업·툴팁 — 색은 토큰으로만(wetherilli 006). Leaflet 기본은 흰 바탕에 고정 회색이라, 어두운 모드에서
+   글자 토큰(밝은 회색)이 흰 바탕 위에 올라가거나 고정 #666 이 흐렸다 */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--ink); box-shadow: 0 3px 14px rgba(0, 0, 0, .35); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--ink); }
+.leaflet-popup-content a { color: var(--accent); }
+.leaflet-tooltip.occ-tip { background: var(--panel); color: var(--ink); border-color: var(--line); }
+.leaflet-tooltip-top.occ-tip::before { border-top-color: var(--panel); }
+.leaflet-tooltip-bottom.occ-tip::before { border-bottom-color: var(--panel); }
+.leaflet-tooltip-left.occ-tip::before { border-left-color: var(--panel); }
+.leaflet-tooltip-right.occ-tip::before { border-right-color: var(--panel); }
+.leaflet-container .leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--muted); }
+.leaflet-control-attribution a { color: var(--accent); }
 .leaflet-popup-content { font-size: 13px; line-height: 1.45; max-width: 320px; }
 .pop h3 { margin: 0 0 4px; font-size: 14px; }
 .pop dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0; }
-.pop dt { color: #666; }
+.pop dt { color: var(--muted); }
 .pop dd { margin: 0; }
+.pop small { color: var(--muted); }
 .pop .taxa { max-height: 180px; overflow-y: auto; margin: 6px 0 0; padding-left: 18px; }
-.pop .taxa small { color: #777; }
-.pop .muted { color: #777; }
+.pop .muted { color: var(--muted); }
+/* 눌러서 복사하는 좌표 — 글자처럼 보이되 점선 밑줄, 누르면 잠깐 "복사했다" */
+.pop .copy {
+  position: relative; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: copy;
+  text-decoration: underline dotted; text-underline-offset: 3px; font-variant-numeric: tabular-nums;
+}
+.pop .copy:hover { color: var(--accent); }
+.pop .copy.flash::after {
+  content: attr(data-flash); position: absolute; left: 100%; top: 50%; transform: translate(6px, -50%);
+  padding: 0 6px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 11px; white-space: nowrap;
+}
 
 @media (max-width: 760px) {
   .stage { flex-direction: column; }
-  #map { min-height: 55vh; }
+  #map { min-height: 50vh; }
+  .findbar { padding: 6px 10px; }
   .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); max-height: 45vh; padding-top: 0; }
   .panel-bar {
     display: block; position: sticky; top: 0; z-index: 2; width: calc(100% + 32px); margin: 0 -16px;
