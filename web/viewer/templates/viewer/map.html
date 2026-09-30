@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wegener's Dream — 베게너의 꿈</title>
+<link rel="icon" href="{% static 'viewer/favicon.svg' %}?v={{ version }}" type="image/svg+xml">
 <link rel="stylesheet" href="{% static 'viewer/vendor/leaflet/leaflet.css' %}">
 <link rel="stylesheet" href="{% static 'viewer/map.css' %}?v={{ version }}">
 <script>
@@ -24,6 +25,7 @@
 
   <header class="bar">
     <div class="brand">
+      <img class="brand-mark" src="{% static 'viewer/emblem.svg' %}?v={{ version }}" alt="" width="40" height="40">
       <strong>Wegener's Dream</strong> <span class="ver">v{{ version }}</span>
       <span class="sub" data-i18n="brand.sub">베게너의 꿈 · 고지리 화석 지도</span>
     </div>
@@ -205,15 +207,23 @@
   </main>
 
   {% if has_data %}
-  <!-- 대기 화면(wetherilli 005) — 첫 배경 그림이 그려지면 걷힌다. 영어로 열 때 <body> 가 잠깐 가려져도 이것은 보인다 -->
+  <!-- 대기 화면(wetherilli 005 → tupandactyl 005) — 빈티지 종이 위에 베게너 초상 메달, 파이프 연기, 헤엄쳐 와 메달을 두르는
+       메소사우루스, 펜으로 쓰듯 나타나는 제목(splash.js). 첫 배경이 그려지고 움직임이 끝나면 걷힌다. 누르면 건너뛴다.
+       영어로 열 때 <body> 가 잠깐 가려져도 이것은 보인다 -->
   <div class="splash" id="splash" role="status" aria-live="polite">
-    <div class="splash-card">
-      <div class="splash-brand"><strong>Wegener's Dream</strong> <span>베게너의 꿈</span></div>
-      <div class="splash-spin" aria-hidden="true"></div>
+    <div class="splash-frame" aria-hidden="true"></div>
+    <div class="splash-stage">
+      <div class="splash-medal"><img src="{% static 'viewer/wegener.svg' %}?v={{ version }}" alt="알프레트 베게너" width="960" height="960"></div>
+      <h1 class="splash-title">Wegener's Dream</h1>
+      <p class="splash-sub"><span class="ko">베게너의 꿈 · 고지리 화석 지도</span><span class="en">Paleogeographic fossil map</span></p>
       <p class="splash-msg" id="splash-msg"><span class="ko">지도를 불러오는 중…</span><span class="en">Loading the map…</span></p>
       <button type="button" id="splash-retry" hidden></button>
     </div>
+    <canvas class="splash-fx" aria-hidden="true"></canvas>
+    <p class="splash-foot"><span>Alfred Wegener, 1880–1930</span><span class="skip"><span class="ko">누르면 건너뛴다</span><span class="en">Click to skip</span></span><span><i>Mesosaurus tenuidens</i></span></p>
   </div>
+  <script src="{% static 'viewer/meso.js' %}?v={{ version }}"></script>
+  <script src="{% static 'viewer/splash.js' %}?v={{ version }}"></script>
   {% else %}
   <div class="empty" role="alert">
     <h2 data-i18n="empty.title">자료가 아직 없다</h2>

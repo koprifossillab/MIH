@@ -6,6 +6,7 @@
 |---|---|---|---|
 | Leaflet | 1.9.4 | https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/ (2026-09-29) | BSD 2-Clause, (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade |
 | CesiumJS | 1.145.0 | https://registry.npmjs.org/cesium/-/cesium-1.145.0.tgz 의 `Build/Cesium/` (2026-09-30, GSM `vendor/cesium/` 과 같은 것) | Apache-2.0, `cesium/LICENSE.md` |
+| La Belle Aurore(글씨체) | Google Fonts v23, 라틴 부분만 | https://fonts.gstatic.com/s/labelleaurore/v23/ (2026-09-30) | SIL OFL 1.1, (c) 2010 Kimberly Geswein, `fonts/OFL-LaBelleAurore.txt` |
 
 갱신할 때는 같은 자리의 `leaflet.js`·`leaflet.css`·`images/` 를 통째로 바꾸고 이 표의 판을 고친다.
 
@@ -18,3 +19,10 @@ dbb7a1606ef2150c7266eee6eb10bfeba1bd1351cdce1df85787a45491f482e3  cesium/Cesium.
 ```
 
 판을 올릴 때는 GSM 과 같은 판으로 맞춘다(두 저장소가 같은 서버에 있다).
+
+**La Belle Aurore** 는 머리말·대기 화면의 제목만 쓴다(tupandactyl 005). 영문 제목뿐이라 라틴 부분(`U+0000-00FF` 등)만 담았다.
+확인값:
+
+```
+54da154868e2237e6a2323ede6a4db035be01f0547692c66b0fd7e83a0867047  fonts/la-belle-aurore-latin.woff2
+```
