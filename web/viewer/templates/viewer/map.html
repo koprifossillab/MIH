@@ -194,6 +194,12 @@
         <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
         <p class="note" id="coast-note"></p>
         <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
+        <!-- 지구본의 지형(wetherilli 017) — 지구본이고 가공물에 지형이 있을 때만 보인다 -->
+        <div id="terrain-row" hidden>
+          <label class="swatch"><input type="checkbox" id="terrain" checked> <span data-i18n="terrain">지형 높이 (지구본)</span></label>
+          <label class="opacity"><span data-i18n="terrain.exag">높이 과장</span> <input type="range" id="terrain-exag" min="1" max="50" step="1" value="15" aria-label="높이 과장" data-i18n-attr="aria-label:terrain.exag"> <output id="terrain-exag-value">×15</output></label>
+          <p class="note" id="terrain-note"></p>
+        </div>
       </section>
     </aside>
   </main>

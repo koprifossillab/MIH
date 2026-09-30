@@ -415,6 +415,12 @@
     climate: globeClimate, climateOpacity: function () { return climateLayer.options.opacity; },
     onView: function () { if (state.proj === "globe" && frame()) writeHash(frame()); },
     avoid: function () { return [$("findfloat")]; },
+    // 지형(wetherilli 017) — 가공물의 terrain 칸을 그대로 넘긴다. 옛 가공물(칸 없음)이면 매끈한 구
+    terrain: function (f) {
+      var t = f.terrain;
+      return t && $("terrain").checked ? { url: dataUrl(t.file), step: t.step, offset: t.offset, unit: t.unit } : null;
+    },
+    exaggeration: function () { return +$("terrain-exag").value; },
     onLoading: function (on, err) {
       $("map").classList.toggle("globe-loading", on);
       $("map").dataset.loading = tr("globe.loading");
@@ -501,6 +507,7 @@
     }
     if ($("tool-zoomin")) syncZoomButtons();   // 지구본에서는 늘 켠다
     var f = frame();
+    noteTerrain(f);
     if (!f) return;
     relief.setUrl(reliefUrl(f));
     redrawLines(f);
@@ -600,6 +607,12 @@
     if (relief._url !== url) relief.setUrl(url);
     noteRelief(f);
   });
+  // 지형 칸은 지구본이고 가공물에 지형이 있을 때만 보인다(wetherilli 017)
+  function noteTerrain(f) {
+    var t = f && f.terrain;
+    $("terrain-row").hidden = state.proj !== "globe" || !t;
+    if (t) $("terrain-note").textContent = tr("terrain.note", { min: fmtNum(t.min), max: fmtNum(t.max) });
+  }
   function noteRelief(f) {
     $("relief-note").textContent = tr("relief.note", { grid: tr(f.grid === "6min" ? "grid.6min" : "grid.1deg"), w: reliefWidth() });
   }
@@ -809,6 +822,7 @@
 
     relief.setUrl(reliefUrl(f));
     noteRelief(f);
+    noteTerrain(f);
     drawCoast(f);
     drawBorders(f, false);
     drawClimate(f);
@@ -2383,6 +2397,11 @@
     });
     document.querySelectorAll("#proj-seg [data-proj]").forEach(function (b) {
       b.addEventListener("click", function () { setProjection(b.dataset.proj); });
+    });
+    $("terrain").addEventListener("change", function () { if (globe) globe.mark("terrain"); });
+    $("terrain-exag").addEventListener("input", function () {
+      $("terrain-exag-value").textContent = "×" + this.value;
+      if (globe) globe.mark("terrain");
     });
     $("grid").addEventListener("change", function () {
       if (this.checked) gridLayer.addTo(map); else map.removeLayer(gridLayer);
