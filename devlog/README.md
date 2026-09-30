@@ -63,3 +63,4 @@
 | wetherilli 003 | 2026-09-30 | [투영 단추를 머리말로, 언어·자료는 설정 창으로](20260930_wetherilli_003_header_projection_settings.md) |
 | wetherilli 004 | 2026-09-30 | [분류군·국가 찾기를 지도 아래 막대로](20260930_wetherilli_004_find_bar.md) |
 | wetherilli 005 | 2026-09-30 | [대기 화면과 읽기 실패 안내](20260930_wetherilli_005_splash_load_failure.md) |
+| wetherilli 006 | 2026-09-30 | [팝업 색을 토큰으로, 고좌표는 눌러서 복사](20260930_wetherilli_006_popup_tokens_copy.md) |

@@ -1038,7 +1038,8 @@
         (rowPrecise(row, col) ? "" : '<br><small class="wide-note">' + tr("pop.vague") + "</small>") + "</dd>" +
       (row[col.formation] ? "<dt>" + tr("pop.formation") + "</dt><dd>" + esc(row[col.formation]) + "</dd>" : "") +
       "<dt>" + tr("pop.env") + "</dt><dd>" + esc(env || tr("pop.noenv")) + (groupName ? "<br><small>" + esc(groupName) + "</small>" : "") + "</dd>" +
-      "<dt>" + tr("pop.paleo") + "</dt><dd>" + row[col.paleolat] + "°, " + row[col.paleolng] + "°<br><small>" +
+      "<dt>" + tr("pop.paleo") + '</dt><dd><button type="button" class="copy" data-copy="' + row[col.paleolat] + ", " + row[col.paleolng] +
+        '" title="' + tr("copy.title") + '">' + row[col.paleolat] + "°, " + row[col.paleolng] + "°</button><br><small>" +
         (col.rotated != null && row[col.rotated]
           ? tr("pop.rotated", { age: fmtAge(frame().age) })
           : tr("pop.pbdb")) + "</small></dd>" +
@@ -1052,6 +1053,7 @@
     el.className = "pop";
     el.innerHTML = html;
     var box = el.querySelector(".taxa-box");
+    el.querySelector(".copy").addEventListener("click", function () { copyCoords(this); });
     var popup = L.popup({ maxWidth: 340 }).setLatLng(latlng).setContent(el).openOn(map);
     // 그때 그 자리의 지표 기온 — 기온 층을 켜지 않아도 적는다.
     var f = frame();
@@ -1073,6 +1075,32 @@
       box.innerHTML = items.length ? '<ul class="taxa">' + items.join("") + "</ul>" : tr("pop.none");
       popup.update();
     }).catch(function () { box.textContent = tr("pop.fail"); });
+  }
+
+  // 좌표를 눌러 복사한다(wetherilli 006). 운영은 http 라 navigator.clipboard 가 없다(보안 맥락에서만 열린다) —
+  // 그때는 숨긴 textarea 와 execCommand("copy") 로 한다(GSM 과 같은 길).
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { /* 막힌 브라우저 */ }
+      ta.remove();
+      if (ok) resolve(); else reject(new Error("copy"));
+    });
+  }
+  function copyCoords(button) {
+    copyText(button.dataset.copy).then(function () { return "copy.done"; }, function () { return "copy.fail"; }).then(function (key) {
+      button.dataset.flash = tr(key);
+      button.classList.add("flash");
+      clearTimeout(button._flash);
+      button._flash = setTimeout(function () { button.classList.remove("flash"); }, 900);
+    });
   }
 
   // ── 분류군 찾기 ─────────────────────────────────────────────────────

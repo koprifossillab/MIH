@@ -10,6 +10,7 @@
   --other: #f5f5f5;
   --coast: #ff3da8;
   --taxon: #2ee6a6;
+  --warn: #9a5b00;          /* 팝업의 "모호한 연대" 같은 주의 글씨 */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -19,6 +20,7 @@
     --muted: #a3a9b3;
     --line: #33373d;
     --accent: #e0a060;
+    --warn: #e6a64a;
   }
 }
 
@@ -214,7 +216,7 @@ body {
 .occ-tip b { display: block; margin-bottom: 2px; }
 .occ-tip ul { margin: 0; padding-left: 16px; }
 .occ-tip li i { font-style: italic; }
-.occ-tip small { color: #666; }
+.occ-tip small { color: var(--muted); }
 .colorby { display: flex; gap: 10px; align-items: center; font-size: 13px; margin: 2px 0 6px; }
 .colorby > span { color: var(--muted); font-size: 12px; }
 .colorby label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
@@ -226,7 +228,7 @@ body {
 .shape.solid { background: var(--ink); opacity: .75; border: 1px solid #fff; }
 .shape.tri { width: 11px; height: 10px; border-radius: 0; background: var(--ink); opacity: .75;
              clip-path: polygon(50% 0, 100% 100%, 0 100%); }
-.pop .wide-note { color: #9a5b00; }
+.pop .wide-note { color: var(--warn); }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-bottom: 4px; }
 .legend:empty { display: none; }
 .legend .leg { display: inline-flex; align-items: center; gap: 4px; }
@@ -336,15 +338,37 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   border-color: var(--ink); font-variant-numeric: tabular-nums;
 }
 
-/* 팝업 */
+/* 팝업·툴팁 — 색은 토큰으로만(wetherilli 006). Leaflet 기본은 흰 바탕에 고정 회색이라, 어두운 모드에서
+   글자 토큰(밝은 회색)이 흰 바탕 위에 올라가거나 고정 #666 이 흐렸다 */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--panel); color: var(--ink); box-shadow: 0 3px 14px rgba(0, 0, 0, .35); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+.leaflet-container a.leaflet-popup-close-button:hover { color: var(--ink); }
+.leaflet-popup-content a { color: var(--accent); }
+.leaflet-tooltip.occ-tip { background: var(--panel); color: var(--ink); border-color: var(--line); }
+.leaflet-tooltip-top.occ-tip::before { border-top-color: var(--panel); }
+.leaflet-tooltip-bottom.occ-tip::before { border-bottom-color: var(--panel); }
+.leaflet-tooltip-left.occ-tip::before { border-left-color: var(--panel); }
+.leaflet-tooltip-right.occ-tip::before { border-right-color: var(--panel); }
+.leaflet-container .leaflet-control-attribution { background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--muted); }
+.leaflet-control-attribution a { color: var(--accent); }
 .leaflet-popup-content { font-size: 13px; line-height: 1.45; max-width: 320px; }
 .pop h3 { margin: 0 0 4px; font-size: 14px; }
 .pop dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0; }
-.pop dt { color: #666; }
+.pop dt { color: var(--muted); }
 .pop dd { margin: 0; }
+.pop small { color: var(--muted); }
 .pop .taxa { max-height: 180px; overflow-y: auto; margin: 6px 0 0; padding-left: 18px; }
-.pop .taxa small { color: #777; }
-.pop .muted { color: #777; }
+.pop .muted { color: var(--muted); }
+/* 눌러서 복사하는 좌표 — 글자처럼 보이되 점선 밑줄, 누르면 잠깐 "복사했다" */
+.pop .copy {
+  position: relative; border: 0; padding: 0; background: none; color: inherit; font: inherit; cursor: copy;
+  text-decoration: underline dotted; text-underline-offset: 3px; font-variant-numeric: tabular-nums;
+}
+.pop .copy:hover { color: var(--accent); }
+.pop .copy.flash::after {
+  content: attr(data-flash); position: absolute; left: 100%; top: 50%; transform: translate(6px, -50%);
+  padding: 0 6px; border-radius: 4px; background: var(--accent); color: #fff; font-size: 11px; white-space: nowrap;
+}
 
 @media (max-width: 760px) {
   .stage { flex-direction: column; }
