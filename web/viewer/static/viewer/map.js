@@ -1095,8 +1095,8 @@
     });
   }
   function copyCoords(button) {
-    copyText(button.dataset.copy).then(function () { return "copy.done"; }, function () { return "copy.fail"; }).then(function (key) {
-      button.dataset.flash = tr(key);
+    copyText(button.dataset.copy).then(function () { return tr("copy.done"); }, function () { return tr("copy.fail"); }).then(function (said) {
+      button.dataset.flash = said;
       button.classList.add("flash");
       clearTimeout(button._flash);
       button._flash = setTimeout(function () { button.classList.remove("flash"); }, 900);

@@ -64,3 +64,4 @@
 | wetherilli 004 | 2026-09-30 | [분류군·국가 찾기를 지도 아래 막대로](20260930_wetherilli_004_find_bar.md) |
 | wetherilli 005 | 2026-09-30 | [대기 화면과 읽기 실패 안내](20260930_wetherilli_005_splash_load_failure.md) |
 | wetherilli 006 | 2026-09-30 | [팝업 색을 토큰으로, 고좌표는 눌러서 복사](20260930_wetherilli_006_popup_tokens_copy.md) |
+| wetherilli 007 | 2026-09-30 | [번역이 빠진 문구를 잡는 시험](20260930_wetherilli_007_i18n_missing_key_test.md) |
