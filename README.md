@@ -41,9 +41,10 @@ docs/         정하기 전의 검토(예: DB 전환)
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt        # Windows: .venv\Scripts\pip …
 
-# 1) 원본 받기(약 440 MB, 풀면 3.2 GB)와 가공(약 10 분, 배경 굽기 포함) — 처음 한 번
+# 1) 원본 받기(약 440 MB, 풀면 3.2 GB)와 가공(약 15 분, 배경·지형 굽기 포함) — 처음 한 번
 .venv/bin/python -m pipeline all
-#    PBDB 만 새로 받아 다시 가공: fetch --refresh-pbdb 다음 build --no-relief(30 초 남짓)
+#    PBDB 만 새로 받아 다시 가공: fetch --refresh-pbdb 다음 build --no-relief(30 초 남짓, 배경·지형은 지난 것)
+#    지구본 지형만 굽어 지금 목록에 붙이기: python -m pipeline terrain(5 분 남짓)
 
 # 2) 뷰어
 WEGENER_DEBUG=1 .venv/bin/python web/manage.py runserver    # PowerShell: $env:WEGENER_DEBUG = "1"

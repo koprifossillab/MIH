@@ -10,7 +10,7 @@
 import json
 from datetime import datetime, timezone
 
-from . import climate, coastlines, countries, fossils, relief
+from . import climate, coastlines, countries, fossils, relief, terrain
 from .common import DERIVED, WINDOW_MA, manifest, period
 from .environments import classify, tree_for_index
 from .intervals import VAGUE_TYPES, load_types, vague_names
@@ -47,10 +47,21 @@ def previous_reliefs():
     return out
 
 
+def previous_terrains():
+    """지난 목록의 지형 칸(wetherilli 016) — --no-relief 에서 지형도 그대로 둔다. 파일이 없는 시점은 뺀다
+    (옛 목록이면 지형 없이 나가고, `python -m pipeline terrain` 으로 붙인다)."""
+    index = json.loads((DERIVED / "index.json").read_text(encoding="utf-8"))
+    return {f["age"]: f["terrain"] for f in index["frames"]
+            if f.get("terrain") and (DERIVED / f["terrain"]["file"]).is_file()}
+
+
 def build(skip_relief=False):
     DERIVED.mkdir(parents=True, exist_ok=True)
     print("배경(PaleoDEM)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
     reliefs = previous_reliefs() if skip_relief else relief.build()
+    # 지형(지구본의 높이, wetherilli 016)은 배경과 같은 격자에서 굽는다(5 분 남짓). --no-relief 면 지난 것을 둔다
+    print("지형(PaleoDEM → 지구본 높이)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
+    terrains = previous_terrains() if skip_relief else terrain.build()
     print("해안선(PaleoCoastlines)")
     coasts = coastlines.build()
     print("화석(PBDB)")
@@ -77,6 +88,7 @@ def build(skip_relief=False):
             "relief_files": entry["files"],
             "grid": entry["grid"],
             "land_fraction": entry["land_fraction"],
+            "terrain": terrains.get(age),
             "coastline": {"age": coast["age"], "file": coast["file"]} if coast else None,
             "borders": borders.get(age),
             "climate": temps.get(age),

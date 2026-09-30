@@ -78,3 +78,5 @@
 | wetherilli 015 | 2026-09-30 | [지구본 1 단계: 지금 가공물을 둥근 지구에](20260930_wetherilli_015_globe_first_stage.md) |
 | tupandactyl 003 | 2026-09-30 | [패널을 오른쪽 하나로, "점" 을 "포인트" 로, 분류군 설명도 "읽는 법" 으로](20260930_tupandactyl_003_right_panel.md) |
 | tupandactyl 004 | 2026-09-30 | [확대·축소 단추를 도구 묶음에 다시 둔다](20260930_tupandactyl_004_zoom_buttons.md) |
+| wetherilli 016 | 2026-09-30 | [지구본 지형 격자를 굽는다 (파이프라인)](20260930_wetherilli_016_terrain_grids.md) |
+| wetherilli 017 | 2026-09-30 | [지구본에 지형을 세운다 (뷰어)](20260930_wetherilli_017_globe_terrain.md) |

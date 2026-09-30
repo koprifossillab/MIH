@@ -18,17 +18,20 @@
       가공물은 paleoserver 에 새것(09-30)이 있어 필요 없고, 남은 뜻은 다시 받을 수 없는 그날의 PBDB 사본 하나다.
       운영 `/srv/WegenersDream/state`(명칭 덮어쓰기·비밀키)의 백업도 함께 정한다
 
-## 지구본 2 단계 — 지형 ([wetherilli P01](devlog/20260930_wetherilli_P01_globe_3d.md) §4)
+## 지구본 지형 — 운영 가공물에 붙이기 ([wetherilli 016](devlog/20260930_wetherilli_016_terrain_grids.md))
 
-0.19.0 의 지구본은 매끈한 구다. 다음은 PaleoDEM 높이를 세우는 것이고, **가공은 paleoadmin(koprifossillab) 계정의 몫이
-낀다** — 원본 `data/sources/paleodem`(6 분 격자)과 pygplates `.venv` 가 그 계정의 저장소 폴더에만 있다.
+0.21.0 뷰어는 가공물에 `terrain` 칸이 있어야 지형을 세운다(없으면 0.19.0 처럼 매끈한 구). **가공은 paleoadmin(koprifossillab)
+계정의 몫이다** — PaleoDEM 원본과 `.venv` 가 그 계정의 저장소 폴더에 있다.
 
-- [ ] (wetherilli) 파이프라인에 높이 격자 굽기를 더한다 — 시점마다 낮은 해상도 격자(예: 1/4° int16 PNG)와 음영 없는 색
-      그림. 뷰어는 Cesium `CustomHeightmapTerrainProvider` 로 읽고 고도 과장 밀대를 단다. 새 가공물이라 `index.json` 에 칸이 는다
-- [ ] **(paleoadmin) 그 PR 이 병합되면 가공을 다시 돌린다** — `python -m pipeline build`(배경 포함) 후 운영
-      `/srv/WegenersDream/data` 로 바꿔 끼운다(순서는 README "운영"). 옛 가공물이면 뷰어는 지형 없이 지금처럼 뜨게 짠다
-- [ ] (누구든) 실제 GPU 가 있는 PC 에서 지구본을 끌어 돌려 보고 무게·처음 높이·점 크기를 알려 준다 — 0.19.0 은 헤드리스
-      (소프트웨어 WebGL)로만 확인했다
+- [ ] **(paleoadmin) 0.21.0 을 병합·배포한 뒤** 지형만 굽어 붙이고 운영에 옮긴다(배경·화석은 다시 만들지 않는다, 5 분 남짓):
+      ```
+      cd ~/projects/WegenersDream && git pull
+      .venv/bin/python -m pipeline terrain                 # data/derived/terrain/*.webp(27 MB) + index.json 의 terrain 칸
+      rsync -a --exclude index.json data/derived/ /srv/WegenersDream/data/
+      rsync -a data/derived/index.json /srv/WegenersDream/data/index.json
+      ```
+- [ ] (누구든) 실제 GPU 가 있는 PC 에서 지구본을 끌어 돌려·기울여 보고 무게·처음 높이·점 크기·높이 과장(처음 ×15)을 알려
+      준다 — 헤드리스(소프트웨어 WebGL)로만 확인했다
 
 ## 저장소
 

@@ -11,6 +11,7 @@
 
   var MIN_ALT = 2.5e5, MAX_ALT = 4e7;
   var LINE_HEIGHT = 3000;               // 선을 땅에서 조금 띄운다 — 2° 마디의 현이 지구 속으로 꺼지지 않게(1 km 남짓)
+  var LINE_TERRAIN_PAD = 400;           // m × 과장 — 멀리서 Cesium 이 지형을 성기게 그려 마디 사이 높이가 격자와 어긋나는 만큼
   var EYE_OFFSET = -60000;              // 점을 카메라 쪽으로 당겨 지구 겉면에 파묻히지 않게. 뒤편 반구의 점은 여전히 가린다
 
   function loadCesium(base) {
@@ -85,7 +86,8 @@
    * opts: { box: 지도 칸(#map), map: Leaflet 지도, base: Cesium 이 놓인 주소, L,
    *         layers: { fossils, taxa, lines: [층…] },
    *         reliefUrl(f), climate(f) → Promise<캔버스|null>, climateOpacity() → 0~1, frame(),
-   *         onView(자리) — 카메라가 멈출 때(주소를 고친다), onLoading(bool), avoid() → 팝업이 덮지 않을 요소들 }
+   *         onView(자리) — 카메라가 멈출 때(주소를 고친다), onLoading(bool), avoid() → 팝업이 덮지 않을 요소들,
+   *         terrain(f) → { url, step, offset, unit } | null — 지형을 세울 때(끄거나 없으면 null), exaggeration() → 배 }
    */
   window.WegenerGlobe = function (opts) {
     var L = opts.L, box = opts.box;
@@ -101,6 +103,7 @@
     var points = null, lines = null;
     var dirty = {}, frameReq = 0, ready = null, active = false;
     var pop = null, tip = null, hoverReq = 0, hoverPos = null, pending = null;
+    var relief3d = null, terrainFor = null, exag = 1;          // 지금 세운 지형 격자(없으면 null)와 과장 배수
 
     function open() {
       active = true;
@@ -186,7 +189,7 @@
 
     // ── 층을 비추기 ────────────────────────────────────────────────────
     function mark(what) {
-      if (what === "all") { dirty.relief = dirty.climate = dirty.points = dirty.lines = true; }
+      if (what === "all") { dirty.relief = dirty.climate = dirty.points = dirty.lines = dirty.terrain = true; }
       else dirty[what] = true;
       if (!active || !scene || frameReq) return;
       frameReq = requestAnimationFrame(flush);
@@ -198,10 +201,98 @@
       var f = opts.frame();
       if (dirty.relief && f) syncRelief(f);
       if (dirty.climate && f) syncClimate(f);
+      // 지형은 격자를 받은 뒤에 점·선을 그 높이로 다시 앉힌다 — 받는 동안은 옛 높이로 둔다
+      if ((dirty.terrain || dirty.relief) && f) syncTerrain(f);
       if (dirty.points) syncPoints();
       if (dirty.lines) syncLines();
       dirty = {};
       scene.requestRender();
+    }
+
+    // ── 지형(wetherilli 017) ─────────────────────────────────────────────
+    // 격자(terrain.py 가 구운 1/4° 마디, R·G 두 칸에 (해발 + offset) / unit)를 캔버스로 읽어 Float32 해발(m)로 편다.
+    // 받은 격자는 몇 장 들고 있는다 — 밀대를 오가면 다시 받지 않게.
+    var gridCache = {}, gridOrder = [];
+    function loadHeights(info) {
+      if (!gridCache[info.url]) {
+        gridCache[info.url] = new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.onload = function () {
+            var c = document.createElement("canvas");
+            c.width = img.width; c.height = img.height;
+            var ctx = c.getContext("2d", { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0);
+            var px = ctx.getImageData(0, 0, c.width, c.height).data, v = new Float32Array(c.width * c.height);
+            for (var k = 0; k < v.length; k++) v[k] = (px[k * 4] * 256 + px[k * 4 + 1]) * info.unit - info.offset;
+            resolve({ w: c.width, h: c.height, step: info.step, v: v });
+          };
+          img.onerror = reject;
+          img.src = info.url;
+        });
+        gridOrder.push(info.url);
+        if (gridOrder.length > 4) delete gridCache[gridOrder.shift()];
+      }
+      return gridCache[info.url];
+    }
+
+    // 격자의 해발(m) — 마디 사이는 둘레 넷으로 선형 보간. 경도는 −180~180 을 한 바퀴로 잇는다
+    function heightAt(g, lat, lng) {
+      var y = (90 - lat) / g.step, x = (((lng + 180) % 360) + 360) % 360 / g.step;
+      y = Math.max(0, Math.min(g.h - 1.001, y));
+      x = Math.max(0, Math.min(g.w - 1.001, x));
+      var r = Math.floor(y), c = Math.floor(x), fy = y - r, fx = x - c, w = g.w, v = g.v;
+      var a = v[r * w + c], b = v[r * w + c + 1], d = v[(r + 1) * w + c], e = v[(r + 1) * w + c + 1];
+      return (a * (1 - fx) + b * fx) * (1 - fy) + (d * (1 - fx) + e * fx) * fy;
+    }
+    // 점·선을 앉힐 높이(m) — Cesium 이 지형에 건 과장과 같은 배수를 곱한다
+    function liftAt(lat, lng) { return relief3d ? heightAt(relief3d, lat, lng) * exag : 0; }
+
+    var TILE = 33;                                      // 타일 한 변의 마디 수(끝을 이웃과 나눈다)
+    function terrainProvider(g) {
+      var scheme = new C.GeographicTilingScheme();
+      return new C.CustomHeightmapTerrainProvider({
+        width: TILE, height: TILE, tilingScheme: scheme,
+        callback: function (x, y, level) {
+          var r = scheme.tileXYToRectangle(x, y, level), out = new Float32Array(TILE * TILE);
+          var west = C.Math.toDegrees(r.west), east = C.Math.toDegrees(r.east);
+          var north = C.Math.toDegrees(r.north), south = C.Math.toDegrees(r.south);
+          for (var j = 0; j < TILE; j++) {
+            var lat = north - (north - south) * j / (TILE - 1);
+            for (var i = 0; i < TILE; i++) out[j * TILE + i] = heightAt(g, lat, west + (east - west) * i / (TILE - 1));
+          }
+          return out;
+        },
+        credit: "PaleoDEM (Scotese & Wright 2018)",
+      });
+    }
+
+    function syncTerrain(f) {
+      var info = opts.terrain ? opts.terrain(f) : null, want = info ? info.url : null;
+      var e = info ? Math.max(1, opts.exaggeration()) : 1;
+      if (want === terrainFor && e === exag) return;
+      if (!info) {
+        terrainFor = null; relief3d = null; exag = 1;
+        scene.terrainProvider = new C.EllipsoidTerrainProvider();
+        scene.verticalExaggeration = 1;
+        dirty.points = dirty.lines = true;
+        return;
+      }
+      if (want === terrainFor) {                         // 과장만 바뀌었다 — 격자는 그대로
+        exag = e;
+        scene.verticalExaggeration = e;
+        dirty.points = dirty.lines = true;
+        return;
+      }
+      terrainFor = want;
+      loadHeights(info).then(function (g) {
+        if (terrainFor !== want) return;
+        relief3d = g;
+        exag = Math.max(1, opts.exaggeration());
+        scene.terrainProvider = terrainProvider(g);
+        scene.verticalExaggeration = exag;
+        mark("points");
+        mark("lines");
+      }).catch(function () { if (terrainFor === want) terrainFor = null; });
     }
 
     // 배경은 새 그림이 다 온 뒤에 옛 것을 지운다 — 먼저 지우면 받는 동안 파란 바탕이 비친다(021 과 같은 뜻)
@@ -245,7 +336,7 @@
           if (!m.getLatLng || !m.options || m.options.fillColor == null) return;
           var ll = m.getLatLng(), img = markImage(m.options, m instanceof L.TriangleMarker);
           points.add({
-            position: C.Cartesian3.fromDegrees(ll.lng, ll.lat, 0),
+            position: C.Cartesian3.fromDegrees(ll.lng, ll.lat, liftAt(ll.lat, ll.lng)),
             image: img.url, width: img.size, height: img.size,
             eyeOffset: eye, id: m,
           });
@@ -264,8 +355,18 @@
           var material = C.Material.fromType("Color", { color: color });
           lineParts(layer, L).forEach(function (part) {
             if (part.length < 2) return;
-            var flat = [];
-            part.forEach(function (p) { flat.push(p.lng, p.lat, LINE_HEIGHT); });
+            var flat = [], lift = LINE_HEIGHT + (relief3d ? LINE_TERRAIN_PAD * exag : 0);
+            part.forEach(function (p, k) {
+              // 지형을 세웠으면 긴 마디(경위선의 2° 등)를 0.5° 로 쪼개 마디마다 그 높이에 앉힌다 — 산을 뚫고 지나가지 않게
+              if (relief3d && k) {
+                var q = part[k - 1], n = Math.ceil(Math.max(Math.abs(p.lat - q.lat), Math.abs(p.lng - q.lng)) / 0.5);
+                for (var t = 1; t < n; t++) {
+                  var la = q.lat + (p.lat - q.lat) * t / n, lo = q.lng + (p.lng - q.lng) * t / n;
+                  flat.push(lo, la, liftAt(la, lo) + lift);
+                }
+              }
+              flat.push(p.lng, p.lat, liftAt(p.lat, p.lng) + lift);
+            });
             lines.add({
               positions: C.Cartesian3.fromDegreesArrayHeights(flat),
               width: Math.max(1, o.weight || 1), material: material,
@@ -288,7 +389,7 @@
       wrap.querySelector(".leaflet-popup-content").appendChild(el);
       wrap.querySelector(".leaflet-popup-close-button").addEventListener("click", function (e) { e.preventDefault(); closePopup(); });
       host.appendChild(wrap);
-      pop = { el: wrap, at: C.Cartesian3.fromDegrees(latlng.lng, latlng.lat, 0) };
+      pop = { el: wrap, at: C.Cartesian3.fromDegrees(latlng.lng, latlng.lat, liftAt(latlng.lat, latlng.lng)) };
       placePopup();
       return { update: placePopup, close: closePopup };
     }
