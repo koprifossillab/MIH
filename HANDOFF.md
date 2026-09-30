@@ -10,8 +10,8 @@
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
 **브랜치** `main` = `0.15.3` (09-30, PR #1~#11) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
-다음 코드 작업은 그날의 새 브랜치(`work/<YYYYMMDD>-<계정>`)를 `main` 에서 만든다 — 여러 날 걸칠 기능 하나는
-`feature/<이름>`(연구자, 024). 0.9.0 부터 모호한 연대 산지를 세모로(016),
+다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
+(CLAUDE.md "커밋과 PR"). 0.9.0 부터 모호한 연대 산지를 세모로(016),
 화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
 `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
 화석 파일에 `precise`·`rotated` 칸이 있어야 한다. 0.12.0 의 몰바이데(024)는 배경을 다시 구워야 한다 —

@@ -90,11 +90,16 @@ sources/*.json ──fetch──▶ data/sources/ ──build──▶ data/deri
 찾은 이름의 계급(`taxa/single`). 서버는 PBDB 를 부르지 않는다. 사내망에서 PBDB 가 막히는 일이
 생기면 그때 GSM 처럼 서버에 문(`viewer/pbdb.py`) 하나를 두고 중계한다.
 
-## 커밋 — DiaRUGA 의 규약을 따른다
+## 커밋과 PR
 
-**코드 작업은 하루치 브랜치에서 한다** — `work/<YYYYMMDD>-<계정>`. **코드에 손대기 직전에**
-만들고(`git switch -c work/20260929-koprifossillab`), 그 뒤로 **커밋·push·확인을 전부 그
-브랜치에서** 한다. **`main` 병합은 사람이 정한다.**
+**각자 자기 Linux 계정에서, 자기 GitHub 계정으로 작업한다**(대응표는 "devlog" 절). 저장소에 git 이름을 따로 두지 않는다.
+
+**코드 작업은 기능마다 `feature/<기능 이름>` 브랜치에서 한다** — 기능 이름은 영어 kebab-case
+(`feature/mollweide-drag`). **코드에 손대기 직전에** `main` 에서 만들고(`git switch -c feature/<이름> main`),
+**커밋·push·확인을 전부 그 브랜치에서** 한다. **작업이 끝나면 PR 을 만든다**(`gh pr create --base main`) — CI 를
+통과해야 하고, **`main` 병합은 사람이 정한다.** 판을 올리는 것은 그 PR 안에서 한다(CHANGELOG·`version.py`).
+병합하고 판이 올랐으면 CHANGELOG 의 그 절로 GitHub 릴리스(`v<판>`)를 만든다 — 태그마다 CI 가 Docker Hub 에 이미지를
+올린다(koprifossillab 031). 2026-09-30 전에는 하루치 브랜치(`work/<YYYYMMDD>-<계정>`)였다.
 
 **문서·기록만 고치는 커밋은 `main` 에 바로 올린다**(HANDOFF·TODOs·CLAUDE.md 같은 것).
 브랜치는 부딪힐 수 있는 것을 격리하려고 있는 것이다. 애매하면 묻는다.
