@@ -47,13 +47,21 @@ def previous_reliefs():
     return out
 
 
+def previous_terrains():
+    """지난 목록의 지형 칸(wetherilli 016) — --no-relief 에서 지형도 그대로 둔다. 파일이 없는 시점은 뺀다
+    (옛 목록이면 지형 없이 나가고, `python -m pipeline terrain` 으로 붙인다)."""
+    index = json.loads((DERIVED / "index.json").read_text(encoding="utf-8"))
+    return {f["age"]: f["terrain"] for f in index["frames"]
+            if f.get("terrain") and (DERIVED / f["terrain"]["file"]).is_file()}
+
+
 def build(skip_relief=False):
     DERIVED.mkdir(parents=True, exist_ok=True)
     print("배경(PaleoDEM)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
     reliefs = previous_reliefs() if skip_relief else relief.build()
-    # 지형(지구본의 높이, wetherilli 016)은 배경과 같은 격자에서 굽고 5 분 남짓이라 --no-relief 에서도 다시 굽는다
-    print("지형(PaleoDEM → 지구본 높이)")
-    terrains = terrain.build()
+    # 지형(지구본의 높이, wetherilli 016)은 배경과 같은 격자에서 굽는다(5 분 남짓). --no-relief 면 지난 것을 둔다
+    print("지형(PaleoDEM → 지구본 높이)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
+    terrains = previous_terrains() if skip_relief else terrain.build()
     print("해안선(PaleoCoastlines)")
     coasts = coastlines.build()
     print("화석(PBDB)")

@@ -7,7 +7,8 @@
 `pipeline/terrain.py` — 배경 그림과 같은 PaleoDEM 격자(6 분, 없으면 1°)를 시점마다 **1/4° 마디 격자(1441 × 721)**로
 줄여 `terrain/<나이>.webp` 에 담고, `index.json` 의 시점마다 `terrain` 칸(파일·간격·OFFSET·UNIT·최저·최고)을 단다.
 
-- `python -m pipeline build` 가 배경 다음에 굽는다(`--no-relief` 에서도 — 5 분 남짓이라)
+- `python -m pipeline build` 가 배경 다음에 굽는다. `--no-relief` 면 배경처럼 지난 지형 칸을 그대로 둔다(PBDB 만 다시 가공하는
+  길이 30 초 남짓으로 남게)
 - **`python -m pipeline terrain`** 은 지형만 굽고 **지금 index.json 에 붙인다**. 배경·화석·국경을 다시 만들지 않고 운영
   가공물에 지형을 더하는 길이다(paleoadmin 이 돌릴 것, TODOs). index.json 은 임시 파일에 쓰고 바꿔 끼운다
 
