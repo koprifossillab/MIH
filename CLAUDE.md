@@ -78,7 +78,7 @@ sources/*.json ──fetch──▶ data/sources/ ──build──▶ data/deri
  (주소·SHA-256)            (원본, 커밋 안 함)       (가공물, 커밋 안 함)
 ```
 
-- Zenodo 두 압축본은 매니페스트의 SHA-256 과 맞아야만 쓴다
+- Zenodo 압축본(PaleoDEM·PaleoCoastlines·기온)은 매니페스트의 SHA-256 과 맞아야만 쓴다
 - PBDB 는 계속 자라서 고정하지 않고, 받은 날의 값을 `data/sources/pbdb/receipt.json` 에 남긴다
 - 뷰어는 파이프라인을 import 하지 않는다. 웹 이미지에 numpy 등이 들어가지 않게 하려는 것이다
 - 뷰어가 내주는 것은 `.json`·`.webp`·`.png` 뿐이다(`views.SERVED`)

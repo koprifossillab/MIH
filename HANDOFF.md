@@ -11,28 +11,33 @@
 **브랜치** `main` = `0.15.3` (09-30, PR #1~#11) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
-(CLAUDE.md "커밋과 PR"). 0.9.0 부터 모호한 연대 산지를 세모로(016),
-화석 좌표를 시점마다 v19o 로 계산(017), 0.10.0 부터 연대 범위 막대(018). **옛 가공물이면 다시 만든다** —
-`python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 새로 필요하다) 다음 `build --no-relief`.
-화석 파일에 `precise`·`rotated` 칸이 있어야 한다. 0.12.0 의 몰바이데(024)는 배경을 다시 구워야 한다 —
-`build`(배경 포함, 7 분 남짓). `relief_files` 에 `moll-*` 가 없으면 투영 고르기가 숨는다.
-**배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.15.3`, 컨테이너
-`wegenersdream-web-1`, `127.0.0.1:8095`, nginx `snippets/WegenersDream-subpath.conf`, 첫 화면 카드). 이미지는 그 서버에서
-구웠다. 09-30 부터 릴리스 태그(`v*`)마다 CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.15.3 부터 —
-저장소 비밀값 `DOCKERHUB_USERNAME`·`DOCKERHUB_TOKEN`, 변수 `DOCKERHUB_PUSH=true`). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
-`python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 에
-`WEGENER_EDITOR_KEY` 를 넣어 명칭 고치기가 열쇠로 열린다(비밀키는 비워 두어 `state/secret_key` 를 쓴다).
+(CLAUDE.md "커밋과 PR").
 
-**git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(작업 장비) — 이날의 PBDB 사본·`data/state`(16 MB)와
-가공물 전체(69 MB), 되살리는 법은 그 안의 README. PBDB 사본은 다시 받을 수 없어 둔 것이다. 같은 디스크라
-장비를 잃으면 함께 잃는다 — NAS 나 paleoserver 로 옮기는 일은 TODOs. 09-30 작업(이름 바꾸기)은 자료를 건드리지
-않아 이 백업이 아직 최신이다. 백업 파일 이름의 `mih_` 는 옛 이름 그대로다.
+**옛 가공물이면 다시 만든다** — 화석 파일에 `precise`·`rotated` 칸(016·017)이, `index.json` 의 `relief_files` 에
+몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
+`build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
+
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.15.3`. 컨테이너 `wegenersdream-web-1`
+(`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
+`/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
+운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 있어 명칭 고치기가 열쇠로 열린다(비밀키는 비워 두어 `state/secret_key` 를 쓴다).
+배포 순서(이미지 → 가공물은 `index.json` 을 맨 나중에 → `up -d` → `smoke.sh`)는 README "운영". 릴리스 태그(`v*`)마다
+CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.15.3 부터, koprifossillab 031) — 지금까지의 운영
+이미지는 서버에서 구웠다.
+
+**가공**: paleoserver `paleoadmin` 의 `~/projects/WegenersDream/.venv`(pygplates 포함)로 한다. 원본 `data/sources/`(3.2 GB)와
+가공물 `data/derived/`(189 MB)가 그 저장소 폴더에 있다.
+
+**git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(Windows 작업 장비) — 09-29 PBDB 사본·`data/state`·가공물. 서버에
+09-30(UTC 09-29 20:37) PBDB 로 다시 가공한 것이 있어 가공물로는 옛것이다. 남은 뜻은 09-29 PBDB 사본(다시 받을 수
+없다) 하나다(TODOs).
 
 ## 1. 한 줄 요약
 
 PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채집지를 시점(0~540 Ma, 109 장)마다
 올리는 2D 뷰어. 층서표(한글판 2023/04 이름·ICS 2024/12 경계)로 시점을 고르고, 퇴적기원·국가·분류군으로
-거르고, 지표 기온(Scotese 2021)과 지금 국경을 그때 자리로 돌린 선을 겹친다.
+거르고, 지표 기온(Scotese 2021)과 지금 국경을 그때 자리로 돌린 선을 겹친다. 투영은 정거원통·몰바이데(돌려 보기),
+화면은 한국어·영어.
 
 ## 2. 지금 돌아가는 것
 
@@ -40,7 +45,11 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 
 - 화면 하나(`/`), 가공물 내주기(`/data/…` — `.json`·`.webp`·`.png` 만), 상태(`/healthz`),
   명칭 덮어쓰기(`/labels` GET·POST, 003·0.3.0)
-- 지도는 Leaflet 1.9.4(저장소에 담음), EPSG:4326. 배경은 2048·4096 두 벌을 확대 정도로 고른다(002)
+- 지도는 Leaflet 1.9.4(저장소에 담음). 투영은 정거원통(EPSG:4326)·몰바이데(직접 짠 좌표계, 024) — 몰바이데는
+  끌어서 가운데 경선을 돌린다(025, 지구 밖을 끌면 옮기기 029). 배경은 2048·4096 두 벌을 확대 정도로 고른다(002)
+- 한국어·영어(027) — 문구는 `viewer/static/viewer/i18n.js`, 자료의 이름은 index.json 의 `en`. 패널은 절마다 접히고
+  좁은 창에서는 통째로 접힌다(026)
+- 주소 `#age=…&proj=moll&lon=…&lang=en` 이 시점·투영·가운데 경선·언어를 담는다. 옮기기·확대는 담지 않는다(030)
 - 브라우저가 PBDB 를 곧장 부른다(CORS). 무엇을 부르는지는 CLAUDE.md "PBDB 에 바로 묻는 것"
 - 개발: `WEGENER_DEBUG=1` 로 `web/manage.py runserver`. 명칭 고치기는 개발에서 열쇠 없이 열린다
 
@@ -48,17 +57,17 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 
 | 단계 | 자료 | 가공물 (`data/derived/`) |
 |---|---|---|
-| 배경 | PaleoDEM 6 분 격자(Zenodo 5460860) | `relief/{2048,4096}/*.webp` — 6 분쯤 걸린다 |
+| 배경 | PaleoDEM 6 분 격자(Zenodo 5460860) | `relief/{2048,4096}/*.webp` 와 몰바이데 `relief/moll-{2048,4096}/` — 7 분 남짓 |
 | 해안선 | PaleoCoastlines v7.1(Zenodo 4297693) | `coastlines/*.json` |
 | 화석 | PBDB 채집지 전체(`pgm=scotese`, `show=loc,…`) | `fossils/*.json` (국가 코드 포함) |
 | 국경 | Natural Earth 50m + PaleoCoastlines 안의 PALEOMAP 모델, pygplates | `countries/*.json` (41 MB) |
 | 고기후 | Scotese 2021 지표 기온(Zenodo 8238875) | `climate/*.png` (회색조, 0.7 MB) |
 | 목록 | 층서표·환경 나무·국가 목록·출처 | `index.json` |
 
-`build --no-relief` 는 배경을 다시 그리지 않는다(18 초). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
+`build --no-relief` 는 배경을 다시 그리지 않는다(30 초 남짓). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
 Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값을 `receipt.json` 에 남긴다.
 
-**지금 로컬 가공물은 2026-09-29 PBDB(채집지 278,398)로 만든 것이다.**
+**지금 가공물(paleoserver·운영)은 2026-09-29 20:37 UTC 에 받은 PBDB(채집지 278,398)로 만든 것이다.**
 
 ### 시험
 
@@ -85,9 +94,9 @@ CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이
 `runserver --noreload` 로 띄우면 템플릿을 고쳐도 안 바뀐다. 자동 재시작으로 띄운다. 정적 파일 주소에는
 `?v=<판>` 이 붙어, 판을 올리지 않으면 브라우저가 옛 map.js 를 쓸 수 있다.
 
-### 3.4 Windows 에서의 git
+### 3.4 Windows 작업 장비에서의 git
 
-작업 장비가 Windows 다. `.gitattributes` 가 셸·Dockerfile 을 LF 로 두고, 로컬은 `core.eol=lf` 다.
+Windows 에서 작업할 때(첫 판을 만든 장비). `.gitattributes` 가 셸·Dockerfile 을 LF 로 두고, 로컬은 `core.eol=lf` 다.
 셸 스크립트는 실행 비트(`git update-index --chmod=+x`)를 붙여 커밋했다. PowerShell 에서 파일을
 `Get-Content`/`Set-Content` 로 고치면 한글이 깨진다(한 번 깨뜨렸다) — 편집기로 고친다.
 
@@ -95,6 +104,13 @@ CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이
 
 저장소에 `user.name`·`user.email` 을 따로 두지 않는다 — 각 Linux 계정이 자기 GitHub 계정으로 커밋·push 한다.
 대응표(devlog 글쓴이도 이것)는 CLAUDE.md "devlog". jschoi(Tupandactyl)는 아직 저장소 협업자가 아니다.
+
+### 3.6 paleoserver 에서 화면을 시험할 때
+
+playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPRI 루트)를 믿지 않아 PBDB 호출(분류군 찾기·산출 목록)이
+실패한다. `--ignore-certificate-errors-spki-list=<KOPRI 루트 공개키 해시>` 로 띄운다 — 해시는
+`openssl x509 -in /usr/local/share/ca-certificates/kopri_ssl_root.crt -pubkey -noout | openssl pkey -pubin -outform der
+| openssl dgst -sha256 -binary | base64`. 서버의 gh·git·pip 는 운영체제 인증서 저장소를 써서 문제없다.
 
 ## 4. 어디까지 왔나
 
