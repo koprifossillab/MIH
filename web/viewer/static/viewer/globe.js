@@ -85,7 +85,7 @@
    * opts: { box: 지도 칸(#map), map: Leaflet 지도, base: Cesium 이 놓인 주소, L,
    *         layers: { fossils, taxa, lines: [층…] },
    *         reliefUrl(f), climate(f) → Promise<캔버스|null>, climateOpacity() → 0~1, frame(),
-   *         onView(자리) — 카메라가 멈출 때(주소를 고친다), onLoading(bool) }
+   *         onView(자리) — 카메라가 멈출 때(주소를 고친다), onLoading(bool), avoid() → 팝업이 덮지 않을 요소들 }
    */
   window.WegenerGlobe = function (opts) {
     var L = opts.L, box = opts.box;
@@ -313,7 +313,12 @@
       var body = pop.el.querySelector(".leaflet-popup-content-wrapper");
       body.style.maxHeight = "";
       var w = pop.el.offsetWidth, h = pop.el.offsetHeight;
-      var above = p.y - 8 - 72, under = host.clientHeight - p.y - 14;
+      var floor = host.clientHeight, hr = host.getBoundingClientRect();
+      (opts.avoid ? opts.avoid() : []).forEach(function (el) {    // 지도 위에 떠 있는 것(찾기 카드) 밑으로는 펴지 않는다
+        var r = el && el.getBoundingClientRect();
+        if (r && r.width && r.top - hr.top > p.y && r.left - hr.left < p.x + w / 2 && r.right - hr.left > p.x - w / 2) floor = Math.min(floor, r.top - hr.top);
+      });
+      var above = p.y - 8 - 72, under = floor - p.y - 14;
       var below = h > above && under > above;
       body.style.maxHeight = Math.max(80, (below ? under : above) - 24) + "px";
       h = pop.el.offsetHeight;

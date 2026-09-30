@@ -414,6 +414,7 @@
     reliefUrl: function (f) { var files = f.relief_files || {}; return dataUrl(files["4096"] || files["2048"] || f.relief); },
     climate: globeClimate, climateOpacity: function () { return climateLayer.options.opacity; },
     onView: function () { if (state.proj === "globe" && frame()) writeHash(frame()); },
+    avoid: function () { return [$("findfloat")]; },
     onLoading: function (on, err) {
       $("map").classList.toggle("globe-loading", on);
       $("map").dataset.loading = tr("globe.loading");
