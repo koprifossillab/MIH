@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.20.1` (09-30, PR #1~#18) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `0.21.0` (09-30, PR #1~#19) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
 (CLAUDE.md "커밋과 PR"). **병합 직전에 `deploy/host/premerge.sh <PR>`**(충돌·뒤처짐·판·CI, wetherilli 010).
@@ -17,7 +17,7 @@
 몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
 `build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
 
-**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.20.1`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.21.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
 운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
@@ -50,7 +50,10 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
   끌어서 가운데 경선을 돌린다(025, 지구 밖을 끌면 옮기기 029). 배경은 2048·4096 두 벌을 확대 정도로 고른다(002)
 - **지구본**(wetherilli P01·015) — CesiumJS 1.145.0(저장소에 담음, 14 MB, 처음 고를 때만 싣는다)·`globe.js`. 자료를 따로
   거르지 않고 **숨은 Leaflet 층(정거원통)을 비춘다** — 거르기·색을 고칠 때는 map.js 만 고치면 지구본도 따라온다. 거리 재기·
-  축척 막대·커서 기온은 지구본에서 쉰다. 지형(높이 격자·고도 과장)은 2 단계(P01 §4, 파이프라인 가공이 낀다)
+  축척 막대·커서 기온은 지구본에서 쉰다
+- **지구본 지형**(wetherilli 016·017, 0.21.0) — 가공물의 `terrain/<나이>.webp`(1/4° 높이 격자)를 브라우저가 풀어 Cesium 지형을
+  세운다. 높이 과장 밀대(처음 ×15). **운영 가공물에는 아직 지형이 없다** — 지형 칸이 숨고 매끈한 구로 뜬다. paleoadmin 이
+  `python -m pipeline terrain` 후 운영으로 옮겨야 보인다(TODOs)
 - 한국어·영어(027) — 문구는 `viewer/static/viewer/i18n.js`, 자료의 이름은 index.json 의 `en`. 패널은 절마다 접히고
   좁은 창에서는 통째로 접힌다(026)
 - 화면 배치(wetherilli 001~014, tupandactyl 002·003): 머리말 밑 한 줄에 창 폭을 채운 시점 막대(기·세 띠에 영어 이름, 좁으면
@@ -69,6 +72,7 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 | 단계 | 자료 | 가공물 (`data/derived/`) |
 |---|---|---|
 | 배경 | PaleoDEM 6 분 격자(Zenodo 5460860) | `relief/{2048,4096}/*.webp` 와 몰바이데 `relief/moll-{2048,4096}/` — 7 분 남짓 |
+| 지형 | 같은 PaleoDEM 격자 | `terrain/*.webp`(1/4°, 무손실, 27 MB) — 5 분 남짓, `pipeline terrain` 으로 따로도 (016) |
 | 해안선 | PaleoCoastlines v7.1(Zenodo 4297693) | `coastlines/*.json` |
 | 화석 | PBDB 채집지 전체(`pgm=scotese`, `show=loc,…`) | `fossils/*.json` (국가 코드 포함) |
 | 국경 | Natural Earth 50m + PaleoCoastlines 안의 PALEOMAP 모델, pygplates | `countries/*.json` (41 MB) |
@@ -151,3 +155,4 @@ playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPR
 | 0.19.0 | 세 번째 투영: 3D 지구본(Cesium, Leaflet 층을 비춘다) | wetherilli P01·015 |
 | 0.20.0 | 패널을 오른쪽 하나로, 층서표 글씨 키움, "포인트", 분류군 설명도 "읽는 법" 으로 | tupandactyl 003 |
 | 0.20.1 | 확대·축소 단추를 도구 묶음에 다시(지구본 포함) | tupandactyl 004 |
+| 0.21.0 | 지구본 지형(1/4° 높이 격자, 높이 과장), `pipeline terrain` | wetherilli 016·017 |
