@@ -3,6 +3,13 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 0.24.0 — 2026-09-30 · `feature/quaternary-precise`
+
+- **제4기 안의 시대 이름은 모호한 연대에서 뺀다** — "Pleistocene"·"Early Pleistocene"·"Holocene"·"Quaternary" 처럼 세·기 등급이어도
+  제4기(2.58 Ma 이후) 안이면 정해진 기록(●)으로 친다. 지도 시점의 창(±2.5 Myr)과 길이가 비슷해 자리가 흐려지지 않는다.
+  신생대의 다른 세(Pliocene·Miocene …)와 그 하위는 그대로 모호하다. 경계는 층서표에서 읽는다 (tupandactyl 008)
+- **가공물을 다시 만들어야 한다** — 화석 파일의 `precise` 칸과 index.json 의 `rules.vague_intervals` 가 바뀐다(`build --no-relief`)
+
 ## 0.23.0 — 2026-09-30 · `feature/vintage-theme`
 
 - **사이트 전체를 빈티지풍으로** — 머리말은 금박 괘선을 두른 **가죽 표지**, 시점 막대·패널·팝업·찾기 카드·설정 창은

@@ -6,7 +6,7 @@ import unittest
 
 from pipeline.common import age_key, belongs, environment_class, parse_dem_name, period
 from pipeline.fossils import assign
-from pipeline.intervals import is_vague
+from pipeline.intervals import QUATERNARY, is_vague, types_from
 
 
 class DemNameTest(unittest.TestCase):
@@ -67,6 +67,24 @@ class VagueTest(unittest.TestCase):
         self.assertFalse(self.vague("Aptian", "Albian"))
         self.assertFalse(self.vague("Lacian"))                 # 아절
         self.assertFalse(self.vague("Ivorian"))                # 지역 절
+
+    def test_quaternary_names_are_not_vague(self):
+        # 제4기 안의 세·기 이름은 정해진 기록(tupandactyl 008). 신생대의 다른 세는 그대로 모호하다
+        records = [{"interval_name": "Early Pleistocene", "type": "subepoch", "b_age": 2.58},
+                   {"interval_name": "Pleistocene", "type": "epoch", "b_age": 2.58},
+                   {"interval_name": "Quaternary", "type": "period", "b_age": 2.58},
+                   {"interval_name": "Holocene", "type": "epoch", "b_age": 0.0117},
+                   {"interval_name": "Holocene", "type": "age", "b_age": 0.0117},
+                   {"interval_name": "Late Pliocene", "type": "subepoch", "b_age": 3.6},
+                   {"interval_name": "Miocene", "type": "epoch", "b_age": 23.04},
+                   {"interval_name": "Neogene", "type": "period", "b_age": 23.04}]
+        types = types_from(records, q_base=2.58)
+        for name in ("Early Pleistocene", "Pleistocene", "Quaternary", "Holocene"):
+            self.assertFalse(is_vague(name, "", types), name)
+        self.assertEqual(types["Pleistocene"], QUATERNARY)
+        for name in ("Late Pliocene", "Miocene", "Neogene"):
+            self.assertTrue(is_vague(name, "", types), name)
+        self.assertTrue(is_vague("Pleistocene", "Late Pliocene", types))   # 둘 가운데 하나라도 모호하면
 
     def test_epochs_periods_eras_are_vague(self):
         self.assertTrue(self.vague("Middle Cambrian"))
