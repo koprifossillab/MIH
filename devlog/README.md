@@ -74,3 +74,5 @@
 | wetherilli 013 | 2026-09-30 | [분류군·국가를 한 칸에서 찾는다](20260930_wetherilli_013_one_find_box.md) |
 | wetherilli 014 | 2026-09-30 | [그림 단추를 도구 묶음으로, 거리 재기·링크·전체 보기](20260930_wetherilli_014_map_tools.md) |
 | tupandactyl 002 | 2026-09-30 | [시점 막대를 맨 위로, 찾기 칸을 떠 있는 카드로, 잔정보는 설정 창으로](20260930_tupandactyl_002_layout_tidy.md) |
+| wetherilli P01 | 2026-09-30 | [세 번째 투영: 3D 지구본 (계획)](20260930_wetherilli_P01_globe_3d.md) |
+| wetherilli 015 | 2026-09-30 | [지구본 1 단계: 지금 가공물을 둥근 지구에](20260930_wetherilli_015_globe_first_stage.md) |
