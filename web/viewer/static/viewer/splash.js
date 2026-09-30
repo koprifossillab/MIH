@@ -35,7 +35,8 @@
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     var a = box.getBoundingClientRect(), m = medal.getBoundingClientRect();
     C = [m.left - a.left + m.width / 2, m.top - a.top + m.height / 2];
-    Rm = m.width / 2 * (472 / 480);            // wegener.svg 의 메달 테두리 반지름(960 틀의 472)
+    // 크기는 변형(떠오를 때의 scale) 전의 것으로. wegener.svg 의 메달 테두리 반지름은 960 틀의 472
+    Rm = medal.offsetWidth / 2 * (472 / 480);
     ring = Meso.emblemRing(C[0], C[1], Rm);
     path = buildPath();
     drawPaper();
@@ -147,8 +148,10 @@
     var settle = smooth((t - T_ENTER - T_SWIM * .72) / (T_SWIM * .28));      // 끝 무렵 물결을 거둔다
     var L = ring.L, P = [];
     for (var i = 0; i <= Meso.N; i++) {
-      var s = i / Meso.N, q = at(head - s * L), nx = -Math.sin(q[2]), ny = Math.cos(q[2]);
-      var wav = L * .03 * (.15 + .85 * s * s) * Math.sin(TAU * (s / .5 - SWAY * t)) * (1 - settle);
+      var s = i / Meso.N, pos = head - s * L, q = at(pos), nx = -Math.sin(q[2]), ny = Math.cos(q[2]);
+      // 원(메달 둘레)에 들어선 마디는 물결을 거둔다 — 안쪽으로 출렁이면 등이 초상에 겹친다(연구자)
+      var free = smooth((path.onRing - pos) / (ring.R * .8) + .15);
+      var wav = L * .03 * (.15 + .85 * s * s) * Math.sin(TAU * (s / .5 - SWAY * t)) * (1 - settle) * free;
       P.push([q[0] + nx * wav, q[1] + ny * wav]);
     }
     return { P: P, settle: settle, beat: Math.sin(TAU * SWAY * t) };
@@ -237,6 +240,7 @@
     svg.innerHTML = html;
     title.appendChild(svg);
     title.classList.add("pen-ready");
+    recheck();
     var total = lens.reduce(function (a, b) { return a + b; }, 0);
     pen = { lines: svg.querySelectorAll("polyline"), lens: lens, total: total, last: -1 };
   }
@@ -279,6 +283,14 @@
     if (!closed && (e.key === "Escape" || e.key === "Enter" || e.key === " ")) skip();
   });
   window.addEventListener("resize", function () { if (!closed) layout(); });
+  // 메달이 움직이면(제목의 펜 글씨가 들어와 줄 높이가 바뀌는 등) 고리를 다시 맞춘다 — 어긋나면 등이 초상에 겹친다
+  var lastC = null;
+  function recheck() {
+    if (closed || !path) return;
+    var a = box.getBoundingClientRect(), m = medal.getBoundingClientRect(), c = [m.left - a.left + m.width / 2, m.top - a.top + m.height / 2];
+    if (!lastC || Math.abs(c[0] - lastC[0]) > .5 || Math.abs(c[1] - lastC[1]) > .5) { lastC = c; layout(); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(recheck).observe(box.querySelector(".splash-stage"));
 
   window.WegenerSplash = {
     // 지도가 준비됐다 — 움직임이 끝났으면 걷는다

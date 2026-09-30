@@ -256,7 +256,7 @@
 
   // 엠블럼 — 초상 메달(반지름 Rm)을 몸으로 두른 자세. 대기 화면의 끝 모습과 머리말·아이콘이 같은 값을 쓴다.
   // 몸은 둘레의 94% 를 차지하고, 머리는 메달 바로 아래 조금 왼쪽에서 오른쪽을 보며 꼬리 끝과 마주한다
-  var EMBLEM = { ring: 1.3, share: .94, head: Math.PI / 2 + .03 * TAU };
+  var EMBLEM = { ring: 1.36, share: .94, head: Math.PI / 2 + .03 * TAU };   // ring: 메달 반지름에 대한 고리 반지름 — 등이 초상에 닿지 않게
   function emblemRing(cx, cy, Rm) {
     var R = Rm * EMBLEM.ring, L = EMBLEM.share * TAU * R;
     return { R: R, L: L, P: ring(cx, cy, R, L, EMBLEM.head) };

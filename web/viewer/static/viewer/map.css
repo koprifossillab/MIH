@@ -333,7 +333,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   letter-spacing: .28em; text-transform: uppercase; color: rgba(59, 42, 26, .78); }
 .splash-stage { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px; }
 /* 메달 — 둘레에 메소사우루스가 두를 자리를 비운다 */
-.splash-medal { --m: clamp(120px, 27vmin, 250px); width: var(--m); height: var(--m); margin: calc(var(--m) * .3) 0 calc(var(--m) * .52);   /* 밑은 곧은 주둥이가 뻗는 자리까지 */
+.splash-medal { --m: clamp(120px, 27vmin, 250px); width: var(--m); height: var(--m); margin: calc(var(--m) * .38) 0 calc(var(--m) * .56);   /* 밑은 곧은 주둥이가 뻗는 자리까지 */
   opacity: 0; transform: scale(.96); transition: opacity 1s ease, transform 1.4s ease; filter: sepia(.25) contrast(1.05); }
 .splash.lit .splash-medal { opacity: 1; transform: none; }
 .splash-medal img { display: block; width: 100%; height: 100%; }
@@ -344,7 +344,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   mask-image: linear-gradient(90deg, #000 calc(var(--ink, -10%) - 6%), transparent calc(var(--ink, -10%) + 3%));
 }
 /* 펜 획(splash.js)이 준비되면 글자 대신 SVG 가 쓴다 — 글자는 읽는 기계를 위해 남기고 숨긴다 */
-.splash-title.pen-ready { -webkit-mask-image: none; mask-image: none; line-height: 0; }
+.splash-title.pen-ready { -webkit-mask-image: none; mask-image: none; }
 .splash-title.pen-ready .splash-title-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .splash-title svg { display: inline-block; max-width: 86vw; height: auto !important; }
 .splash-sub { margin: 4px 0 0; font: 400 15px/1.5 "Nanum Myeongjo", "Batang", "AppleMyungjo", Georgia, serif; letter-spacing: .12em; color: var(--fade);
