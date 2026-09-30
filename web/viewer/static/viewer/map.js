@@ -2262,7 +2262,7 @@
 
   // 밑 띠 — 밝은 바탕에 짙은 글씨로 고정한다(어두운 모드에서 받아도 인쇄·슬라이드에 그대로 쓰게)
   function drawExportStrip(ctx, f, W, H, STRIP) {
-    var FONT = 'system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    var FONT = '"Spectral", "Noto Serif KR", Georgia, serif';   // 화면과 같은 본문 글씨체(tupandactyl 006)
     ctx.fillStyle = "#fffdf8";
     ctx.fillRect(0, H, W, STRIP);
     ctx.fillStyle = "#d8d2c4";
