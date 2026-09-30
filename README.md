@@ -33,7 +33,7 @@ web/          Django 뷰어. 파이프라인이 만든 파일만 읽는다. DB �
 deploy/       Docker·nginx(/WegenersDream/ 서브경로)·운영 compose. GSM 과 같은 갈래
 sources/      원본 매니페스트(주소·SHA-256·인용·이용 조건)
 devlog/       왜 그렇게 했는지 — 색인은 devlog/README.md
-docs/         정하기 전의 검토(예: DB 전환)
+docs/         운영 문서(백업·PBDB 자료 처리)와 정하기 전의 검토(DB 전환)
 ```
 
 ## 로컬 실행
