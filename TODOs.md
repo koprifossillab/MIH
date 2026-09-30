@@ -7,8 +7,6 @@
 
 - [ ] PBDB 를 주기적으로 다시 받는 cron — 서버 `.venv` 로 `fetch --refresh-pbdb` → `build --no-relief` → 임시 폴더에서
       `/srv/WegenersDream/data` 로 바꿔 끼운다. 주기부터 정한다
-- [ ] Docker Hub 비밀값(`DOCKERHUB_USERNAME`·`DOCKERHUB_TOKEN`)을 저장소에 넣고 변수 `DOCKERHUB_PUSH=true` 로 켜야
-      CI 가 태그에서 이미지를 민다
 
 ## 자료
 

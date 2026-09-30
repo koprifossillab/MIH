@@ -18,7 +18,8 @@
 `build`(배경 포함, 7 분 남짓). `relief_files` 에 `moll-*` 가 없으면 투영 고르기가 숨는다.
 **배포**: 09-30 에 paleoserver 에 올렸다 — **http://172.16.116.98/WegenersDream/** (`v0.15.3`, 컨테이너
 `wegenersdream-web-1`, `127.0.0.1:8095`, nginx `snippets/WegenersDream-subpath.conf`, 첫 화면 카드). 이미지는 그 서버에서
-구웠고 Docker Hub 에는 없다 — CI 의 Docker Hub 올리기는 저장소 변수 `DOCKERHUB_PUSH=true` 일 때만 돈다(지금 꺼짐). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
+구웠다. 09-30 부터 릴리스 태그(`v*`)마다 CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.15.3 부터 —
+저장소 비밀값 `DOCKERHUB_USERNAME`·`DOCKERHUB_TOKEN`, 변수 `DOCKERHUB_PUSH=true`). 가공은 서버의 `~/projects/WegenersDream/.venv`(pygplates 포함)로
 `python -m pipeline all` 을 돌려 `data/derived` 를 `/srv/WegenersDream/data` 로 복사했다. 운영 `.env` 에
 `WEGENER_EDITOR_KEY` 를 넣어 명칭 고치기가 열쇠로 열린다(비밀키는 비워 두어 `state/secret_key` 를 쓴다).
 
@@ -62,7 +63,7 @@ Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값�
 ### 시험
 
 `python -m unittest discover -s pipeline/tests -t .`(26 — 판 모델 시험 3 개는 원본이 있을 때만) · `WEGENER_SECRET_KEY=x web/manage.py test viewer`(13).
-CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이미지를 굽는다(Docker Hub 비밀값이 아직 없다).
+CI(`.github/workflows/test.yml`)가 둘 다 돌리고, `v*` 태그를 밀면 이미지를 굽고 Docker Hub 에 올린다.
 
 ## 3. 지금 조심할 것
 
