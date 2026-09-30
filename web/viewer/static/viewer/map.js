@@ -523,7 +523,7 @@
       proj = "&proj=globe" + (v ? "&lon=" + v.lon.toFixed(1) + "&lat=" + v.lat.toFixed(1) + "&alt=" + Math.round(v.alt / 1000) : "");
     }
     try {
-      history.replaceState(null, "", "#age=" + f.age + (state.all ? "&all=1" : "") + proj + (EN ? "&lang=en" : ""));
+      history.replaceState(null, "", "#age=" + f.age + proj + (EN ? "&lang=en" : ""));
     } catch (e) { /* 미리보기 등 */ }
   }
   // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
@@ -812,8 +812,6 @@
 
   function show(i, opts) {
     opts = opts || {};
-    // 다른 시점으로 옮기면 "모든 시대 산지" 를 끄고 그 시대의 산지로 돌아간다
-    if (!opts.all && state.all) setEverything(false, true);
     state.i = Math.max(0, Math.min(state.frames.length - 1, i));
     state.focus = opts.focus || null;
     if (!opts.focus) $("chrono-note").textContent = "";
@@ -1002,7 +1000,6 @@
   function loadFossils(f) {
     $("fossil-count").textContent = "";
     state.payload = null;
-    if (state.all) { loadEverything(); return; }
     if (!f.fossils || !f.fossils.file) { fossilLayer.clearLayers(); return; }
     var want = f.age;
     getJSON(dataUrl(f.fossils.file)).then(function (payload) {
@@ -1041,68 +1038,8 @@
     return col;
   }
 
-  // ── 모든 시대 산지(tupandactyl 007) ────────────────────────────────
-  // 첫 화면 — PBDB 의 모든 산지를 오늘날 자리에. 가공물(fossils/all.json, pipeline/everything.py)은 0.25° 칸으로 묶여
-  // 칸마다 산지 수·가장 많은 퇴적기원·연대 범위·연대 중간값을 준다. 점 크기는 산지 수(로그), 색은 퇴적기원 또는 시대(중간값).
-  // 퇴적기원은 맨 윗 갈래(해양·육상·미상)로만 거른다 — 칸에는 세부 환경이 없다. 나라·연대 거르기는 시점마다의 산지에만 건다.
-  var everything = null;
-  function loadEverything() {
-    if (everything) { drawFossils(); return; }
-    getJSON(dataUrl(state.everything.file)).then(function (payload) {
-      everything = payload;
-      if (state.all) drawFossils();
-    }).catch(function () { setEverything(false); });
-  }
-  function setEverything(on, quiet) {
-    state.all = !!on && !!state.everything;
-    $("everything").checked = state.all;
-    app.classList.toggle("all-eras", state.all);
-    if (quiet) return;
-    if (state.all) {
-      if (state.country) setCountry(null);
-      var zero = state.frames.findIndex(function (f) { return f.age === 0; });
-      show(zero < 0 ? state.i : zero, { all: true });
-    } else {
-      show(state.i);
-    }
-  }
-  function drawEverything() {
-    var col = columns(everything), shown = 0, cellsShown = 0, byTop = { m: 0, t: 0, o: 0 };
-    var on = {};
-    ["m", "t", "o"].forEach(function (k) { on[k] = termsUnder("top", k).some(function (t) { return state.enabled[t]; }); });
-    everything.rows.forEach(function (row) {
-      var env = row[col.env], n = row[col.n];
-      byTop[env] = (byTop[env] || 0) + n;
-      if (!on[env]) return;
-      shown += n; cellsShown += 1;
-      var color = state.colorBy === "age" ? ((periodOf(row[col.mid_ma], row[col.mid_ma]) || {}).color || UNKNOWN_COLOR) : state.topColor[env];
-      var r = 1.7 + 1.25 * Math.log(n) / Math.LN10;
-      L.circleMarker([row[col.lat], row[col.lng]], {
-        renderer: renderer, radius: r, weight: .5, color: "#ffffff", opacity: Math.min(1, state.opacity + .1),
-        fillColor: color, fillOpacity: state.opacity,
-      }).bindTooltip(tr("all.tip", { n: fmtNum(n), old: row[col.max_ma], young: row[col.min_ma] }), { direction: "top", opacity: .95 })
-        .on("click", function (e) { if (!measure.on) map.setView(e.latlng, Math.min(map.getMaxZoom(), map.getZoom() + 2)); })
-        .addTo(fossilLayer);
-    });
-    // 환경 칸의 수 — 맨 윗 갈래만 적는다(칸에는 세부 환경이 없다)
-    document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
-      var key = el.dataset.count, top = key.indexOf("top:") === 0 ? key.slice(4) : null;
-      el.textContent = top ? fmtNum(byTop[top] || 0) : "";
-      el.closest(".env").classList.toggle("zero", top ? !byTop[top] : false);
-    });
-    $("envtree").title = tr("env.count.coll");
-    spanNote(0, tr("what.coll"));
-    $("fossil-count").textContent = tr("fossil.everything", { n: fmtNum(shown) });
-    renderLegend();
-  }
-
   // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 산지 점은 찾기를 지우면 돌아온다.
   function drawFossils() {
-    if (state.all && !state.taxon) {
-      fossilLayer.clearLayers();
-      if (everything) drawEverything();
-      return;
-    }
     var payload = state.payload;
     fossilLayer.clearLayers();
     if (!payload) return;
@@ -1842,7 +1779,6 @@
   }
 
   function setCountry(cc) {
-    if (cc && state.all) setEverything(false, true);   // 나라로 거르기는 시점마다의 산지에만 건다(tupandactyl 007)
     state.country = cc;
     $("country-chip").hidden = !cc;
     $("country-chip-name").textContent = cc ? countryName(cc) : "";
@@ -2432,19 +2368,16 @@
     var add = function (maxMa, minMa) { var p = periodOf(maxMa, minMa); if (p) seen[p.id] = p; };
     if (state.taxon && state.taxa) {
       state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
-    } else if (state.all && everything) {
-      var ec = columns(everything);
-      everything.rows.forEach(function (row) { add(row[ec.mid_ma], row[ec.mid_ma]); });
     } else if (state.payload) {
       var col = columns(state.payload);
       state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col), row[col.max_ma], row[col.min_ma])) add(row[col.max_ma], row[col.min_ma]); });
     }
     // 색은 산지 연대 범위의 **중간값이 드는 기**다. 범위가 긴 산지는 지금 시점을 걸쳐도 중간값이 다른 기에 들어,
     // 지금의 기가 아닌 기도 범례에 뜬다(연구자가 물었다) — 그래서 범례 머리에 기준을 적고, 지금 시점의 기를 앞에 굵게 둔다
-    var now = state.all ? null : periodOf(frame().age, frame().age);
+    var now = periodOf(frame().age, frame().age);
     var list = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst);
     if (now && seen[now.id]) list = [now].concat(list.filter(function (p) { return p.id !== now.id; }));
-    box.innerHTML = '<span class="leg-head">' + tr(state.all ? "legend.allMid" : "legend.mid") + "</span>" + list.map(function (p) {
+    box.innerHTML = '<span class="leg-head">' + tr("legend.mid") + "</span>" + list.map(function (p) {
       return '<span class="leg' + (now && p.id === now.id ? " now" : "") + '"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
     }).join("");
   }
@@ -2462,7 +2395,6 @@
     });
     $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
     $("coeval").addEventListener("change", drawTaxa);
-    $("everything").addEventListener("change", function () { stopTour(); setEverything(this.checked); });
     $("show-wide").addEventListener("change", function () {
       state.showWide = this.checked;
       if (state.taxon) computeDist();
@@ -2556,8 +2488,6 @@
         (index.rules.vague_intervals || []).forEach(function (name) { VAGUE[name] = true; });
       }
       BUILT = index.built_at || "";
-      state.everything = index.everything && index.everything.file ? index.everything : null;   // 모든 시대 산지(tupandactyl 007)
-      $("everything-row").hidden = !state.everything;
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
@@ -2626,15 +2556,10 @@
     if (proj !== state.proj) setProjection(proj);
     else if (proj === "moll") rotateTo(Mollweide.lon0);
     if (proj === "globe") state.globeView = null; else fitWorld();
-    // 주소에 시점이 없는 첫 화면은 홀로세(0 Ma) 지도에 모든 시대의 산지를 오늘날 자리로(tupandactyl 007).
-    // 주소의 all=1 도 같다 — 첫 화면에서 새로고침해도 그대로
-    state.all = !!state.everything && (/[#&]all=1/.test(hash) || (initial && !isFinite(wanted)));
-    if (state.all) wanted = 0;
-    $("everything").checked = state.all;
-    app.classList.toggle("all-eras", state.all);
+    // 주소에 시점이 없는 첫 화면은 홀로세(0 Ma) 지도(tupandactyl 007)
     var first = state.frames.findIndex(function (f) { return f.age === wanted; });
     if (first < 0) first = initial ? state.frames.findIndex(function (f) { return f.age === 0; }) : state.i;
-    show(first < 0 ? 0 : first, { all: state.all });
+    show(first < 0 ? 0 : first);
   }
 
   // ── 언어(027) ────────────────────────────────────────────────────

@@ -139,7 +139,4 @@ def build(ages):
         print(f"  화석 {age:6.1f} Ma  {len(members):6d} 산지 (모호한 연대 {vague}, PBDB 좌표 {fallback}, "
               f"해양 {counts['m']}, 육상 {counts['t']})")
     stats["used"] = len(rows)
-    # 첫 화면의 "모든 시대 산지(오늘날 자리)" — 같은 산지 목록으로(tupandactyl 007)
-    from .everything import write as write_everything
-    everything = write_everything(rows)
-    return entries, {"stats": stats, "receipt": receipt, "everything": everything}
+    return entries, {"stats": stats, "receipt": receipt}
