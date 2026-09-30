@@ -2,6 +2,7 @@
 numpy>=2.0
 scipy>=1.13        # PaleoDEM 격자 보간·음영
 pillow>=11.0       # 배경 그림을 WebP 로 쓴다
+tifffile>=2024.1   # PaleoClim 기온 GeoTIFF 읽기(paleoclim.py)
 netCDF4>=1.7       # PaleoDEM .nc 읽기
 pyshp>=2.3         # PaleoCoastlines 셰이프파일 읽기
 shapely>=2.0       # 해안선·국경 단순화

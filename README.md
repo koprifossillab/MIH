@@ -18,6 +18,7 @@
 | 해안선 | PaleoCoastlines v7.1, Kocsis & Scotese 2021 | CC BY 4.0 |
 | 화석 점 | Paleobiology Database 채집지, PALEOMAP 고좌표(`pgm=scotese`) | CC BY 4.0 |
 | 지표 기온 | Scotese et al. 2021, HadCM3L 모의를 대리 자료에 맞춘 것 | CC BY 4.0 |
+| 최근 절의 지표 기온 | PaleoClim(Brown et al. 2018; 최종빙기 최성기는 CHELSA v1.2, Karger et al. 2017) — 최종빙기 최성기·최종간빙기·MIS 19·플라이오세 중기 온난기, 육지만 | **CC BY-NC-SA 4.0** — 비영리, 같은 조건 |
 | 국경선 | Natural Earth 1:50m 현재 국경을 PALEOMAP 판으로 돌린 것 | 퍼블릭 도메인 |
 
 자료가 모두 **PALEOMAP 판 모델 틀**이라 서로 맞는다. PBDB 기본 모델(`gplates`)을
@@ -114,5 +115,6 @@ deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 | 글꼴 La Belle Aurore·본명조(Noto Serif KR)·Spectral | SIL OFL 1.1 | `web/viewer/static/viewer/vendor/fonts/OFL-*.txt` |
 | 베게너 사진(대기 화면 초상의 원본) | Photo: Alfred Wegener Institute | `design/README.md` |
 | 자료(PaleoDEM·PaleoCoastlines·PBDB·기온·Natural Earth) | CC BY 4.0·퍼블릭 도메인 | 위 "겹" 표, `sources/*.json` — 저장소에 담지 않고 파이프라인이 받는다 |
+| 자료(PaleoClim — 최근 절의 기온) | **CC BY-NC-SA 4.0** | `sources/paleoclim.json`. 저장소에 담지 않는다. 이것으로 구운 기온 그림(`climate/pc_*.png`)과 그것이 든 화면 그림도 같은 조건 — **상업적으로 쓸 수 없다**. 연구자가 이 조건으로 쓰기로 정했다(2026-09-30). 빙기 최성기·최종간빙기 압축본에는 조건 문서가 없어 PaleoClim 의 조건으로 본다 |
 
 목록은 [vendor/README.md](web/viewer/static/viewer/vendor/README.md) 에 판·받은 곳과 함께 있다.

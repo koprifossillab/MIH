@@ -1,0 +1,36 @@
+{
+  "id": "paleoclim",
+  "title": "PaleoClim — 제4기·플라이오세 기후 스냅숏의 연평균 기온(bio_1), 10′ 격자, 육지만",
+  "citation": "Brown, J. L., Hill, D. J., Dolan, A. M., Carnaval, A. C., & Haywood, A. M. (2018). PaleoClim, high spatial resolution paleoclimate surfaces for global land areas. Scientific Data, 5, 180254. https://doi.org/10.1038/sdata.2018.254 — LGM: Karger et al. (2017) CHELSA v1.2. Data: http://www.paleoclim.org",
+  "record": "http://www.paleoclim.org",
+  "license": {
+    "name": "CC BY-NC-SA 4.0",
+    "note": "MIS19·mPWP 압축본 안의 readme 가 CC BY-NC-SA 라고 적는다. LGM(CHELSA v1.2)·LIG 압축본에는 조건 문서가 없어 PaleoClim 의 조건으로 본다. 연구자가 이 조건으로 쓰기로 정했다(2026-09-30, tupandactyl 010)",
+    "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+  },
+  "role": "최근의 절 시점(tupandactyl 009)에 그 절 안의 기온 지도 — Scotese(2021) 격자는 5 Myr 간격이라 0·5 Ma 사이가 없다. 오늘날 좌표(5 Myr 안에서는 PALEOMAP 과 거의 같다), 육지만",
+  "snapshots": {
+    "lgm":   {"age": 0.021, "en": "Last Glacial Maximum (ca. 21 ka)", "ko": "최종빙기 최성기(약 2만 1천 년 전)"},
+    "lig":   {"age": 0.13,  "en": "Last Interglacial (ca. 130 ka)",   "ko": "최종간빙기(약 13만 년 전)"},
+    "mis19": {"age": 0.787, "en": "MIS 19 (ca. 787 ka)",             "ko": "해양 동위원소 단계 19(약 78만 7천 년 전)"},
+    "mpwp":  {"age": 3.205, "en": "mid-Pliocene Warm Period (3.205 Ma)", "ko": "플라이오세 중기 온난기(320만 5천 년 전)"}
+  },
+  "archives": [
+    {"id": "lgm", "url": "http://sdmtoolbox.org/paleoclim.org/data/chelsa_LGM/chelsa_LGM_v1_2B_r10m.zip",
+     "path": "data/sources/paleoclim/chelsa_LGM_v1_2B_r10m.zip", "bytes": 17468981,
+     "sha256": "2638c6d7388a9645b54e8f14391f1e2aabf76a818d0fbca2e3e00a64c80c0f6d",
+     "unzip": "data/sources/paleoclim/lgm", "members": ["*bio_1.tif", "*bio_1.tfw", "*readme*"]},
+    {"id": "lig", "url": "http://sdmtoolbox.org/paleoclim.org/data/LIG/LIG_v1_10m.zip",
+     "path": "data/sources/paleoclim/LIG_v1_10m.zip", "bytes": 12427402,
+     "sha256": "657ac550ec207b7fafb09e8436fa363011302a5271f9d2c109e0a0662f373241",
+     "unzip": "data/sources/paleoclim/lig", "members": ["*bio_1.tif", "*bio_1.tfw", "*readme*"]},
+    {"id": "mis19", "url": "http://sdmtoolbox.org/paleoclim.org/data/MIS19/MIS19_v1_r10m.zip",
+     "path": "data/sources/paleoclim/MIS19_v1_r10m.zip", "bytes": 12012541,
+     "sha256": "f605c826fb827a4d8feb8860bf07e17ffe704ccad9a4251e94982db99397d914",
+     "unzip": "data/sources/paleoclim/mis19", "members": ["*bio_1.tif", "*bio_1.tfw", "*readme*"]},
+    {"id": "mpwp", "url": "http://sdmtoolbox.org/paleoclim.org/data/mpwp/mPWP_v1_r10m.zip",
+     "path": "data/sources/paleoclim/mPWP_v1_r10m.zip", "bytes": 12360442,
+     "sha256": "f7b610b58a2eb442b9f054fbb701dc404a44e4299384be38f85ead2f216f30e9",
+     "unzip": "data/sources/paleoclim/mpwp", "members": ["*bio_1.tif", "*bio_1.tfw", "*readme*"]}
+  ]
+}
