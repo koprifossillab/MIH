@@ -17,7 +17,3 @@
 - [ ] `D:\Claude\MIH-backup\20260929\` 의 09-29 PBDB 사본을 작업 장비 밖(NAS 또는 paleoserver)으로 옮길지 정한다 —
       가공물은 paleoserver 에 새것(09-30)이 있어 필요 없고, 남은 뜻은 다시 받을 수 없는 그날의 PBDB 사본 하나다.
       운영 `/srv/WegenersDream/state`(명칭 덮어쓰기·비밀키)의 백업도 함께 정한다
-
-## 저장소
-
-- [ ] 라이선스를 정한다(LICENSE 파일이 없다). 쓰는 자료는 CC BY 4.0·퍼블릭 도메인, Leaflet 은 BSD-2

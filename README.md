@@ -93,3 +93,20 @@ deploy/host/smoke.sh http://172.16.116.98/WegenersDream/
 
 화면의 ⚙ 설정 · 자료 창과 `index.json` 의 `sources` 에 다섯 자료의 인용이 있다. 그림을 쓸 때
 자료를 모두 밝힌다. PBDB 는 채집지마다 원 문헌이 따로 있다.
+
+## 라이선스
+
+이 저장소의 코드(파이프라인·뷰어·배포 스크립트)는 **GNU Affero General Public License v3.0**([LICENSE](LICENSE))을 따른다.
+저작권은 기여자들에게 있다(git 기록). AGPL 이라 **고쳐서 네트워크로 서비스하면 그 소스도 이용자에게 내놓아야 한다.**
+
+함께 담은 것은 각자의 조건을 따른다 — AGPL 로 바뀌지 않는다.
+
+| 것 | 조건 | 자리 |
+|---|---|---|
+| Leaflet 1.9.4 | BSD 2-Clause | `web/viewer/static/viewer/vendor/leaflet/` |
+| CesiumJS 1.145.0 | Apache-2.0 | `web/viewer/static/viewer/vendor/cesium/LICENSE.md` |
+| 글꼴 La Belle Aurore·본명조(Noto Serif KR)·Spectral | SIL OFL 1.1 | `web/viewer/static/viewer/vendor/fonts/OFL-*.txt` |
+| 베게너 사진(대기 화면 초상의 원본) | Photo: Alfred Wegener Institute | `design/README.md` |
+| 자료(PaleoDEM·PaleoCoastlines·PBDB·기온·Natural Earth) | CC BY 4.0·퍼블릭 도메인 | 위 "겹" 표, `sources/*.json` — 저장소에 담지 않고 파이프라인이 받는다 |
+
+목록은 [vendor/README.md](web/viewer/static/viewer/vendor/README.md) 에 판·받은 곳과 함께 있다.
