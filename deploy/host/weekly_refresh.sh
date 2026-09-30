@@ -110,6 +110,11 @@ for f in frames:
         path = f[key] if key == "relief" else f[key]["file"]
         assert (d / path).is_file(), f"{f['age']} Ma {key} 파일 없음"
     assert f.get("terrain") and (d / f["terrain"]["file"]).is_file(), f"{f['age']} Ma 지형 없음"
+# 최근의 절 기온(PaleoClim) — index.json 밖의 목록(koprifossillab 033)
+recent = json.loads((d / "climate" / "recent.json").read_text(encoding="utf-8"))
+assert recent["snapshots"], "PaleoClim 스냅숏 없음"
+for s in recent["snapshots"]:
+    assert (d / s["file"]).is_file(), f"PaleoClim {s['id']} 그림 없음"
 EOF
 
 [ "$MODE" = "--no-deploy" ] && { status ok "가공까지(운영 안 옮김): 산지 $old → $new"; exit 0; }

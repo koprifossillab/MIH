@@ -29,10 +29,10 @@ CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.1
 **가공**: paleoserver `paleoadmin` 의 `~/projects/WegenersDream/.venv`(pygplates 포함)로 한다. 원본 `data/sources/`(3.2 GB)와
 가공물 `data/derived/`(216 MB, 지형 포함)가 그 저장소 폴더에 있다.
 
-**최근의 절 기온(PaleoClim, 0.26.0)**: `climate/pc_*.png`·`climate/recent.json` 은 **운영 폴더에만 있다** — jschoi 가
-`python -m pipeline paleoclim` 으로 `/srv/WegenersDream/data` 에 바로 구웠다(09-30). paleoadmin 의 `data/derived/` 에는 없으나, 주간
-가공은 `rsync -a`(지우지 않음)로 옮기므로 남는다. 운영 폴더를 통째로 새로 만들 일이 있으면 `pipeline paleoclim` 도 돌린다
-(원본 PBDB 가 필요 없고 1 분 안쪽). 조건은 **CC BY-NC-SA 4.0**(README 라이선스 표, tupandactyl 010).
+**최근의 절 기온(PaleoClim, 0.26.0)**: `climate/pc_*.png`·`climate/recent.json`. 원본은 PaleoDEM 처럼 SHA-256 으로 고정돼 있어
+`fetch` 가 받고 `build` 가 굽는다 — `--no-relief`(주간 갱신)면 있는 것을 그대로 둔다(koprifossillab 033). 주간 점검도 본다. paleoadmin
+가공 폴더의 것과 운영 폴더의 것(jschoi 가 먼저 구운 것)이 바이트까지 같다. 읽으려면 `tifffile`·`imagecodecs`(요구 목록에 있다).
+조건은 **CC BY-NC-SA 4.0**(README 라이선스 표, tupandactyl 010).
 
 **매주 월요일 02:30**(paleoadmin crontab, `deploy/host/crontab.WegenersDream`): `deploy/host/weekly_refresh.sh` 가 운영 자료·PBDB
 원본·state(비밀키 빼고)를 `/data/WegenersDream/backups/WegenersDream.<YYYYMMDD>.tar.gz`(640, 주 140 MB 남짓)와 NAS
