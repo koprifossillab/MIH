@@ -56,10 +56,12 @@
     <!-- 읽는 법 — 패널에 늘 떠 있던 설명들(tupandactyl 002) -->
     <section class="guide">
       <h3 data-i18n="guide">읽는 법</h3>
-      <p class="note" data-i18n="fossils.about">점 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
+      <p class="note" data-i18n="fossils.about">포인트 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
       <p class="note" data-i18n="env.count">퇴적 환경 옆의 수는 지금 지도의 산지 수다. 분류군을 찾는 동안에는 그 분류군의 산출 건수다.</p>
       <p class="note" data-i18n="span.about">연대 범위(max − min)가 고른 값 이하인 기록만 보인다. 시대 이름의 등급(▲)과 따로 본다 — 등급은 어떻게 매겼는지, 범위는 시간이 얼마나 불확실한지다.</p>
       <p class="note" data-i18n="vague.about">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
+      <p class="note" data-i18n="guide.hover">분류군을 찾으면 산지에 커서를 대기만 해도 그 산지에서 나온 찾은 분류군 아래의 기록이 뜬다. 5종 이상이면 수만 적고, 누르면 산지의 산출 목록 전체를 PBDB 에서 읽는다.</p>
+      <p class="note" id="guide-dist"></p>
       <p class="note" data-i18n="chrono.about">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
     </section>
     <section class="sources">
@@ -88,38 +90,10 @@
   </div>
 
   <main class="stage">
-    <!-- 패널을 양쪽으로 나눈다(wetherilli 011) — 왼쪽은 층서표와 겹쳐 보기(층), 오른쪽은 화석 산지.
-         좁은 창에서는 지도 밑에 차례로 쌓이고, 접기 막대 하나가 둘을 함께 접는다 -->
-    <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel-left panel" aria-expanded="true">패널 접기 ▾</button>
-    <aside class="panel panel-left" id="panel-left">
-      <section data-sec="time">
-        <h2 data-i18n="chrono.pick">층서표로 고르기</h2>
-        <div class="chrono" id="chrono">
-          <div class="chrono-row"><span class="rank" data-i18n="rank.era">대</span><div class="chips" data-rank="era"></div></div>
-          <div class="chrono-row"><span class="rank" data-i18n="rank.period">기</span><div class="chips" data-rank="period"></div></div>
-          <div class="chrono-row"><span class="rank" data-i18n="rank.epoch">세</span><div class="chips" data-rank="epoch"></div></div>
-          <div class="chrono-row"><span class="rank" data-i18n="rank.age">절</span><div class="chips" data-rank="age"></div></div>
-        </div>
-        <p class="note" id="chrono-note"></p>
-      </section>
-
-      <section data-sec="overlay">
-        <h2 data-i18n="overlay">겹쳐 보기</h2>
-        <label class="swatch"><input type="checkbox" id="climate"> <i class="line temp"></i> <span data-i18n="climate">지표 기온 (Scotese 2021)</span></label>
-        <div class="temp-legend" id="temp-legend" hidden>
-          <div class="bar" id="temp-bar"></div>
-          <div class="ticks"><span>−40</span><span>−20</span><span>0</span><span>20</span><span>40 ℃</span></div>
-          <label class="opacity"><span data-i18n="climate.opacity">기온 층 불투명도</span> <input type="range" id="climate-opacity" min="10" max="100" step="5" value="55" aria-label="기온 층 불투명도" data-i18n-attr="aria-label:climate.opacity"> <output id="climate-opacity-value">55%</output></label>
-        </div>
-        <p class="note" id="climate-note"></p>
-        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (지금 국경을 그때 자리로 돌린 것)</span></label>
-        <p class="note" id="borders-note"></p>
-        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
-        <p class="note" id="coast-note"></p>
-        <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
-      </section>
-    </aside>
-
+    <!-- 패널은 오른쪽 하나(tupandactyl 003) — 층서표 · 화석 산지 · 분류군 찾기(찾은 뒤에만) · 겹쳐 보기.
+         시점 막대가 맨 위로 가(tupandactyl 002) 왼쪽 패널에 남은 것이 적어 한 줄로 모았다(wetherilli 011 의 양쪽 패널을 걷는다).
+         좁은 창에서는 지도 밑에 오고 접기 막대로 접는다 -->
+    <button type="button" class="panel-bar" id="panel-bar" aria-controls="panel" aria-expanded="true">패널 접기 ▾</button>
     <div class="mapcol">
       <div id="map" aria-label="고지리 지도" data-i18n-attr="aria-label:map"></div>
       <!-- 찾기 카드(wetherilli 004 → tupandactyl 002) — 지도 위에 떠 있고 끌어서 옮긴다. 후보 목록은 카드가 지도 위쪽에
@@ -148,16 +122,26 @@
       </div>
     </div>
 
-    <!-- 오른쪽 패널 — 화석 산지와 찾은 분류군(wetherilli 011) -->
-    <aside class="panel panel-right" id="panel">
+    <aside class="panel" id="panel">
+      <section data-sec="time">
+        <h2 data-i18n="chrono.pick">층서표로 고르기</h2>
+        <div class="chrono" id="chrono">
+          <div class="chrono-row"><span class="rank" data-i18n="rank.era">대</span><div class="chips" data-rank="era"></div></div>
+          <div class="chrono-row"><span class="rank" data-i18n="rank.period">기</span><div class="chips" data-rank="period"></div></div>
+          <div class="chrono-row"><span class="rank" data-i18n="rank.epoch">세</span><div class="chips" data-rank="epoch"></div></div>
+          <div class="chrono-row"><span class="rank" data-i18n="rank.age">절</span><div class="chips" data-rank="age"></div></div>
+        </div>
+        <p class="note" id="chrono-note"></p>
+      </section>
+
       <section data-sec="fossils">
         <h2 class="with-tool"><span class="title" data-i18n="fossils">화석 산지</span> <small id="fossil-count"></small></h2>
-        <div class="colorby" role="radiogroup" aria-label="점 색" data-i18n-attr="aria-label:colorby">
-          <span data-i18n="colorby">점 색</span>
+        <div class="colorby" role="radiogroup" aria-label="포인트 색" data-i18n-attr="aria-label:colorby">
+          <span data-i18n="colorby">포인트 색</span>
           <label><input type="radio" name="color-by" value="env" checked> <span data-i18n="colorby.env">퇴적기원</span></label>
           <label><input type="radio" name="color-by" value="age"> <span data-i18n="colorby.age">시대(기)</span></label>
         </div>
-        <label class="opacity"><span data-i18n="opacity">점 불투명도</span> <input type="range" id="point-opacity" min="15" max="100" step="5" value="60" aria-label="점 불투명도" data-i18n-attr="aria-label:opacity"> <output id="point-opacity-value">60%</output></label>
+        <label class="opacity"><span data-i18n="opacity">포인트 불투명도</span> <input type="range" id="point-opacity" min="15" max="100" step="5" value="60" aria-label="포인트 불투명도" data-i18n-attr="aria-label:opacity"> <output id="point-opacity-value">60%</output></label>
         <div class="shapes">
           <span><i class="shape solid"></i> <span data-i18n="shape.solid">절 단위로 정해진 기록</span></span>
           <label><input type="checkbox" id="show-wide" checked> <i class="shape tri"></i> <span data-i18n="shape.tri">모호한 연대 기록도 보기</span></label>
@@ -168,7 +152,7 @@
         <div class="envtree" id="envtree"></div>
       </section>
 
-      <!-- 찾은 분류군의 결과만 — 찾기 칸은 지도 밑 찾기 막대에 있다. 찾기 전에는 숨긴다(wetherilli 011) -->
+      <!-- 찾은 분류군의 결과만 — 찾기 칸은 지도 위 찾기 카드에 있다. 찾기 전에는 숨긴다(wetherilli 011) -->
       <section data-sec="taxon" id="taxon-sec" hidden>
         <h2 data-i18n="taxon">분류군 찾기</h2>
         <p class="note" id="taxon-status" aria-live="polite"></p>
@@ -194,6 +178,22 @@
           <p class="note" id="tour-status" aria-live="polite"></p>
           <p class="note" id="dist-note"></p>
         </div>
+      </section>
+
+      <section data-sec="overlay">
+        <h2 data-i18n="overlay">겹쳐 보기</h2>
+        <label class="swatch"><input type="checkbox" id="climate"> <i class="line temp"></i> <span data-i18n="climate">지표 기온 (Scotese 2021)</span></label>
+        <div class="temp-legend" id="temp-legend" hidden>
+          <div class="bar" id="temp-bar"></div>
+          <div class="ticks"><span>−40</span><span>−20</span><span>0</span><span>20</span><span>40 ℃</span></div>
+          <label class="opacity"><span data-i18n="climate.opacity">기온 층 불투명도</span> <input type="range" id="climate-opacity" min="10" max="100" step="5" value="55" aria-label="기온 층 불투명도" data-i18n-attr="aria-label:climate.opacity"> <output id="climate-opacity-value">55%</output></label>
+        </div>
+        <p class="note" id="climate-note"></p>
+        <label class="swatch"><input type="checkbox" id="borders"> <i class="line border"></i> <span data-i18n="borders">국경선 (지금 국경을 그때 자리로 돌린 것)</span></label>
+        <p class="note" id="borders-note"></p>
+        <label class="swatch"><input type="checkbox" id="coast" checked> <i class="line"></i> <span data-i18n="coast">화석으로 고친 해안선</span></label>
+        <p class="note" id="coast-note"></p>
+        <label class="swatch"><input type="checkbox" id="grid"> <span data-i18n="grid">경위선 30°</span></label>
       </section>
     </aside>
   </main>

@@ -1295,7 +1295,7 @@
     strip.innerHTML = "";
     if (box.hidden) return;
     $("dist-total").textContent = tr("dist.total", { n: fmtNum(d.total) }) + (state.country ? " · " + countryName(state.country) : "") +
-      (d.filtered ? tr("dist.filtered") : "");
+      (d.filtered ? tr("dist.filtered") : "") + (d.exact ? "" : tr("dist.stage"));
     // 산출이 있는 기 — 층서표 색 아이콘에 수를 붙인다. 누르면 그 기의 가운데 지도로 간다.
     var periods = state.periods.slice().sort(byOldFirst).filter(function (p) { return d.units[p.id]; });
     $("dist-periods").innerHTML = "";
@@ -1313,10 +1313,7 @@
     var a = d.app;
     $("dist-note").textContent = (!periods.length ? tr(d.exact ? "dist.noneExact" : "dist.noneStage") : "") +
       (a && a.early_interval ? tr("dist.app", { e: a.early_interval, emax: a.firstapp_max_ma, emin: a.firstapp_min_ma,
-        l: a.late_interval, lmax: a.lastapp_max_ma, lmin: a.lastapp_min_ma }) : "") +
-      (d.exact
-        ? tr("dist.exact")
-        : tr("dist.coarse", { limit: fmtNum(OCC_LIMIT) }));
+        l: a.late_interval, lmax: a.lastapp_max_ma, lmin: a.lastapp_min_ma }) : "");   // 수를 어떻게 세는지는 "읽는 법"(guide.dist)
     // 시점 막대 밑 — 시점마다 로그 높이의 막대
     var max = 0;
     Object.keys(d.frames).forEach(function (j) { max = Math.max(max, d.frames[j]); });
@@ -1556,7 +1553,7 @@
     $("taxon-status").textContent = tr("taxon.status", {
       name: state.taxon, rank: state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "",
       age: fmtAge(frame().age), n: fmtNum(shown), occ: fmtNum(occs),
-      country: state.country ? ", " + countryName(state.country) : "", hover: tr("taxon.hover") });
+      country: state.country ? ", " + countryName(state.country) : "" });
     renderLegend();
   }
 
@@ -2488,6 +2485,9 @@
     b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
   });
   document.documentElement.classList.remove("i18n-pending");
+
+  // 읽는 법 — 산출 시대의 수를 어떻게 세는지. 기준 건수(OCC_LIMIT)가 여기 있어 문구를 JS 가 채운다(tupandactyl 003)
+  $("guide-dist").textContent = tr("guide.dist", { limit: fmtNum(OCC_LIMIT) });
 
   // ── 설정 · 자료(wetherilli 003) ──────────────────────────────────────
   // <dialog> 의 showModal — Esc 로 닫히고 뒤는 눌리지 않는다. 바깥(흐린 뒤)을 눌러도 닫는다.
