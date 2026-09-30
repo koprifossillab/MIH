@@ -326,8 +326,11 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
     var(--paper);
 }
 .splash.done { opacity: 0; pointer-events: none; }
-.splash-frame { position: absolute; inset: 16px; border: 1.5px solid rgba(59, 42, 26, .55); pointer-events: none; }
-.splash-frame::after { content: ""; position: absolute; inset: 5px; border: .75px solid rgba(59, 42, 26, .4); }
+/* 고서의 한 페이지 — 종이는 splash.js 가 캔버스에 그린다(얼룩·여우 반점·책등 그늘). 머리글과 도판 설명은 옛 책의 짜임 */
+.splash-paper { position: absolute; inset: 0; width: 100%; height: 100%; }
+.splash-head { position: absolute; top: 28px; left: 11%; right: 7%; display: flex; justify-content: space-between; padding-bottom: 6px;
+  border-bottom: 3px double rgba(59, 42, 26, .55); font: 13px/1.2 "EB Garamond", Georgia, "Times New Roman", serif;
+  letter-spacing: .28em; text-transform: uppercase; color: rgba(59, 42, 26, .78); }
 .splash-stage { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 24px; }
 /* 메달 — 둘레에 메소사우루스가 두를 자리를 비운다 */
 .splash-medal { --m: clamp(120px, 27vmin, 250px); width: var(--m); height: var(--m); margin: calc(var(--m) * .3) 0 calc(var(--m) * .52);   /* 밑은 곧은 주둥이가 뻗는 자리까지 */
@@ -346,9 +349,15 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .splash-msg { margin: 18px 0 0; font: italic 13px/1.5 Georgia, "Nanum Myeongjo", "Batang", serif; color: var(--fade); letter-spacing: .04em; }
 .splash.map-ready .splash-msg { visibility: hidden; }
 .splash-fx { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-.splash-foot { position: absolute; left: 34px; right: 34px; bottom: 26px; margin: 0; display: flex; justify-content: space-between; gap: 16px;
-  font: 12px/1.4 Georgia, "Nanum Myeongjo", "Batang", serif; letter-spacing: .08em; color: var(--fade); }
-.splash-foot .skip { opacity: .75; }
+.splash-foot { position: absolute; left: 11%; right: 7%; bottom: 24px; text-align: center; color: var(--fade);
+  font: 13px/1.5 "EB Garamond", Georgia, "Nanum Myeongjo", "Batang", serif; }
+.splash-foot p { margin: 0; }
+.splash-foot .plate { color: rgba(59, 42, 26, .85); letter-spacing: .02em; }
+.splash-foot .sc { font-variant: small-caps; letter-spacing: .06em; }
+.splash-foot .credit { margin-top: 4px; font-size: 11.5px; letter-spacing: .06em; }
+.splash-foot .skip { opacity: .8; }
+/* 인쇄된 잉크처럼 — 글자 가장자리가 종이에 조금 번진다 */
+.splash-title, .splash-sub, .splash-head, .splash-foot { text-shadow: 0 0 .6px rgba(59, 42, 26, .45); }
 .splash .en { display: none; }
 .lang-en .splash .en { display: inline; }
 .lang-en .splash .ko { display: none; }
@@ -356,7 +365,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .splash.failed .splash-msg { color: var(--sink); font-style: normal; visibility: visible; }
 #splash-retry { margin-top: 12px; border: 1px solid var(--sink); background: var(--sink); color: var(--paper); border-radius: 3px; padding: 5px 16px; cursor: pointer;
   font: 14px Georgia, "Nanum Myeongjo", serif; letter-spacing: .06em; }
-@media (max-width: 560px) { .splash-foot { flex-direction: column; align-items: center; gap: 2px; bottom: 22px; } }
+@media (max-width: 560px) { .splash-head { left: 9%; right: 5%; letter-spacing: .16em; } .splash-foot { left: 9%; right: 5%; } }
 @media (prefers-reduced-motion: reduce) { .splash-medal, .splash-sub { transition: none; } }
 
 .empty {

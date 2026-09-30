@@ -23,7 +23,17 @@ function medal(id) {
     `<path d="${trace.figure}" fill="${INK}" fill-opacity=".16" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>` +
     `<path d="${trace.shirt}" fill="${PAPER}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>` +
     `<path d="${trace.dark}" fill="${INK}"/>` +
-    `<path d="${trace.jaw}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/></g>`;
+    `<path d="${trace.jaw}" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>` + pipe() + `</g>`;
+}
+// 파이프 — 굽은 물부리(가늘게) → 은색 띠 → 대(굵게) → 대통(테와 빛)
+function pipe() {
+  const p = trace.pipe, [cx, cy, rx, ry] = p.rim;
+  return `<path d="${p.stem}" fill="none" stroke="${INK}" stroke-width="13" stroke-linecap="round"/>` +
+    `<path d="${p.shank}" fill="none" stroke="${INK}" stroke-width="22" stroke-linecap="round"/>` +
+    `<path d="${p.band}" fill="none" stroke="${PAPER}" stroke-width="5"/>` +
+    `<path d="${p.bowl}" fill="${INK}"/>` +
+    `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${INK}" stroke="${PAPER}" stroke-width="3.5"/>` +
+    `<path d="${p.shine}" fill="none" stroke="${PAPER}" stroke-width="4" stroke-linecap="round" opacity=".75"/>`;
 }
 const head = (vb, w) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" width="${w}" height="${w}">`;
 

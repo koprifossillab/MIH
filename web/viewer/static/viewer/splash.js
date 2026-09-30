@@ -18,12 +18,12 @@
   var INK = "#3b2a1a", PAPER = "#efe4cc";
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  var cv = box.querySelector(".splash-fx"), ctx = cv.getContext("2d");
+  var cv = box.querySelector(".splash-fx"), ctx = cv.getContext("2d"), paper = box.querySelector(".splash-paper");
   var medal = box.querySelector(".splash-medal"), title = box.querySelector(".splash-title");
   var W = 0, H = 0, dpr = 1, C = [0, 0], Rm = 0, ring = null, path = null;
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
-  var T_ENTER = .9, T_SWIM = 4.8, T_WRITE = 3.0, T_BONES = 2.0;
+  var T_ENTER = .9, T_SWIM = 6.6, T_WRITE = 3.0, T_BONES = 2.0;
   var T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + .2 + T_WRITE;
   var t0 = 0, raf = 0, mapReady = false, skipped = false, closed = false;
 
@@ -38,6 +38,57 @@
     Rm = m.width / 2 * (472 / 480);            // wegener.svg 의 메달 테두리 반지름(960 틀의 472)
     ring = Meso.emblemRing(C[0], C[1], Rm);
     path = buildPath();
+    drawPaper();
+  }
+
+  // ── 고서의 종이 ───────────────────────────────────────────────────
+  // 누렇게 바랜 종이 한 장을 규칙으로 그린다 — 얼룩진 바탕, 여우 반점(foxing, 오래된 종이의 갈색 점), 물 얼룩의 테,
+  // 종이 섬유, 가장자리의 그을림, 왼쪽 제본 쪽(책등)으로 말려 들어가는 그늘. 같은 창 크기면 늘 같은 그림(씨앗 고정)
+  function drawPaper() {
+    if (!paper) return;
+    var pc = paper.getContext("2d");
+    paper.width = Math.round(W * dpr); paper.height = Math.round(H * dpr);
+    pc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var seed = 7;
+    function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+    var g = pc.createRadialGradient(W * .55, H * .45, 0, W * .55, H * .45, Math.max(W, H) * .75);
+    g.addColorStop(0, "#efe3c6"); g.addColorStop(.6, "#e6d5ae"); g.addColorStop(1, "#cdb384");
+    pc.fillStyle = g; pc.fillRect(0, 0, W, H);
+    var i, x, y, r;
+    for (i = 0; i < 70; i++) {                                                // 얼룩덜룩한 바탕
+      x = rnd() * W; y = rnd() * H; r = (.05 + rnd() * .18) * Math.max(W, H);
+      var b = pc.createRadialGradient(x, y, 0, x, y, r), dark = rnd() < .6;
+      b.addColorStop(0, dark ? "rgba(140,98,45,.07)" : "rgba(255,248,228,.09)"); b.addColorStop(1, "rgba(140,98,45,0)");
+      pc.fillStyle = b; pc.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+    for (i = 0; i < 2; i++) {                                                 // 물 얼룩 — 가장자리가 짙은 테
+      x = (rnd() < .5 ? .08 + rnd() * .2 : .72 + rnd() * .2) * W; y = (.15 + rnd() * .7) * H; r = (.04 + rnd() * .07) * Math.max(W, H);
+      var w = pc.createRadialGradient(x, y, r * .72, x, y, r);
+      w.addColorStop(0, "rgba(150,105,50,0)"); w.addColorStop(.85, "rgba(150,105,50,.055)"); w.addColorStop(1, "rgba(150,105,50,0)");
+      pc.fillStyle = w; pc.beginPath(); pc.arc(x, y, r, 0, Math.PI * 2); pc.fill();
+    }
+    for (i = 0; i < 190; i++) {                                               // 여우 반점 — 가장자리에 많이
+      var edge = rnd() < .7;
+      x = edge ? (rnd() < .5 ? rnd() * .16 : .84 + rnd() * .16) * W : rnd() * W;
+      y = edge && rnd() < .5 ? (rnd() < .5 ? rnd() * .14 : .86 + rnd() * .14) * H : rnd() * H;
+      r = .6 + Math.pow(rnd(), 3) * 3.6;
+      pc.fillStyle = "rgba(128,78,32," + (.08 + rnd() * .22) + ")";
+      pc.beginPath(); pc.arc(x, y, r, 0, Math.PI * 2); pc.fill();
+    }
+    pc.strokeStyle = "rgba(110,80,40,.07)"; pc.lineWidth = .6;                // 종이 섬유
+    for (i = 0; i < 500; i++) {
+      x = rnd() * W; y = rnd() * H; var a = rnd() * Math.PI, l = 3 + rnd() * 10;
+      pc.beginPath(); pc.moveTo(x, y); pc.quadraticCurveTo(x + Math.cos(a) * l * .5 + 1, y + Math.sin(a) * l * .5, x + Math.cos(a) * l, y + Math.sin(a) * l); pc.stroke();
+    }
+    var e = pc.createLinearGradient(0, 0, 0, H);                              // 위아래 가장자리 그을림
+    e.addColorStop(0, "rgba(96,62,24,.32)"); e.addColorStop(.06, "rgba(96,62,24,0)"); e.addColorStop(.94, "rgba(96,62,24,0)"); e.addColorStop(1, "rgba(96,62,24,.36)");
+    pc.fillStyle = e; pc.fillRect(0, 0, W, H);
+    var gut = pc.createLinearGradient(0, 0, W * .14, 0);                      // 책등 쪽 그늘(왼쪽)
+    gut.addColorStop(0, "rgba(58,36,14,.55)"); gut.addColorStop(.25, "rgba(58,36,14,.2)"); gut.addColorStop(1, "rgba(58,36,14,0)");
+    pc.fillStyle = gut; pc.fillRect(0, 0, W * .14, H);
+    var fore = pc.createLinearGradient(W, 0, W * .93, 0);                     // 앞쪽 가장자리
+    fore.addColorStop(0, "rgba(96,62,24,.3)"); fore.addColorStop(1, "rgba(96,62,24,0)");
+    pc.fillStyle = fore; pc.fillRect(W * .93, 0, W * .07, H);
   }
 
   // 머리가 가는 길 — 왼쪽 화면 밖에서 물결치며 와 메달 밑(B)에서 오른쪽을 보고, 메달을 시계 반대 방향으로 돈다.
@@ -53,8 +104,8 @@
       base.push([m * m * m * P0[0] + 3 * m * m * k * P1[0] + 3 * m * k * k * P2[0] + k * k * k * P3[0],
                  m * m * m * P0[1] + 3 * m * m * k * P1[1] + 3 * m * k * k * P2[1] + k * k * k * P3[1]]);
     }
-    // 원에 닿기 전까지 물결 — 파장은 몸길이의 0.62, 진폭은 0.09. 메달에 가까워지며 잦아든다
-    var len = cumulative(base), total = len[len.length - 1], lam = L * .62, amp = L * .09, out = [];
+    // 원에 닿기 전까지 물결 — 파장은 몸길이의 0.74(길고 느긋한 굽이), 진폭은 0.085. 메달에 가까워지며 잦아든다
+    var len = cumulative(base), total = len[len.length - 1], lam = L * .74, amp = L * .085, out = [];
     for (i = 0; i < base.length; i++) {
       var a = base[Math.max(0, i - 1)], b = base[Math.min(base.length - 1, i + 1)];
       var d = Math.atan2(b[1] - a[1], b[0] - a[0]), nx = -Math.sin(d), ny = Math.cos(d);
@@ -85,10 +136,11 @@
     return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, Math.atan2(b[1] - a[1], b[0] - a[0])];
   }
   function smooth(k) { k = Math.max(0, Math.min(1, k)); return k * k * (3 - 2 * k); }
-  // 머리의 빠르기 — 거의 고르게 헤엄치다 메달을 돌며 늦춘다
-  function progress(k) { k = Math.max(0, Math.min(1, k)); return 1 - Math.pow(1 - k, 1.3); }
+  // 머리의 빠르기 — 느릿하게 들어와 고르게 나아가다 메달을 돌며 가만히 멈춘다(연구자: "더 우아하고 느릿하게")
+  function progress(k) { k = Math.max(0, Math.min(1, k)); return .35 * k + .65 * (.5 - .5 * Math.cos(Math.PI * k)); }
 
   // 몸 — 머리가 지나온 길 위의 점들 + 꼬리로 갈수록 커지는 작은 물결
+  var SWAY = 1.0;                             // 꼬리 물결과 다리 젓기의 박자(초당) — 느긋하게
   function body(t) {
     var k = (t - T_ENTER) / T_SWIM;
     var head = path.start + (path.total - path.start) * progress(k);
@@ -96,14 +148,14 @@
     var L = ring.L, P = [];
     for (var i = 0; i <= Meso.N; i++) {
       var s = i / Meso.N, q = at(head - s * L), nx = -Math.sin(q[2]), ny = Math.cos(q[2]);
-      var wav = L * .034 * (.15 + .85 * s * s) * Math.sin(TAU * (s / .42 - 1.7 * t)) * (1 - settle);
+      var wav = L * .03 * (.15 + .85 * s * s) * Math.sin(TAU * (s / .5 - SWAY * t)) * (1 - settle);
       P.push([q[0] + nx * wav, q[1] + ny * wav]);
     }
-    return { P: P, settle: settle, beat: Math.sin(TAU * 1.7 * t) };
+    return { P: P, settle: settle, beat: Math.sin(TAU * SWAY * t) };
   }
 
   // ── 파이프 연기 ─────────────────────────────────────────────────────
-  // wegener.svg 의 960 틀에서 입(578, 600)·대통 윗면(752, 664)
+  // wegener.svg 의 960 틀에서 입(578, 600)·대통 윗면(773, 686)
   var puffs = [];
   function toScreen(px, py) { var k = medal.getBoundingClientRect().width / 960; return [C[0] + (px - 480) * k, C[1] + (py - 480) * k]; }
   var owed = 0;                                                               // 한 틀에 못 낸 연기 알갱이(소수)
@@ -118,7 +170,7 @@
       }
     }
     if (Math.random() < dt * 5) {                                             // 대통에서 가늘게 피어오른다
-      var b = toScreen(752 + (Math.random() - .5) * 18, 660);
+      var b = toScreen(773 + (Math.random() - .5) * 30, 680);
       puffs.push({ x: b[0], y: b[1], vx: (Math.random() - .3) * 14 * k, vy: (-70 - Math.random() * 40) * k, r: 4 * k,
                    g: 40 * k, a: .15, life: 3.6, age: 0, drag: .25, wob: Math.random() * TAU, wa: 30 * k });
     }
@@ -150,7 +202,8 @@
       Meso.draw(ctx, ring.P, ring.L, { fill: INK, eye: PAPER, tuck: 1, teeth: true, bones: bone, boneColor: PAPER });
     } else if (t > T_ENTER) {
       var b = body(t);
-      Meso.draw(ctx, b.P, ring.L, { fill: INK, eye: PAPER, beat: b.beat, tuck: b.settle, teeth: true });
+      // 헤엄칠 때는 목과 몸통 앞쪽(몸길이의 0.16)으로 머리 방향을 재 까닥임을 줄이고, 메달을 두르며 목 끝의 접선으로 옮긴다
+      Meso.draw(ctx, b.P, ring.L, { fill: INK, eye: PAPER, beat: b.beat, tuck: b.settle, teeth: true, neck: .16 - .11 * b.settle });
     }
     // 제목 — 왼쪽부터 펜으로 쓰듯. 끝이 번진 가림막을 옮긴다
     var w = skipped || reduce ? 1 : Math.max(0, Math.min(1, (t - T_SEATED - .2) / T_WRITE));
