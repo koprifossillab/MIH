@@ -1876,6 +1876,144 @@
   });
   new ScaleBar({ position: "bottomright", imperial: false, maxWidth: 120 }).addTo(map);
 
+  // ── 그림으로 내려받기(wetherilli 008) ──────────────────────────────
+  // 지금 보이는 지도를 PNG 한 장으로. 지도는 창(pane)마다 캔버스(배경·기온·산지)·그림(정거원통 기온)·SVG(해안선·국경·
+  // 경위선)로 그려져 있어, 화면에 놓인 자리(getBoundingClientRect) 그대로 겹 순서대로 한 캔버스에 옮긴다.
+  // 밑에 띠를 붙여 시점·층서·평균 기온·투영·거르기·출처·주소·날짜를 적는다 — 그림만 떨어져 돌아다녀도 무엇인지 알게.
+  var exporter = L.control({ position: "topright" });
+  exporter.onAdd = function () {
+    var b = L.DomUtil.create("button", "map-btn");
+    b.type = "button";
+    b.id = "export";
+    b.title = tr("export.title");
+    b.innerHTML = '<span aria-hidden="true">⤓</span> ' + esc(tr("export"));
+    L.DomEvent.disableClickPropagation(b);
+    b.addEventListener("click", function () {
+      if (b.disabled) return;
+      b.disabled = true;
+      exportMap().catch(function (err) {
+        console.error(err);
+        b.title = tr("export.fail");
+      }).then(function () { b.disabled = false; });
+    });
+    return b;
+  };
+  exporter.addTo(map);
+
+  function svgImage(svg) {
+    var copy = svg.cloneNode(true);
+    copy.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    copy.removeAttribute("style");   // Leaflet 이 자리를 잡는 transform — 그림 안에서 다시 먹어 선이 밀렸다
+    var url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)], { type: "image/svg+xml" }));
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("svg")); };
+      img.src = url;
+    });
+  }
+
+  function exportMap() {
+    var f = frame();
+    if (!f) return Promise.resolve();
+    var box = map.getContainer(), R = box.getBoundingClientRect(), W = Math.round(R.width), H = Math.round(R.height);
+    var dpr = Math.min(2, window.devicePixelRatio || 1), STRIP = 66;
+    var out = document.createElement("canvas");
+    out.width = W * dpr; out.height = (H + STRIP) * dpr;
+    var ctx = out.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.fillStyle = getComputedStyle(box).backgroundColor || "#06162f";
+    ctx.fillRect(0, 0, W, H);
+    // 겹 순서: 배경(380) < 기온(390) < 선(400, overlayPane) < 산지(450)
+    var els = [];
+    ["base", "climate", "overlayPane", "fossils"].forEach(function (name) {
+      map.getPane(name).querySelectorAll("canvas, img, svg").forEach(function (el) {
+        if (el.closest("svg") && el.tagName.toLowerCase() !== "svg") return;
+        els.push(el);
+      });
+    });
+    return Promise.all(els.map(function (el) {
+      return el.tagName.toLowerCase() === "svg" ? svgImage(el).catch(function () { return null; }) : Promise.resolve(el);
+    })).then(function (sources) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+      els.forEach(function (el, k) {
+        var src = sources[k], r = el.getBoundingClientRect();
+        if (!src || !r.width || !r.height) return;
+        if (src.tagName === "IMG" && !src.complete) return;
+        var style = getComputedStyle(el);
+        if (style.display === "none" || style.visibility === "hidden") return;
+        ctx.globalAlpha = +style.opacity;
+        ctx.drawImage(src, r.left - R.left, r.top - R.top, r.width, r.height);
+      });
+      ctx.restore();
+      ctx.globalAlpha = 1;
+      drawExportScale(ctx, R, W, H);
+      drawExportStrip(ctx, f, W, H, STRIP);
+      return new Promise(function (resolve, reject) {
+        out.toBlob(function (blob) {
+          if (!blob) { reject(new Error("toBlob")); return; }
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "wegenersdream_" + String(f.age).replace(".", "_") + "Ma" + (state.proj === "moll" ? "_moll" : "") + ".png";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+          resolve();
+        }, "image/png");
+      });
+    });
+  }
+
+  // 축척 막대 — 화면의 막대(001)를 그 자리에 옮겨 그린다
+  function drawExportScale(ctx, R, W, H) {
+    var line = map.getContainer().querySelector(".leaflet-control-scale-line");
+    if (!line || !line.offsetWidth || line.closest(".leaflet-control-scale").style.visibility === "hidden") return;
+    var r = line.getBoundingClientRect(), x = r.left - R.left, y = r.top - R.top;
+    ctx.fillStyle = "rgba(255,255,255,.8)";
+    ctx.fillRect(x, y, r.width, r.height);
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 1, y); ctx.lineTo(x + 1, y + r.height - 1); ctx.lineTo(x + r.width - 1, y + r.height - 1); ctx.lineTo(x + r.width - 1, y);
+    ctx.stroke();
+    ctx.fillStyle = "#222";
+    ctx.font = "11px system-ui, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(line.textContent, x + 5, y + r.height / 2);
+  }
+
+  // 밑 띠 — 밝은 바탕에 짙은 글씨로 고정한다(어두운 모드에서 받아도 인쇄·슬라이드에 그대로 쓰게)
+  function drawExportStrip(ctx, f, W, H, STRIP) {
+    var FONT = 'system-ui, -apple-system, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+    ctx.fillStyle = "#fffdf8";
+    ctx.fillRect(0, H, W, STRIP);
+    ctx.fillStyle = "#d8d2c4";
+    ctx.fillRect(0, H, W, 1);
+    ctx.textBaseline = "alphabetic";
+    var units = frameUnits(f).filter(function (u) { return u.rank !== "subperiod"; })
+      .map(function (u) { return u.rank === "epoch" ? chipName(u) : u.ko; }).join(" › ");
+    var head = fmtAge(f.age) + (units ? "  " + units : "") + (f.label ? " · " + f.label : "") +
+      (f.climate ? " · " + tr("export.gmst", { t: f.climate.gmst.toFixed(1) }) : "");
+    var filters = [tr(state.proj === "moll" ? "export.moll" : "export.eq")];
+    if (state.taxon) filters.push(tr("export.taxon", { name: state.taxon }));
+    if (state.country) filters.push(tr("export.country", { name: countryName(state.country) }));
+    if (state.colorBy === "age") filters.push(tr("export.colorAge"));
+    ctx.fillStyle = "#8a4b14";
+    ctx.font = "700 14px " + FONT;
+    ctx.fillText("Wegener's Dream", 10, H + 20);
+    var x = 10 + ctx.measureText("Wegener's Dream").width + 10;
+    ctx.fillStyle = "#1f2328";
+    ctx.font = "600 13px " + FONT;
+    ctx.fillText(head, x, H + 20, W - x - 10);
+    ctx.fillStyle = "#5d6470";
+    ctx.font = "12px " + FONT;
+    ctx.fillText(filters.join(" · "), 10, H + 38, W - 20);
+    ctx.font = "11px " + FONT;
+    ctx.fillText(tr("attribution") + " · " + location.href + " · " + new Date().toISOString().slice(0, 10), 10, H + 56, W - 20);
+  }
+
   // 고른 나라의 범위로 지도를 당긴다.
   // - 국경 조각들 가운데 가장 큰 조각을 잡고, 그 둘레(20°)의 조각만 함께 넣는다 — 알래스카·하와이,
   //   날짜변경선에서 잘린 러시아 동쪽 끝 같은 조각까지 넣으면 지구 전체로 물러난다

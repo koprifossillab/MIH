@@ -332,6 +332,14 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .thermo-read span { font-size: 11px; color: var(--muted); }
 .thermo-read small { margin-top: 4px; font-size: 10px; color: var(--muted); white-space: nowrap; }
 
+/* 지도 위 단추 — 그림으로 내려받기(wetherilli 008) */
+.map-btn {
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent); color: var(--ink); box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+.map-btn:hover { color: var(--accent); border-color: var(--accent); }
+.map-btn:disabled { opacity: .6; cursor: progress; }
+
 /* 축척 막대(wetherilli 001) — 출처 표기 위, 오른쪽 아래 */
 .leaflet-control-scale-line {
   background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink);
