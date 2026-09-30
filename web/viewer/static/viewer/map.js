@@ -632,7 +632,56 @@
       return '<span class="unit" style="background:' + u.color + ";color:" + ink(u.color) + '" title="' + esc(u.en) + '">' +
         esc(u.rank === "epoch" ? chipName(u) : u.ko) + "</span>";
     }).join('<span class="sep">›</span>');
-    $("now-label").textContent = f.label + (f.climate ? tr("header.gmst", { t: f.climate.gmst.toFixed(1) }) : "");
+    $("now-label").textContent = f.label;   // 전 지구 평균 기온은 지도 왼쪽 위 온도계로 옮겼다(wetherilli 002)
+    renderThermo(f);
+  }
+
+  // ── 전 지구 평균 기온 온도계(wetherilli 002) ─────────────────────────
+  // 확대·축소 단추가 있던 왼쪽 위. 눈금은 모든 시점의 평균 기온 범위를 5 ℃ 단위로 넓힌 것이고, 지금(0 Ma)의
+  // 값에 금을 긋는다 — 그때가 지금보다 얼마나 더웠는지가 한눈에 보이게.
+  var thermo = L.control({ position: "topleft" });
+  thermo.onAdd = function () {
+    var div = L.DomUtil.create("div", "thermo");
+    div.id = "thermo";
+    div.hidden = true;
+    L.DomEvent.disableClickPropagation(div);
+    return div;
+  };
+  thermo.addTo(map);
+  var THERMO = { lo: 10, hi: 40, now: null };
+  function initThermo() {
+    var vals = state.frames.filter(function (f) { return f.climate; }).map(function (f) { return f.climate.gmst; });
+    if (!vals.length) return;
+    THERMO.lo = Math.floor(Math.min.apply(null, vals) / 5) * 5;
+    THERMO.hi = Math.ceil(Math.max.apply(null, vals) / 5) * 5;
+    var now = state.frames.filter(function (f) { return f.age === 0 && f.climate; })[0];
+    THERMO.now = now ? now.climate.gmst : null;
+  }
+  function renderThermo(f) {
+    var box = $("thermo");
+    if (!box) return;
+    box.hidden = !f.climate;
+    if (!f.climate) return;
+    var t = f.climate.gmst, lo = THERMO.lo, hi = THERMO.hi;
+    // 관: 위 y=8 ~ 아래 y=78, 구: 가운데 y=90
+    var y = function (v) { return 78 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo) * 70; };
+    var rgb = "rgb(" + tempColor(t).join(",") + ")", ticks = "";
+    for (var v = lo; v <= hi; v += 5) {
+      ticks += '<line x1="21" x2="' + (v % 10 ? 24 : 26) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>' +
+        (v % 10 ? "" : '<text x="28" y="' + (y(v) + 3) + '">' + v + "</text>");
+    }
+    var nowMark = THERMO.now == null ? "" :
+      '<line class="now" x1="7" x2="19" y1="' + y(THERMO.now) + '" y2="' + y(THERMO.now) + '"/>';
+    box.innerHTML = '<svg viewBox="0 0 44 100" width="44" height="100" aria-hidden="true">' +
+      '<rect class="tube" x="8" y="4" width="10" height="80" rx="5"/>' +
+      '<circle class="tube" cx="13" cy="90" r="8"/>' +
+      '<rect x="10.5" y="' + y(t) + '" width="5" height="' + (90 - y(t)) + '" fill="' + rgb + '"/>' +
+      '<circle cx="13" cy="90" r="5.5" fill="' + rgb + '"/>' +
+      '<g class="ticks">' + ticks + "</g>" + nowMark + "</svg>" +
+      '<div class="thermo-read"><b>' + t.toFixed(1) + '</b><span>' + (EN ? "°C" : "℃") + "</span>" +
+      "<small>" + tr("thermo.label") + "</small></div>";
+    box.title = tr("thermo.title", { t: t.toFixed(1), age: fmtAge(f.climate.source_age) }) +
+      (THERMO.now == null ? "" : tr("thermo.now", { t: THERMO.now.toFixed(1) }));
   }
 
   // ── 시점 ────────────────────────────────────────────────────────────
@@ -1959,6 +2008,7 @@
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
+      initThermo();
       $("temp-bar").style.background = "linear-gradient(90deg," + [-40, -30, -20, -10, 0, 10, 20, 30, 40].map(function (t) {
         return "rgb(" + tempColor(t).join(",") + ")";
       }).join(",") + ")";

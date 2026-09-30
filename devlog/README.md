@@ -59,3 +59,4 @@
 | koprifossillab 030 | 2026-09-30 | [몰바이데에서 지구가 옆으로 밀려 남던 것, 돌리는 동안의 세로 이동](20260930_koprifossillab_030_mollweide_view_reset.md) |
 | koprifossillab 031 | 2026-09-30 | [릴리스 태그마다 Docker Hub 에 이미지를 올린다](20260930_koprifossillab_031_dockerhub_push_setup.md) |
 | wetherilli 001 | 2026-09-30 | [확대·축소 단추를 치우고 축척 막대를 단다](20260930_wetherilli_001_zoom_buttons_scale_bar.md) |
+| wetherilli 002 | 2026-09-30 | [전 지구 평균 기온을 온도계로](20260930_wetherilli_002_gmst_thermometer.md) |

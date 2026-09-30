@@ -250,6 +250,22 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   background: color-mix(in srgb, var(--bg) 88%, transparent); z-index: 2000;
 }
 
+/* 전 지구 평균 기온 온도계(wetherilli 002) — 왼쪽 위 */
+.thermo {
+  display: flex; align-items: flex-end; gap: 2px; padding: 6px 8px 6px 4px; border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent); color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3); cursor: default;
+}
+.thermo svg { display: block; }
+.thermo .tube { fill: var(--bg); stroke: var(--muted); stroke-width: 1; }
+.thermo .ticks line { stroke: var(--muted); stroke-width: 1; }
+.thermo .ticks text { fill: var(--muted); font: 9px system-ui, sans-serif; }
+.thermo line.now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
+.thermo-read { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; padding-bottom: 2px; }
+.thermo-read b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.thermo-read span { font-size: 11px; color: var(--muted); }
+.thermo-read small { margin-top: 4px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+
 /* 축척 막대(wetherilli 001) — 출처 표기 위, 오른쪽 아래 */
 .leaflet-control-scale-line {
   background: color-mix(in srgb, var(--panel) 82%, transparent); color: var(--ink);

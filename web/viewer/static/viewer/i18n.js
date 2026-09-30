@@ -34,7 +34,6 @@
     "focus.inside": ["{unit} ({base}–{top} Ma) 안의 {age} 지도.", "{age} map within {unit} ({base}–{top} Ma)."],
     "focus.nearest": ["{unit} ({base}–{top} Ma) 안에는 지도 시점이 없다 — 가장 가까운 {age} 지도를 보인다.",
                       "No map falls within {unit} ({base}–{top} Ma) — showing the nearest, {age}."],
-    "header.gmst": [" · 전 지구 평균 {t} ℃", " · global mean {t} °C"],
     "coast.none": ["이 시점 ±10 Myr 안에 해안선 자료가 없다.", "No coastline within ±10 Myr of this time."],
     "coast.nearest": ["가장 가까운 {age} 해안선을 그었다.", "Showing the nearest coastline, {age}."],
     // 퇴적 환경 나무
@@ -120,6 +119,9 @@
     "climate.gmst": ["전 지구 평균 {t} ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.", "Global mean {t} °C. HadCM3L simulations nudged to proxy data."],
     "readout": ["기온 {t} ℃ · ", "{t} °C · "],
     // 지도 도구
+    "thermo.label": ["전 지구 평균", "global mean"],
+    "thermo.title": ["전 지구 평균 지표 기온 {t} ℃ — Scotese 2021, {age} 지도.", "Global mean surface temperature {t} °C — Scotese 2021, {age} map."],
+    "thermo.now": [" 가로 금은 지금(0 Ma) {t} ℃.", " The bar marks today (0 Ma), {t} °C."],
     "scale.title": ["화면 가운데 위도({lat}°)의 위선을 따라 잰 가로 거리 — 축척은 위도마다 다르다",
                     "East–west distance along the parallel at the map centre ({lat}°) — scale varies with latitude"],
     // 패널·출처
