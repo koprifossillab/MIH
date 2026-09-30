@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.20.0` (09-30, PR #1~#17) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `0.20.1` (09-30, PR #1~#18) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
 (CLAUDE.md "커밋과 PR"). **병합 직전에 `deploy/host/premerge.sh <PR>`**(충돌·뒤처짐·판·CI, wetherilli 010).
@@ -17,7 +17,7 @@
 몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
 `build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
 
-**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.20.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.20.1`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
 운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
@@ -56,8 +56,8 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 - 화면 배치(wetherilli 001~014, tupandactyl 002·003): 머리말 밑 한 줄에 창 폭을 채운 시점 막대(기·세 띠에 영어 이름, 좁으면
   규칙으로 만든 약자)와 "차례로 보기". 패널은 오른쪽 하나 — 층서표 칩 · 화석 산지(퇴적 환경은 처음에
   퇴적기원 셋만) · 분류군 찾기(찾은 뒤에만) · 겹쳐 보기. 화면 문구는 "점" 이 아니라 "포인트". 머리말 오른쪽에 투영 붙은 단추와 ⚙ 설정 · 자료 창(언어·읽는 법·출처·판).
-  지도 왼쪽 위에 전 지구 평균 기온 온도계, 오른쪽 위에 도구 묶음(전체·거리·링크·다운로드 | 지우기), 오른쪽 아래에 두꺼운
-  축척 막대, 지도 위에 끌어 옮기는 "분류군 또는 국가" 찾기 카드와 고른 것의 딱지. 확대·축소 단추는 없다(휠·키).
+  지도 왼쪽 위에 전 지구 평균 기온 온도계, 오른쪽 위에 도구 묶음(확대·축소 | 전체·거리·링크·다운로드 | 지우기), 오른쪽 아래에 두꺼운
+  축척 막대, 지도 위에 끌어 옮기는 "분류군 또는 국가" 찾기 카드와 고른 것의 딱지. 휠·키로도 확대·축소한다.
   첫 배경이 올 때까지 대기 화면
 - 주소 `#age=…&proj=moll&lon=…&lang=en` 이 시점·투영·가운데 경선·언어를 담는다. 옮기기·확대는 담지 않는다(030).
   지구본은 `proj=globe&lon=…&lat=…&alt=…`(km)로 카메라 자리를 담는다(015)
@@ -150,3 +150,4 @@ playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPR
 | 0.18.0 | 시점 막대 맨 위(영어 이름), 떠 있는 찾기 카드, 환경 나무 접기, 설명문은 설정 창의 "읽는 법", "다운로드", 명칭 고치기 끔 | tupandactyl 002 |
 | 0.19.0 | 세 번째 투영: 3D 지구본(Cesium, Leaflet 층을 비춘다) | wetherilli P01·015 |
 | 0.20.0 | 패널을 오른쪽 하나로, 층서표 글씨 키움, "포인트", 분류군 설명도 "읽는 법" 으로 | tupandactyl 003 |
+| 0.20.1 | 확대·축소 단추를 도구 묶음에 다시(지구본 포함) | tupandactyl 004 |
