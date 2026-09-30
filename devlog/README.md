@@ -55,3 +55,4 @@
 | koprifossillab 026 | 2026-09-30 | [패널을 접는다](20260930_koprifossillab_026_panel_collapse.md) |
 | koprifossillab 027 | 2026-09-30 | [영어판](20260930_koprifossillab_027_english_version.md) |
 | koprifossillab 028 | 2026-09-30 | [몰바이데에서 정거원통 테두리 해안선을 지운다](20260930_koprifossillab_028_mollweide_edge_coastlines.md) |
+| koprifossillab 029 | 2026-09-30 | [몰바이데에서 지구 밖을 끌면 지도를 옮긴다](20260930_koprifossillab_029_mollweide_drag_outside.md) |
