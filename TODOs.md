@@ -20,16 +20,8 @@
 
 ## 지구본 지형 — 운영 가공물에 붙이기 ([wetherilli 016](devlog/20260930_wetherilli_016_terrain_grids.md))
 
-0.21.0 뷰어는 가공물에 `terrain` 칸이 있어야 지형을 세운다(없으면 0.19.0 처럼 매끈한 구). **가공은 paleoadmin(koprifossillab)
-계정의 몫이다** — PaleoDEM 원본과 `.venv` 가 그 계정의 저장소 폴더에 있다.
+운영 가공물에 지형을 붙였다(09-30, paleoadmin). 남은 것:
 
-- [ ] **(paleoadmin) 0.21.0 을 병합·배포한 뒤** 지형만 굽어 붙이고 운영에 옮긴다(배경·화석은 다시 만들지 않는다, 5 분 남짓):
-      ```
-      cd ~/projects/WegenersDream && git pull
-      .venv/bin/python -m pipeline terrain                 # data/derived/terrain/*.webp(27 MB) + index.json 의 terrain 칸
-      rsync -a --exclude index.json data/derived/ /srv/WegenersDream/data/
-      rsync -a data/derived/index.json /srv/WegenersDream/data/index.json
-      ```
 - [ ] (누구든) 실제 GPU 가 있는 PC 에서 지구본을 끌어 돌려·기울여 보고 무게·처음 높이·점 크기·높이 과장(처음 ×15)을 알려
       준다 — 헤드리스(소프트웨어 WebGL)로만 확인했다
 

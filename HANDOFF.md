@@ -52,8 +52,9 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
   거르지 않고 **숨은 Leaflet 층(정거원통)을 비춘다** — 거르기·색을 고칠 때는 map.js 만 고치면 지구본도 따라온다. 거리 재기·
   축척 막대·커서 기온은 지구본에서 쉰다
 - **지구본 지형**(wetherilli 016·017, 0.21.0) — 가공물의 `terrain/<나이>.webp`(1/4° 높이 격자)를 브라우저가 풀어 Cesium 지형을
-  세운다. 높이 과장 밀대(처음 ×15). **운영 가공물에는 아직 지형이 없다** — 지형 칸이 숨고 매끈한 구로 뜬다. paleoadmin 이
-  `python -m pipeline terrain` 후 운영으로 옮겨야 보인다(TODOs)
+  세운다. 높이 과장 밀대(처음 ×15). 운영 가공물에도 지형이 있다 — 09-30
+  paleoadmin 이 `python -m pipeline terrain`(4 분 20 초, 109 시점, 27 MB)으로 굽어 `/srv/WegenersDream/data` 에 옮겼다.
+  `index.json` 은 `terrain` 칸 말고는 그대로다. 배경·화석을 다시 가공할 때는 `build` 가 지형도 함께 굽는다
 - 한국어·영어(027) — 문구는 `viewer/static/viewer/i18n.js`, 자료의 이름은 index.json 의 `en`. 패널은 절마다 접히고
   좁은 창에서는 통째로 접힌다(026)
 - 화면 배치(wetherilli 001~014, tupandactyl 002·003): 머리말 밑 한 줄에 창 폭을 채운 시점 막대(기·세 띠에 영어 이름, 좁으면
