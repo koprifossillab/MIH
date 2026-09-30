@@ -304,7 +304,8 @@
     },
     _load: function (url) {
       var self = this, img = new Image();
-      img.onload = function () { if (self._url === url) { self._src = img; self.paint(); } };
+      img.onload = function () { if (self._url === url) { self._src = img; self.paint(); self.fire("load"); } };
+      img.onerror = function () { if (self._url === url) self.fire("error"); };
       img.src = url;
     },
     paint: function () {
@@ -2021,7 +2022,33 @@
       // 같은 페이지에서 # 만 바뀐 주소로 가면(주소창에 붙여 넣기 등) 다시 불러오지 않는다 — 주소대로 다시 맞춘다.
       // history.replaceState(writeHash)는 hashchange 를 부르지 않는다.
       window.addEventListener("hashchange", function () { applyHash(false); });
-    }).catch(function (err) { console.error(err); });
+      // 첫 배경이 그려지면 대기 화면을 걷는다. 배경이 늦거나 실패해도 12 초 뒤에는 걷는다 — 점·찾기는 쓸 수 있다
+      relief.once("load error", hideSplash);
+      setTimeout(hideSplash, 12000);
+    }).catch(function (err) {
+      console.error(err);
+      splashFail();
+    });
+  }
+
+  // ── 대기 화면(wetherilli 005) ──────────────────────────────────────
+  function hideSplash() {
+    var box = $("splash");
+    if (!box || box.classList.contains("done")) return;
+    box.classList.add("done");                     // 0.3 초 흐려지며 걷힌다(CSS)
+    setTimeout(function () { box.remove(); }, 400);
+  }
+  // 자료 목록(index.json)을 못 읽으면 지도가 빈 채로 남는다 — 그렇다고 말하고 다시 불러오는 단추를 준다
+  function splashFail() {
+    var box = $("splash");
+    if (!box) return;
+    box.classList.add("failed");
+    $("splash-msg").textContent = tr("load.fail");
+    var retry = $("splash-retry");
+    retry.textContent = tr("load.retry");
+    retry.hidden = false;
+    retry.addEventListener("click", function () { location.reload(); });
+    retry.focus();
   }
 
   // 주소(#age=…&proj=moll&lon=…&lang=en)대로 시점·투영·가운데 경선을 맞추고 지구 전체를 가운데 둔다.

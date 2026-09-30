@@ -118,6 +118,10 @@
     "climate.nearest": ["가장 가까운 {age} 지도. ", "Nearest map, {age}. "],
     "climate.gmst": ["전 지구 평균 {t} ℃. HadCM3L 모의를 대리 자료에 맞춘 값이다.", "Global mean {t} °C. HadCM3L simulations nudged to proxy data."],
     "readout": ["기온 {t} ℃ · ", "{t} °C · "],
+    // 대기 화면
+    "load.fail": ["자료 목록(index.json)을 읽지 못했다. 서버나 연결을 확인하고 다시 불러온다.",
+                  "Could not load the data list (index.json). Check the server or your connection and reload."],
+    "load.retry": ["다시 불러오기", "Reload"],
     // 지도 도구
     "thermo.label": ["전 지구 평균", "global mean"],
     "thermo.title": ["전 지구 평균 지표 기온 {t} ℃ — Scotese 2021, {age} 지도.", "Global mean surface temperature {t} °C — Scotese 2021, {age} map."],

@@ -201,7 +201,17 @@
     </aside>
   </main>
 
-  {% if not has_data %}
+  {% if has_data %}
+  <!-- 대기 화면(wetherilli 005) — 첫 배경 그림이 그려지면 걷힌다. 영어로 열 때 <body> 가 잠깐 가려져도 이것은 보인다 -->
+  <div class="splash" id="splash" role="status" aria-live="polite">
+    <div class="splash-card">
+      <div class="splash-brand"><strong>Wegener's Dream</strong> <span>베게너의 꿈</span></div>
+      <div class="splash-spin" aria-hidden="true"></div>
+      <p class="splash-msg" id="splash-msg"><span class="ko">지도를 불러오는 중…</span><span class="en">Loading the map…</span></p>
+      <button type="button" id="splash-retry" hidden></button>
+    </div>
+  </div>
+  {% else %}
   <div class="empty" role="alert">
     <h2 data-i18n="empty.title">자료가 아직 없다</h2>
     <p><span data-i18n="empty.run">파이프라인을 먼저 돌린다:</span> <code>python -m pipeline all</code></p>
