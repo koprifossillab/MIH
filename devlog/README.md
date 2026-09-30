@@ -85,3 +85,4 @@
 | tupandactyl 007 | 2026-09-30 | [첫 화면에 모든 시대의 산지, 끌어 옮기는 옛 지도 축척, 책등 칩](20260930_tupandactyl_007_all_eras_landing.md) |
 | koprifossillab 032 | 2026-09-30 | [매주 월요일 새벽: 운영 자료 백업과 PBDB 갱신](20260930_koprifossillab_032_weekly_refresh.md) |
 | tupandactyl 008 | 2026-09-30 | [제4기 안의 시대 이름은 모호한 연대에서 뺀다](20260930_tupandactyl_008_quaternary_precise.md) |
+| tupandactyl 009 | 2026-09-30 | [최근 5 Ma 를 절 단위 시점으로, 기온 지도도 절 경계로](20260930_tupandactyl_009_recent_stages.md) |

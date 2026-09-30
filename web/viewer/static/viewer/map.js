@@ -85,7 +85,7 @@
     });
   }
 
-  function fmtAge(age) { return (age % 1 ? age.toFixed(1) : String(age)) + " Ma"; }
+  function fmtAge(age) { return String(Math.round(age * 100) / 100) + " Ma"; }   // 최근의 절은 0.07·0.45 Ma(tupandactyl 009)
   function fmtNum(n) { return Number(n).toLocaleString(EN ? "en-US" : "ko-KR"); }
 
   // ── 점 색 ───────────────────────────────────────────────────────────
@@ -811,13 +811,86 @@
   // ── 시점 ────────────────────────────────────────────────────────────
   function frame() { return state.frames[state.i]; }
 
+  // 시점이 산지를 모으는 창. 5 Myr 간격 시점은 ±WINDOW_MA 와 겹치면(경계 포함), 최근의 절(tupandactyl 009)은 그 절과
+  // **안쪽으로** 겹쳐야 — 절끼리 경계를 맞대고 있어 "Pleistocene"(위 끝 0.0117 Ma)이 홀로세에 오르지 않게. 길이 0 인
+  // 산지는 경계 위여도 넣는다
+  function win(f) { return f.window || [Math.max(0, f.age - WINDOW_MA), f.age + WINDOW_MA]; }
+  function inWin(f, old, young) {
+    old = +old; young = +young;
+    if (old < young) { var t = old; old = young; young = t; }
+    if (!f.window) return old >= f.age - WINDOW_MA && young <= f.age + WINDOW_MA;
+    var w = f.window;
+    return (old > w[0] && young < w[1]) || (old === young && w[0] <= old && old <= w[1]);
+  }
+
+  // ── 최근의 절을 시점으로(tupandactyl 009) ───────────────────────────
+  // 5 Myr 간격의 지도로는 0 Ma 한 장에 홀로세부터 플라이오세 후반까지 다 들어갔다. 연구자가 플라이오세까지 절 단위로
+  // 나누기로 했고, 5 Myr 안에서는 대륙이 거의 움직이지 않으니 **가공물을 새로 만들지 않고** 이미 있는 0 Ma·5 Ma 지도의
+  // 산지를 절의 경계로 다시 걸러 쓴다(연구자). 배경·해안선·국경·기온은 가까운 쪽(2.5 Ma 보다 젊으면 0 Ma, 아니면 5 Ma)
+  // 것이고, 산지 좌표도 그 지도의 것이다. 홀로세의 세 절(합해 1.2 만 년)은 하나로 둔다. 0 Ma 시점은 홀로세가 맡는다.
+  function buildRecentSlices() {
+    var all = Object.keys(state.units).map(unit);
+    var plio = all.filter(function (u) { return u.en === "Pliocene"; })[0];
+    var holo = all.filter(function (u) { return u.en === "Holocene"; })[0];
+    var f0 = state.frames.filter(function (f) { return f.age === 0; })[0];
+    var f5 = state.frames.filter(function (f) { return f.age === 5; })[0];
+    if (!plio || !holo || !f0 || !f5 || !f0.fossils || !f5.fossils || !f0.fossils.file || !f5.fossils.file) return;
+    var picks = [holo].concat(all.filter(function (u) { return u.rank === "age" && u.base > holo.base && u.base <= plio.base + 1e-9; }));
+    var slices = picks.map(function (u) {
+      var age = u === holo ? 0 : Math.round((u.top + u.base) / 2 * 100) / 100;
+      var src = age < 2.5 ? f0 : f5;
+      var f = Object.assign({}, src, {
+        age: age, label: u.en, window: [u.top, u.base], src: src,
+        slice: { unit: u.id, sources: [f0, f5] },
+        units: all.filter(function (v) { return v.top <= age && (age < v.base || (age === 0 && v.top === 0)); }).map(function (v) { return v.id; }),
+      });
+      f.fossils = Object.assign({}, src.fossils, { file: null });   // 산지는 loadFossils 가 두 지도에서 걸러 만든다
+      // 기온 지도도 절 경계로 — 그 절 안의 나이의 격자만 쓴다(연구자: 플라이스토세와 홀로세의 기후는 전혀 다르다).
+      // Scotese(2021) 격자는 5 Myr 간격이라 홀로세(0 Ma)·장클레절(5 Ma)만 제 것이 있고, 나머지 절은 없다고 말한다
+      var c = src.climate;
+      f.climate = c && c.source_age >= u.top - 1e-9 && c.source_age <= u.base + 1e-9 ? c : null;
+      return f;
+    });
+    state.frames = state.frames.filter(function (f) { return f !== f0; }).concat(slices)
+      .sort(function (a, b) { return b.age - a.age; });
+    state.recent = slices.slice().sort(function (a, b) { return b.age - a.age; });
+    renderRecent();
+  }
+  // 시점 막대 밑 "최근 5 Ma" 칩 — 절이 막대 끝 1 % 안에 몰려 밀대로는 고르기 어렵다
+  function renderRecent() {
+    var box = $("recent");
+    if (!box || !state.recent) return;
+    box.innerHTML = '<span class="recent-cap">' + tr("recent.cap") + "</span>";
+    state.recent.forEach(function (f) {
+      var u = unit(f.slice.unit), b = document.createElement("button");
+      b.type = "button"; b.className = "rchip"; b.dataset.age = f.age;
+      b.style.backgroundColor = u.color; b.style.color = ink(u.color);
+      b.textContent = /^(전기|중기|후기)$/.test(u.ko) ? u.full : chipName(u);   // "후기" 만으로는 무엇의 후기인지 모른다
+      b.title = u.full + (EN ? "" : " · " + u.en) + " · " + u.base + "–" + u.top + " Ma";
+      b.addEventListener("click", function () { stopTour(); show(state.frames.indexOf(f)); });
+      box.appendChild(b);
+    });
+  }
+  function markRecent(f) {
+    document.querySelectorAll("#recent .rchip").forEach(function (b) { b.classList.toggle("on", !!f.slice && +b.dataset.age === f.age); });
+  }
+  // 밀대는 나이로 움직인다 — 시점 간격이 고르지 않아서(최근의 절). 놓은 자리에서 가장 가까운 시점으로 간다
+  var SLIDER_MAX = 1000;
+  function sliderOf(age) { return Math.round((OLDEST - Math.min(OLDEST, age)) / OLDEST * SLIDER_MAX); }
+  function frameAtSlider(v) {
+    var age = OLDEST - v / SLIDER_MAX * OLDEST, best = 0;
+    state.frames.forEach(function (f, j) { if (Math.abs(f.age - age) < Math.abs(state.frames[best].age - age)) best = j; });
+    return best;
+  }
+
   function show(i, opts) {
     opts = opts || {};
     state.i = Math.max(0, Math.min(state.frames.length - 1, i));
     state.focus = opts.focus || null;
     if (!opts.focus) $("chrono-note").textContent = "";
     var f = frame();
-    $("slider").value = state.i;
+    $("slider").value = sliderOf(f.age);
+    markRecent(f);
     renderHeader(f);
     renderChrono();
     writeHash(f);
@@ -998,12 +1071,29 @@
   // 자료(state.payload)는 곧바로 비우지만 화면의 점은 새 자료가 올 때까지 둔다 — 먼저 지우면
   // 처음 가 보는 시점마다 받는 동안(사내망에서 0.1~0.3 초) 점이 사라져 깜박인다(021).
   // state.payload 를 남기지 않는 것은 분류군 찾기가 그것을 이 시점의 좌표로 믿고 쓰기 때문이다(017).
+  // 최근의 절 시점은 0 Ma·5 Ma 지도의 산지를 합쳐 절의 창으로 거른다. 좌표는 그 절이 쓰는 지도(src)의 것을 먼저,
+  // 그 지도에 없는 산지만 다른 지도의 것을 쓴다(5 Myr 안에서는 거의 같은 자리다)
+  function slicePayload(f) {
+    var srcs = [f.src].concat(f.slice.sources.filter(function (g) { return g !== f.src; }));
+    return Promise.all(srcs.map(function (g) { return getJSON(dataUrl(g.fossils.file)); })).then(function (loaded) {
+      var col = columns(loaded[0]), seen = {}, rows = [];
+      loaded.forEach(function (p) {
+        p.rows.forEach(function (row) {
+          var no = row[col.collection_no];
+          if (seen[no] || !inWin(f, row[col.max_ma], row[col.min_ma])) return;
+          seen[no] = true;
+          rows.push(row);
+        });
+      });
+      return { age: f.age, fields: loaded[0].fields, rows: rows };
+    });
+  }
   function loadFossils(f) {
     $("fossil-count").textContent = "";
     state.payload = null;
-    if (!f.fossils || !f.fossils.file) { fossilLayer.clearLayers(); return; }
+    if (!f.slice && (!f.fossils || !f.fossils.file)) { fossilLayer.clearLayers(); return; }
     var want = f.age;
-    getJSON(dataUrl(f.fossils.file)).then(function (payload) {
+    (f.slice ? slicePayload(f) : getJSON(dataUrl(f.fossils.file))).then(function (payload) {
       if (frame().age !== want) return;
       state.payload = payload;
       var col = columns(payload);
@@ -1267,7 +1357,7 @@
           if (o.old > u.top && o.young < u.base) units[id] = (units[id] || 0) + 1;
         });
         state.frames.forEach(function (f, j) {
-          if (o.old >= f.age - WINDOW_MA && o.young <= f.age + WINDOW_MA) frames[j] = (frames[j] || 0) + 1;
+          if (inWin(f, o.old, o.young)) frames[j] = (frames[j] || 0) + 1;
         });
       });
     } else {
@@ -1276,7 +1366,7 @@
         total += s.n;
         addUnits((s.base + s.top) / 2, s.n);
         state.frames.forEach(function (f, j) {
-          if (s.base >= f.age - WINDOW_MA && s.top <= f.age + WINDOW_MA) frames[j] = (frames[j] || 0) + s.n;
+          if (inWin(f, s.base, s.top)) frames[j] = (frames[j] || 0) + s.n;
         });
       });
     }
@@ -1346,9 +1436,10 @@
     });
   }
 
-  function taxonUrl(name, age) {
+  function taxonUrl(name, f) {
+    var w = win(f);
     return PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) +
-      "&max_ma=" + (age + WINDOW_MA) + "&min_ma=" + Math.max(0, age - WINDOW_MA) +
+      "&max_ma=" + w[1] + "&min_ma=" + w[0] +
       (state.country ? "&cc=" + encodeURIComponent(state.country) : "") +
       "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class,env,loc&vocab=pbdb&limit=20000";
   }
@@ -1412,7 +1503,7 @@
     $("taxon-status").textContent = tr("taxon.asking", { name: name, age: fmtAge(f.age) });
     drawFossils();
     // 결과를 그리고 나서 풀리는 약속을 돌려준다 — 차례로 보기(011)가 이것을 기다린다.
-    return getJSON(taxonUrl(name, f.age)).then(function (data) {
+    return getJSON(taxonUrl(name, f)).then(function (data) {
       if (seq !== taxonSeq) return;
       if (data.errors) throw new Error(data.errors.join(" "));
       // 산출을 산지로 묶는다 — 한 산지의 여러 산출이 같은 자리에 겹쳐 그려지지 않게.
@@ -1420,6 +1511,7 @@
       (data.records || []).forEach(function (r) {
         // 연대 범위의 상한은 없다 — 모호한 연대는 precise = 0 으로 세모로 그린다(016)
         if (r.paleolat == null || r.paleolng == null) return;
+        if (f.window && !inWin(f, r.max_ma, r.min_ma)) return;      // PBDB 의 overlap 은 경계에 닿은 것도 준다 — 절 시점은 안쪽만
         var row = byColl[r.collection_no];
         if (!row) {
           row = byColl[r.collection_no] = [r.collection_no, r.paleolng, r.paleolat, "", 0, r.collection_name,
@@ -1456,7 +1548,7 @@
   // 절들로 구간을 잡는다. 절 단위 산출이 없는 시점만 산출 범위의 합으로 돌아간다.
   function coevalSpan(rows) {
     if (!rows.length) return null;
-    var f = frame(), lo = f.age - WINDOW_MA, hi = f.age + WINDOW_MA, stages = [];
+    var f = frame(), lo = win(f)[0], hi = win(f)[1], stages = [];
     // 지도 나이가 든 절을 먼저 쓴다. 창에 살짝 걸친 이웃 절까지 넣으면(70 Ma 창이 캄파이나절 끝 0.3 Myr
     // 에 걸친다) 구간이 다시 넓어진다. 나이가 든 절에 산출이 없으면 창과 가장 많이 겹치는 절 하나.
     var cands = ((state.dist && state.dist.stages) || []).filter(function (s) { return s.base >= lo && s.top <= hi; });
@@ -1864,7 +1956,7 @@
     if (globe) globe.mark("climate");
     var on = $("climate").checked, info = f.climate;
     $("temp-legend").hidden = !on;
-    $("climate-note").textContent = !info ? tr("climate.none") :
+    $("climate-note").textContent = !info ? (f.slice ? tr("climate.stageNone", { stage: unit(f.slice.unit).full }) : tr("climate.none")) :
       (info.source_age === f.age ? "" : tr("climate.nearest", { age: fmtAge(info.source_age) })) +
       tr("climate.gmst", { t: info.gmst.toFixed(1) });
     if (!on || !info) { map.removeLayer(climateLayer); map.removeLayer(climateMoll); return; }
@@ -2386,7 +2478,7 @@
   // ── 조작 ────────────────────────────────────────────────────────────
   function bind() {
     // 손으로 시점을 옮기면 차례로 보기를 멈춘다.
-    $("slider").addEventListener("input", function () { stopTour(); show(+this.value); });
+    $("slider").addEventListener("input", function () { stopTour(); var j = frameAtSlider(+this.value); if (j !== state.i) show(j); });
     $("older").addEventListener("click", function () { stopTour(); show(state.i - 1); });
     $("younger").addEventListener("click", function () { stopTour(); show(state.i + 1); });
     document.addEventListener("keydown", function (e) {
@@ -2489,9 +2581,10 @@
         (index.rules.vague_intervals || []).forEach(function (name) { VAGUE[name] = true; });
       }
       BUILT = index.built_at || "";
-      $("slider").max = state.frames.length - 1;
+      $("slider").max = SLIDER_MAX;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
+      buildRecentSlices();
       initThermo();
       $("temp-bar").style.background = "linear-gradient(90deg," + [-40, -30, -20, -10, 0, 10, 20, 30, 40].map(function (t) {
         return "rgb(" + tempColor(t).join(",") + ")";

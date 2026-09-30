@@ -44,6 +44,8 @@
     // 산지
     "fossil.taxonOnly": ["분류군 찾기 결과만 보인다", "showing taxon search results only"],
     "fossil.all": ["{n}곳", "{n}"],
+    "recent.cap": ["최근 5 Ma", "Last 5 Ma"],
+    "climate.stageNone": ["이 절({stage}) 안의 기온 지도가 없다 — Scotese(2021) 격자는 5 Myr 간격이다.", "No temperature map within this age ({stage}) — the Scotese (2021) grids are 5 Myr apart."],
     "legend.mid": ["색 = 산지 연대의 중간값이 드는 기 (범위가 긴 산지는 다른 기로 칠해진다)", "Colour = period of each locality's mid-age (long-ranging localities take another period's colour)"],
     "fossil.some": ["{n} / {total}곳", "{n} / {total}"],
     "fossil.vague": [" (모호한 연대 {n})", " (vague age {n})"],
