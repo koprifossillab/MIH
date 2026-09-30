@@ -17,7 +17,6 @@
   // 가공할 때마다 새 주소가 되게 한다 — 안 붙이면 013 에서 고친 노릭절 산지가 하루 동안 안 보였다.
   var BUILT = "";
   function dataUrl(path) { return DATA + path + (BUILT ? "?b=" + encodeURIComponent(BUILT) : ""); }
-  var CSRF = app.dataset.csrf;
   var PBDB = "https://paleobiodb.org/data1.2/";
   var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
   // 산지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
@@ -66,7 +65,7 @@
     countries: [], countryBy: {}, country: null,   // 국가로 거르기
     dist: null,                             // 찾은 분류군의 산출 시대 분포(센 결과)
     distBase: null,                         // 그 바탕 — PBDB 절 단위 수, 산출이 적으면 산출 기록 자체(014)
-    labels: { env: {} }, editable: false, needsKey: false, editing: false,
+    labels: { env: {} },
   };
   var cache = {};
 
@@ -556,17 +555,47 @@
     Object.keys(state.kids).forEach(function (k) { state.kids[k].sort(byOldFirst); });
     state.periods = ts.units.filter(function (u) { return u.rank === "period"; })
       .sort(function (a, b) { return a.top - b.top; });
-    // 시점 막대 밑의 기·세 띠 — 막대와 같게 왼쪽이 540 Ma 다.
+    // 시점 막대 위의 기·세 띠 — 막대와 같게 왼쪽이 540 Ma 다. 이름은 화면 언어와 상관없이 영어로(tupandactyl 002).
     var rows = { period: $("strip-period"), epoch: $("strip-epoch") };
     ts.units.forEach(function (u) {
       if (!rows[u.rank] || u.top >= OLDEST) return;
       var left = (OLDEST - Math.min(u.base, OLDEST)) / OLDEST * 100;
       var width = (Math.min(u.base, OLDEST) - u.top) / OLDEST * 100;
       var band = document.createElement("span");
-      band.style.cssText = "left:" + left + "%;width:" + width + "%;background:" + u.color;
-      band.title = u.full + " (" + u.base + "–" + u.top + " Ma)";
+      band.style.cssText = "left:" + left + "%;width:" + width + "%;background:" + u.color + ";color:" + ink(u.color);
+      band.title = (u.en || u.full) + (u.en && u.en !== u.full ? " · " + u.full : "") + " (" + u.base + "–" + u.top + " Ma)";
+      band.names = stripNames(u.en || u.full);
       band.addEventListener("click", function () { focusUnit(u); });
       rows[u.rank].appendChild(band);
+    });
+    fitStripNames();
+    if (window.ResizeObserver) new ResizeObserver(fitStripNames).observe($("strip"));
+    else window.addEventListener("resize", fitStripNames);
+  }
+
+  // 띠 이름의 후보 — 긴 것부터. 띠 폭에 드는 가장 긴 것을 적고, 아무것도 안 들면 비운다(이름은 title 에 남는다).
+  // 층서 이름을 map.js 에 적지 않으려고 약자는 규칙으로 만든다: Early/Middle/Late → E./M./L., 긴 낱말은 앞 서너 글자.
+  // "Late Cretaceous" → "L. Cretaceous" → "L. Cret." → "LCr"
+  var QUALIFIER = { Early: "E", Middle: "M", Late: "L" };
+  function stripNames(en) {
+    var words = en.split(" "), q = QUALIFIER[words[0]] && words.length > 1 ? QUALIFIER[words[0]] : "";
+    var rest = q ? words.slice(1) : words;
+    var short = rest.map(function (w) { return w.length <= 5 ? w : w.slice(0, w.length > 8 ? 4 : 3) + "."; }).join(" ");
+    var names = [en, (q ? q + ". " : "") + rest.join(" "), (q ? q + ". " : "") + short,
+                 q + rest.map(function (w) { return /^\d/.test(w) ? w : w.slice(0, 2); }).join("")];
+    return names.filter(function (n, i) { return names.indexOf(n) === i; });
+  }
+  var stripMeasure = document.createElement("canvas").getContext("2d");
+  function fitStripNames() {
+    ["strip-period", "strip-epoch"].forEach(function (id) {
+      var row = $(id), bands = row.children;
+      if (!bands.length) return;
+      stripMeasure.font = getComputedStyle(row).font;
+      for (var k = 0; k < bands.length; k++) {
+        var band = bands[k], room = band.getBoundingClientRect().width - 4;
+        var fit = band.names.filter(function (n) { return stripMeasure.measureText(n).width <= room; })[0] || "";
+        if (band.textContent !== fit) band.textContent = fit;
+      }
     });
   }
 
@@ -743,10 +772,11 @@
     tree.forEach(function (top) {
       state.topColor[top.id] = top.color || UNKNOWN_COLOR;
       var topEl = node("top", top.id, top.id, top.ko, top.en, swatch(top.color));
-      // 환경군은 펼쳐 둔다 — 접어 두면 작은 ▸ 단추를 찾지 못해 없는 것처럼 보였다.
-      // 원 용어(셋째 단계)는 많아서 접어 둔다.
+      // 처음에는 해양·육상·미상기원만 보이게 모두 접어 둔다(tupandactyl 002) — 전에는 환경군까지 펼쳐 두어
+      // 패널이 길었다. ▸ 로 펼친다. 원 용어(셋째 단계)도 접어 둔다.
       var groupsEl = document.createElement("div");
       groupsEl.className = "kids";
+      groupsEl.hidden = true;
       top.groups.forEach(function (g) {
         var terms = g.id === "o-unlisted" ? [UNLISTED] : g.terms.map(function (t) { return t.term; });
         terms.forEach(function (t) { state.termTop[t] = top.id; state.termGroup[t] = g.id; state.enabled[t] = true; });
@@ -776,10 +806,6 @@
       if (state.taxon) computeDist();   // 산출 시대의 수도 고른 퇴적기원을 따른다(014)
       redraw();
     });
-    box.addEventListener("click", function (e) {
-      var pen = e.target.closest(".pen");
-      if (pen) startEdit(pen.closest(".row"));
-    });
     syncChecks();
     applyLabels();
   }
@@ -789,7 +815,7 @@
     return '<i class="dot env-dot" style="background:' + esc(color || UNKNOWN_COLOR) + '"></i>';
   }
 
-  // 한 칸: [펼침] [체크 · 한글 이름 · 원 용어(반투명)] [✎] [수]. 이름은 덮어쓰기 표를 거쳐 적는다.
+  // 한 칸: [펼침] [체크 · 한글 이름 · 원 용어(반투명)] [수]. 이름은 덮어쓰기 표를 거쳐 적는다.
   function node(level, id, labelId, ko, original, prefix) {
     var el = document.createElement("div");
     el.className = "env " + level;
@@ -798,13 +824,13 @@
       '<label><input type="checkbox" data-level="' + level + '" data-id="' + esc(id) + '"> ' + prefix +
       ' <span class="name" data-label="' + esc(labelId) + '" data-default="' + esc(ko) + '">' + esc(ko) + "</span>" +
       (original && original !== ko ? ' <span class="orig">' + esc(original) + "</span>" : "") + "</label>" +
-      '<button type="button" class="pen" title="이름 고치기" aria-label="' + esc(ko) + ' 이름 고치기">✎</button>' +
       '<small class="n" data-count="' + level + ":" + esc(id) + '"></small></div>';
     return el;
   }
 
-  // ── 명칭 고치기 ─────────────────────────────────────────────────────
-  // 기본 이름은 index.json(파이프라인), 고친 이름은 서버의 덮어쓰기 표(/labels)에 있다.
+  // ── 명칭 덮어쓰기 ───────────────────────────────────────────────────
+  // 기본 이름은 index.json(파이프라인), 고친 이름은 서버의 덮어쓰기 표(/labels)에 있다. 화면에서 고치는 기능은
+  // 명칭을 다 고쳐 껐다(tupandactyl 002) — 표가 남아 있으면 읽어서 입히기만 한다.
   function labelFor(id, fallback) {
     var name = state.labels.env[id];
     return name || fallback;
@@ -822,79 +848,8 @@
   function loadLabels() {
     return fetch(LABELS_URL, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (data) {
       state.labels = { env: data.env || {} };
-      state.editable = !!data.editable;
-      state.needsKey = !!data.needs_key;
-      $("edit-toggle").hidden = !state.editable;
-      $("key-row").hidden = !state.needsKey;
       applyLabels();
     }).catch(function () { /* 덮어쓰기가 없으면 기본 이름으로 그린다 */ });
-  }
-
-  function setEditing(on) {
-    state.editing = on;
-    app.classList.toggle("editing", on);
-    $("editbar").hidden = !on;
-    $("edit-toggle").setAttribute("aria-pressed", String(on));
-    $("edit-toggle").textContent = on ? "✓ 고치기 마침" : "✎ 명칭 고치기";
-    if (on) {
-      // 원 용어까지 고칠 수 있게 모두 펼친다.
-      document.querySelectorAll("#envtree .kids[hidden]").forEach(function (k) {
-        k.hidden = false;
-        var tog = k.parentNode.querySelector(":scope > .row > .tog");
-        if (tog) { tog.textContent = "▾"; tog.setAttribute("aria-expanded", "true"); }
-      });
-    } else {
-      document.querySelectorAll("#envtree .editor").forEach(function (ed) { ed.cancel(); });
-    }
-  }
-
-  function startEdit(row) {
-    if (row.querySelector(".editor")) return;
-    var span = row.querySelector(".name");
-    var label = row.querySelector("label");
-    var form = document.createElement("form");
-    form.className = "editor";
-    form.innerHTML = '<input type="text" maxlength="60" aria-label="새 이름">' +
-      '<button type="submit">저장</button><button type="button" class="cancel">취소</button>';
-    var input = form.querySelector("input");
-    input.value = span.textContent;
-    input.placeholder = "기본: " + span.dataset.default;
-    label.hidden = true;
-    row.querySelector(".pen").hidden = true;
-    label.after(form);
-    input.focus();
-    input.select();
-    form.cancel = function () { form.remove(); label.hidden = false; row.querySelector(".pen").hidden = false; };
-    form.querySelector(".cancel").addEventListener("click", form.cancel);
-    input.addEventListener("keydown", function (e) { if (e.key === "Escape") form.cancel(); });
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var name = input.value.trim();
-      if (name === span.dataset.default) name = "";          // 기본과 같으면 덮어쓰기를 지운다
-      saveLabel(span.dataset.label, name).then(function () { form.cancel(); });
-    });
-  }
-
-  function saveLabel(id, name) {
-    var status = $("edit-status");
-    status.textContent = "저장하는 중…";
-    return fetch(LABELS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF },
-      body: JSON.stringify({ kind: "env", id: id, name: name, key: $("editor-key").value }),
-    }).then(function (r) {
-      return r.json().then(function (data) {
-        if (!r.ok) throw new Error(data.error || r.status);
-        return data;
-      });
-    }).then(function (data) {
-      state.labels = { env: data.env || {} };
-      applyLabels();
-      status.textContent = name ? "저장했다." : "기본 이름으로 돌렸다.";
-    }).catch(function (err) {
-      status.textContent = "저장하지 못했다: " + (err.message || err);
-      throw err;
-    });
   }
 
   function wireToggle(el, kids) {
@@ -937,7 +892,7 @@
       counts["group:" + g] = (counts["group:" + g] || 0) + n;
       counts["top:" + top] = (counts["top:" + top] || 0) + n;
     });
-    $("env-count-note").textContent = weight ? tr("env.count.occ", { taxon: state.taxon }) : tr("env.count.coll");
+    $("envtree").title = weight ? tr("env.count.occ", { taxon: state.taxon }) : tr("env.count.coll");
     document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
       var n = counts[el.dataset.count] || 0;
       el.textContent = fmtNum(n);
@@ -2304,7 +2259,6 @@
     });
     $("find-form").addEventListener("submit", function (e) { e.preventDefault(); submitFind(); });
     $("taxon-clear").addEventListener("click", clearTaxon);
-    $("edit-toggle").addEventListener("click", function () { setEditing(!state.editing); });
     bindSuggest();
   }
 
@@ -2424,6 +2378,51 @@
     sheet.addEventListener("click", function (e) { if (e.target === sheet) sheet.close(); });
   })();   // <head> 가 가려 둔 것을 벗긴다
 
+  // ── 찾기 카드 옮기기(tupandactyl 002) ──────────────────────────────
+  // 찾기 칸은 지도 위에 떠 있다. 카드의 빈 자리나 ⠿ 를 끌어 옮긴다 — 칸·단추·딱지를 누른 것은 끌기가 아니다.
+  // 자리는 지도 칸 안으로 가두고 브라우저에 기억한다(창 크기에 대한 비율). 후보 목록은 카드가 지도의 위쪽 절반에
+  // 있으면 아래로, 아래쪽이면 위로 연다.
+  (function initFindFloat() {
+    var KEY = "wegener.find", card = $("findfloat"), col = card.parentNode;
+    var pos = null;
+    try { pos = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* 막힌 저장소 */ }
+    function place() {
+      var W = col.clientWidth, H = col.clientHeight;
+      if (pos && W && H) {
+        var x = Math.max(0, Math.min(W - card.offsetWidth, pos.x * W));
+        var y = Math.max(0, Math.min(H - card.offsetHeight, pos.y * H));
+        card.style.left = x + "px";
+        card.style.top = y + "px";
+        card.style.bottom = "auto";
+      }
+      card.classList.toggle("below", card.offsetTop + card.offsetHeight / 2 < H / 2);
+    }
+    card.addEventListener("pointerdown", function (e) {
+      if (e.button !== 0 || (e.target !== $("find-grip") && e.target.closest("input, button, a, ul, .fchip"))) return;
+      e.preventDefault();
+      var ox = e.clientX - card.offsetLeft, oy = e.clientY - card.offsetTop;
+      card.classList.add("dragging");
+      card.setPointerCapture(e.pointerId);
+      function move(ev) {
+        var W = col.clientWidth, H = col.clientHeight;
+        pos = { x: (ev.clientX - ox) / W, y: (ev.clientY - oy) / H };
+        place();
+      }
+      function end() {
+        card.classList.remove("dragging");
+        card.removeEventListener("pointermove", move);
+        card.removeEventListener("pointerup", end);
+        card.removeEventListener("pointercancel", end);
+        try { if (pos) localStorage.setItem(KEY, JSON.stringify(pos)); } catch (e2) { /* 막힌 저장소 */ }
+      }
+      card.addEventListener("pointermove", move);
+      card.addEventListener("pointerup", end);
+      card.addEventListener("pointercancel", end);
+    });
+    if (window.ResizeObserver) new ResizeObserver(place).observe(col); else window.addEventListener("resize", place);
+    place();
+  })();
+
   // ── 패널 접기(026) ────────────────────────────────────────────────
   // 절 제목을 누르면 그 절을 접는다. 좁은 창(760 px 아래)에서는 패널 전체도 막대 하나로 접는다.
   // 접은 상태는 브라우저에 기억한다(없거나 막혀 있으면 기본값). 기본은 넓은 창이면 모두 펼침,
@@ -2456,7 +2455,7 @@
       var open = saved ? saved.collapsed.indexOf(sec.dataset.sec) < 0 : (!narrow.matches || sec.dataset.sec === "time");
       setSection(sec, open);
       function toggle(e) {
-        if (e.target.closest("button, input, select, a")) return;   // 제목 안의 단추(명칭 고치기)는 접지 않는다
+        if (e.target.closest("button, input, select, a")) return;   // 제목 안의 단추는 접지 않는다
         setSection(sec, sec.classList.contains("collapsed"));
         savePanel();
       }

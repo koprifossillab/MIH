@@ -73,3 +73,4 @@
 | wetherilli 012 | 2026-09-30 | [축척 막대를 GSM 처럼 두껍게, 테마를 따라](20260930_wetherilli_012_thick_scale_bar.md) |
 | wetherilli 013 | 2026-09-30 | [분류군·국가를 한 칸에서 찾는다](20260930_wetherilli_013_one_find_box.md) |
 | wetherilli 014 | 2026-09-30 | [그림 단추를 도구 묶음으로, 거리 재기·링크·전체 보기](20260930_wetherilli_014_map_tools.md) |
+| tupandactyl 002 | 2026-09-30 | [시점 막대를 맨 위로, 찾기 칸을 떠 있는 카드로, 잔정보는 설정 창으로](20260930_tupandactyl_002_layout_tidy.md) |
