@@ -43,9 +43,8 @@ CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.1
 그것을 읽어 실패·NAS 실패·8 일 넘은 침묵이면 `degraded`**(0.26.1, koprifossillab 034). 같은 날 다시 돌려도 백업을 덮어쓰지 않는다(`.2` …).
 백업의 모든 것(되살리기 포함)은 [docs/백업.md](docs/백업.md).
 
-**git 밖의 백업**: `D:\Claude\MIH-backup\20260929\`(Windows 작업 장비) — 09-29 PBDB 사본·`data/state`·가공물. 서버에
-09-30(UTC 09-29 20:37) PBDB 로 다시 가공한 것이 있어 가공물로는 옛것이다. 남은 뜻은 09-29 PBDB 사본(다시 받을 수
-없다) 하나다(TODOs).
+**git 밖의 백업**: 매주 `/data/WegenersDream/backups/`·NAS([docs/백업.md](docs/백업.md)). 첫 판을 만든 개인 PC(Windows)의
+`D:\Claude\MIH-backup\20260929\`(09-29 PBDB 사본 등)는 그 PC 를 더 쓰지 않아 옮기지 않기로 했다(09-30).
 
 **PBDB 자료가 어떻게 받아지고 가공되어 지도에 그려지는지**(빼는 산지·모호한 연대·시점 창·좌표·뷰어의 거르기·분류군 찾기)는
 [docs/PBDB_자료_처리.md](docs/PBDB_자료_처리.md).
