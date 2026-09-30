@@ -71,8 +71,8 @@ body {
   padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
 .brand { display: flex; align-items: center; gap: 2px 8px; flex-wrap: wrap; }
-.brand .brand-mark { width: 40px; height: 40px; flex: none; margin: -6px 0; }
-.brand strong { font: 400 25px/1 "La Belle Aurore", "Segoe Script", cursive; color: var(--accent); padding-top: 4px; }
+.brand .brand-mark { width: 58px; height: 58px; flex: none; }
+.brand strong { font: 400 27px/1 "La Belle Aurore", "Segoe Script", cursive; color: var(--accent); padding-top: 6px; }
 .brand .ver { margin-left: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .brand .sub { margin-left: 6px; color: var(--muted); }
 .now { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; flex: 1 1 0; min-width: 260px; }   /* 좁아지면 안에서 꺾여 오른쪽 단추가 제 줄에 남는다 */
@@ -291,8 +291,12 @@ body {
 .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; margin-bottom: 4px; }
 .legend:empty { display: none; }
 .legend .leg { display: inline-flex; align-items: center; gap: 4px; }
-.dot.env-dot { border-color: rgba(0, 0, 0, .35); }
-#app.color-age .env-dot { opacity: .2; }
+/* 퇴적기원 아이콘은 지도의 포인트와 같은 모양 — 불투명한 색에 흰 테, 바깥에 가는 그늘(tupandactyl 007).
+   시대(기)로 칠할 때는 지도에 그 색이 없으므로 숨긴다(흐리게 두면 지도와 맞대 보기 어려웠다) */
+.dot.env-dot, .legend .dot { width: 11px; height: 11px; border: 1.5px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .45); }
+#app.color-age .env-dot { visibility: hidden; }
+.legend .leg-head { flex-basis: 100%; font-size: 11.5px; color: var(--muted); font-style: italic; }
+.legend .leg.now { font-weight: 700; }
 .suggest .nm-plain small { color: var(--muted); }
 
 /* 원 용어는 한글 이름 옆에 반투명하게 */
@@ -414,14 +418,16 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
   box-shadow: 0 1px 4px rgba(0, 0, 0, .3); cursor: default;
 }
 .thermo svg { display: block; }
-.thermo .tube { fill: var(--bg); stroke: var(--muted); stroke-width: 1; }
-.thermo .ticks line { stroke: var(--muted); stroke-width: 1; }
-.thermo .ticks text { fill: var(--muted); font: 9.5px var(--font); }
+/* 관은 짙은 유리 — 밝은 판에서 옅은 기온 색(14 ℃ 무렵의 노랑)도 또렷하게 떠오른다 */
+.thermo .tube { fill: #3a2c20; stroke: var(--ink); stroke-width: 1.2; }
+.thermo .mercury { stroke: color-mix(in srgb, var(--ink) 75%, transparent); stroke-width: 1; }
+.thermo .ticks line { stroke: var(--ink); stroke-width: 1; }
+.thermo .ticks text { fill: var(--ink); font: 600 9.5px var(--font); }
 .thermo line.now { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2 1.5; }
 .thermo-read { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.1; padding-bottom: 2px; }
-.thermo-read b { font-size: 18px; font-variant-numeric: tabular-nums; }
-.thermo-read span { font-size: 11px; color: var(--muted); }
-.thermo-read small { margin-top: 4px; font-size: 10px; color: var(--muted); white-space: nowrap; }
+.thermo-read b { font-size: 20px; font-weight: 700; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+.thermo-read span { font-size: 11.5px; color: var(--ink); }
+.thermo-read small { margin-top: 4px; font-size: 10.5px; color: color-mix(in srgb, var(--ink) 80%, transparent); white-space: nowrap; }
 
 /* 지도 위 단추 — 그림으로 내려받기(wetherilli 008) */
 /* 도구 묶음(wetherilli 014) — GSM 의 손잡이처럼 세로로, 아이콘 밑에 이름. 결과 칸은 왼쪽 */
@@ -569,7 +575,10 @@ button, input, select { font-family: inherit; }
 .bar::before, .bar::after { content: ""; position: absolute; left: 8px; right: 8px; border-top: 1px solid rgba(216, 180, 103, .5); pointer-events: none; }
 .bar::before { top: 4px; } .bar::after { bottom: 4px; }
 .brand strong { color: var(--gilt); text-shadow: 0 1px 0 rgba(0, 0, 0, .6); }
-.brand .brand-mark { filter: drop-shadow(0 0 1px rgba(216, 180, 103, .9)); }
+/* 위아래 여백이 같게 — 머리말의 칸들을 가운데로 맞춘다(연구자: 왼쪽 위로 밀지 말고) */
+.bar { align-items: center; padding: 9px 18px; }
+.brand { align-items: center; gap: 2px 10px; }
+.brand strong { text-shadow: 0 1px 0 rgba(0, 0, 0, .65), 0 -1px 0 rgba(255, 228, 170, .18); }
 .brand .ver, .brand .sub, .now .sep, .now .label { color: var(--gilt-dim); }
 .now .age { color: #f0dfb8; font-variant-numeric: lining-nums tabular-nums; }
 .now .unit { filter: saturate(.8) sepia(.12); color: #231a10; }
@@ -586,7 +595,8 @@ button, input, select { font-family: inherit; }
 }
 .timebar { border-bottom: 1px solid var(--line); box-shadow: inset 0 -2px 3px rgba(80, 52, 22, .12); }
 .timebar input[type="range"], .opacity input, .panel input[type="checkbox"], .panel input[type="radio"], .timebar input[type="checkbox"] { accent-color: var(--accent); }
-.strip-row.named, .chip, .dist .chip { filter: saturate(.82) sepia(.1); }
+.strip-row.named { filter: saturate(.82) sepia(.1); }
+.chip, .dist .chip { filter: saturate(.9) sepia(.05); }
 .timebar > button { background: var(--field); border-color: var(--line); color: var(--accent); }
 .panel { border-left: 1px solid var(--line); box-shadow: inset 2px 0 4px rgba(80, 52, 22, .1); }
 .panel h2 { font-weight: 600; letter-spacing: .02em; }
@@ -625,8 +635,12 @@ button, input, select { font-family: inherit; }
 .chrono .chip, .dist .chip {
   border: 1px solid rgba(40, 25, 12, .55); border-radius: 2px 2px 1px 1px; padding: 2px 8px 3px;
   background-image:
-    linear-gradient(180deg, transparent 2px, rgba(216, 180, 103, .85) 2px 3px, transparent 3px calc(100% - 4px), rgba(216, 180, 103, .85) calc(100% - 4px) calc(100% - 3px), transparent calc(100% - 3px)),
-    linear-gradient(90deg, rgba(0, 0, 0, .22), rgba(255, 255, 255, .16) 18%, rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, .12) 85%, rgba(0, 0, 0, .28));
+    linear-gradient(180deg, transparent 1px, rgba(216, 180, 103, .8) 1px 2px, transparent 2px calc(100% - 2px), rgba(216, 180, 103, .8) calc(100% - 2px) calc(100% - 1px), transparent calc(100% - 1px)),
+    linear-gradient(90deg, rgba(0, 0, 0, .2), rgba(0, 0, 0, 0) 12%, rgba(0, 0, 0, 0) 88%, rgba(0, 0, 0, .22));
   box-shadow: 0 1px 1px rgba(40, 25, 12, .35);
+  font-weight: 600; letter-spacing: .01em;
 }
+/* 글자가 책등의 색에 묻히지 않게 — 밝은 책등의 짙은 글자에는 밝은, 짙은 책등의 흰 글자에는 짙은 가는 그림자 */
+.chrono .chip, .dist .chip { text-shadow: 0 0 2px rgba(255, 255, 255, .55); }
+.chrono .chip.light-ink, .dist .chip.light-ink { text-shadow: 0 1px 1.5px rgba(0, 0, 0, .7); }
 .chrono .chip.on { outline-color: var(--accent); }

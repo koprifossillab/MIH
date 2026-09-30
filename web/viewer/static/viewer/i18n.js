@@ -44,8 +44,7 @@
     // 산지
     "fossil.taxonOnly": ["분류군 찾기 결과만 보인다", "showing taxon search results only"],
     "fossil.all": ["{n}곳", "{n}"],
-    "fossil.everything": ["모든 시대 {n}곳 · 오늘날 자리", "{n} from all eras · present-day positions"],
-    "all.tip": ["산지 {n}곳 · {old}–{young} Ma · 누르면 확대", "{n} localities · {old}–{young} Ma · click to zoom"],
+    "legend.mid": ["색 = 산지 연대의 중간값이 드는 기 (범위가 긴 산지는 다른 기로 칠해진다)", "Colour = period of each locality's mid-age (long-ranging localities take another period's colour)"],
     "fossil.some": ["{n} / {total}곳", "{n} / {total}"],
     "fossil.vague": [" (모호한 연대 {n})", " (vague age {n})"],
     "pop.noname": ["이름 없는 산지", "Unnamed locality"],
@@ -234,7 +233,6 @@
     "climate.opacity": "Temperature layer opacity",
     "borders": "Borders (present-day borders fitted to their past position)",
     "coast": "Coastlines corrected with fossils",
-    "everything": "All eras at present-day positions",
     "grid": "Graticule 30°",
     "guide": "How to read",
     "sources": "Sources",

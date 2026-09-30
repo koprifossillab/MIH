@@ -523,7 +523,7 @@
       proj = "&proj=globe" + (v ? "&lon=" + v.lon.toFixed(1) + "&lat=" + v.lat.toFixed(1) + "&alt=" + Math.round(v.alt / 1000) : "");
     }
     try {
-      history.replaceState(null, "", "#age=" + f.age + (state.all ? "&all=1" : "") + proj + (EN ? "&lang=en" : ""));
+      history.replaceState(null, "", "#age=" + f.age + proj + (EN ? "&lang=en" : ""));
     } catch (e) { /* 미리보기 등 */ }
   }
   // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
@@ -719,6 +719,7 @@
           (n === 0 ? " none-found" : "");
         b.style.backgroundColor = u.color;   // 색만 — 책등의 그늘·금박 띠(CSS 배경 그림)를 지우지 않게
         b.style.color = ink(u.color);
+        b.classList.toggle("light-ink", ink(u.color) === "#ffffff");   // 흰 글자 — 짙은 그림자를 준다(CSS)
         b.textContent = chipName(u);
         if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
         b.title = u.full + (EN ? "" : " · " + u.en) + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? tr("chip.now") : "") +
@@ -797,8 +798,9 @@
     box.innerHTML = '<svg viewBox="0 0 44 100" width="44" height="100" aria-hidden="true">' +
       '<rect class="tube" x="8" y="4" width="10" height="80" rx="5"/>' +
       '<circle class="tube" cx="13" cy="90" r="8"/>' +
-      '<rect x="10.5" y="' + y(t) + '" width="5" height="' + (90 - y(t)) + '" fill="' + rgb + '"/>' +
-      '<circle cx="13" cy="90" r="5.5" fill="' + rgb + '"/>' +
+      // 수은 — 기온 색에 짙은 테. 14 ℃ 무렵의 옅은 노랑도 밝은 판에서 보이게(tupandactyl 007)
+      '<rect class="mercury" x="10.5" y="' + y(t) + '" width="5" height="' + (90 - y(t)) + '" fill="' + rgb + '"/>' +
+      '<circle class="mercury" cx="13" cy="90" r="5.5" fill="' + rgb + '"/>' +
       '<g class="ticks">' + ticks + "</g>" + nowMark + "</svg>" +
       '<div class="thermo-read"><b>' + t.toFixed(1) + '</b><span>' + (EN ? "°C" : "℃") + "</span>" +
       "<small>" + tr("thermo.label") + "</small></div>";
@@ -811,8 +813,6 @@
 
   function show(i, opts) {
     opts = opts || {};
-    // 다른 시점으로 옮기면 "모든 시대 산지" 를 끄고 그 시대의 산지로 돌아간다
-    if (!opts.all && state.all) setEverything(false, true);
     state.i = Math.max(0, Math.min(state.frames.length - 1, i));
     state.focus = opts.focus || null;
     if (!opts.focus) $("chrono-note").textContent = "";
@@ -1001,7 +1001,6 @@
   function loadFossils(f) {
     $("fossil-count").textContent = "";
     state.payload = null;
-    if (state.all) { loadEverything(); return; }
     if (!f.fossils || !f.fossils.file) { fossilLayer.clearLayers(); return; }
     var want = f.age;
     getJSON(dataUrl(f.fossils.file)).then(function (payload) {
@@ -1040,68 +1039,8 @@
     return col;
   }
 
-  // ── 모든 시대 산지(tupandactyl 007) ────────────────────────────────
-  // 첫 화면 — PBDB 의 모든 산지를 오늘날 자리에. 가공물(fossils/all.json, pipeline/everything.py)은 0.25° 칸으로 묶여
-  // 칸마다 산지 수·가장 많은 퇴적기원·연대 범위·연대 중간값을 준다. 점 크기는 산지 수(로그), 색은 퇴적기원 또는 시대(중간값).
-  // 퇴적기원은 맨 윗 갈래(해양·육상·미상)로만 거른다 — 칸에는 세부 환경이 없다. 나라·연대 거르기는 시점마다의 산지에만 건다.
-  var everything = null;
-  function loadEverything() {
-    if (everything) { drawFossils(); return; }
-    getJSON(dataUrl(state.everything.file)).then(function (payload) {
-      everything = payload;
-      if (state.all) drawFossils();
-    }).catch(function () { setEverything(false); });
-  }
-  function setEverything(on, quiet) {
-    state.all = !!on && !!state.everything;
-    $("everything").checked = state.all;
-    app.classList.toggle("all-eras", state.all);
-    if (quiet) return;
-    if (state.all) {
-      if (state.country) setCountry(null);
-      var zero = state.frames.findIndex(function (f) { return f.age === 0; });
-      show(zero < 0 ? state.i : zero, { all: true });
-    } else {
-      show(state.i);
-    }
-  }
-  function drawEverything() {
-    var col = columns(everything), shown = 0, cellsShown = 0, byTop = { m: 0, t: 0, o: 0 };
-    var on = {};
-    ["m", "t", "o"].forEach(function (k) { on[k] = termsUnder("top", k).some(function (t) { return state.enabled[t]; }); });
-    everything.rows.forEach(function (row) {
-      var env = row[col.env], n = row[col.n];
-      byTop[env] = (byTop[env] || 0) + n;
-      if (!on[env]) return;
-      shown += n; cellsShown += 1;
-      var color = state.colorBy === "age" ? ((periodOf(row[col.mid_ma], row[col.mid_ma]) || {}).color || UNKNOWN_COLOR) : state.topColor[env];
-      var r = 1.7 + 1.25 * Math.log(n) / Math.LN10;
-      L.circleMarker([row[col.lat], row[col.lng]], {
-        renderer: renderer, radius: r, weight: .5, color: "#ffffff", opacity: Math.min(1, state.opacity + .1),
-        fillColor: color, fillOpacity: state.opacity,
-      }).bindTooltip(tr("all.tip", { n: fmtNum(n), old: row[col.max_ma], young: row[col.min_ma] }), { direction: "top", opacity: .95 })
-        .on("click", function (e) { if (!measure.on) map.setView(e.latlng, Math.min(map.getMaxZoom(), map.getZoom() + 2)); })
-        .addTo(fossilLayer);
-    });
-    // 환경 칸의 수 — 맨 윗 갈래만 적는다(칸에는 세부 환경이 없다)
-    document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
-      var key = el.dataset.count, top = key.indexOf("top:") === 0 ? key.slice(4) : null;
-      el.textContent = top ? fmtNum(byTop[top] || 0) : "";
-      el.closest(".env").classList.toggle("zero", top ? !byTop[top] : false);
-    });
-    $("envtree").title = tr("env.count.coll");
-    spanNote(0, tr("what.coll"));
-    $("fossil-count").textContent = tr("fossil.everything", { n: fmtNum(shown) });
-    renderLegend();
-  }
-
   // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 산지 점은 찾기를 지우면 돌아온다.
   function drawFossils() {
-    if (state.all && !state.taxon) {
-      fossilLayer.clearLayers();
-      if (everything) drawEverything();
-      return;
-    }
     var payload = state.payload;
     fossilLayer.clearLayers();
     if (!payload) return;
@@ -1383,6 +1322,7 @@
       b.className = "chip";
       b.style.backgroundColor = p.color;
       b.style.color = ink(p.color);
+      b.classList.toggle("light-ink", ink(p.color) === "#ffffff");
       b.innerHTML = esc(p.ko) + '<span class="cnt">' + fmtNum(d.units[p.id]) + "</span>";
       b.title = tr("dist.chip", { unit: p.full, n: fmtNum(d.units[p.id]) });
       b.addEventListener("click", function () { goToRichest(p); });
@@ -1840,7 +1780,6 @@
   }
 
   function setCountry(cc) {
-    if (cc && state.all) setEverything(false, true);   // 나라로 거르기는 시점마다의 산지에만 건다(tupandactyl 007)
     state.country = cc;
     $("country-chip").hidden = !cc;
     $("country-chip-name").textContent = cc ? countryName(cc) : "";
@@ -2434,8 +2373,13 @@
       var col = columns(state.payload);
       state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col), row[col.max_ma], row[col.min_ma])) add(row[col.max_ma], row[col.min_ma]); });
     }
-    box.innerHTML = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst).map(function (p) {
-      return '<span class="leg"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
+    // 색은 산지 연대 범위의 **중간값이 드는 기**다. 범위가 긴 산지는 지금 시점을 걸쳐도 중간값이 다른 기에 들어,
+    // 지금의 기가 아닌 기도 범례에 뜬다(연구자가 물었다) — 그래서 범례 머리에 기준을 적고, 지금 시점의 기를 앞에 굵게 둔다
+    var now = periodOf(frame().age, frame().age);
+    var list = Object.keys(seen).map(function (id) { return seen[id]; }).sort(byOldFirst);
+    if (now && seen[now.id]) list = [now].concat(list.filter(function (p) { return p.id !== now.id; }));
+    box.innerHTML = '<span class="leg-head">' + tr("legend.mid") + "</span>" + list.map(function (p) {
+      return '<span class="leg' + (now && p.id === now.id ? " now" : "") + '"><i class="dot" style="background:' + p.color + '"></i>' + esc(p.ko) + "</span>";
     }).join("");
   }
 
@@ -2452,7 +2396,6 @@
     });
     $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
     $("coeval").addEventListener("change", drawTaxa);
-    $("everything").addEventListener("change", function () { stopTour(); setEverything(this.checked); });
     $("show-wide").addEventListener("change", function () {
       state.showWide = this.checked;
       if (state.taxon) computeDist();
@@ -2546,8 +2489,6 @@
         (index.rules.vague_intervals || []).forEach(function (name) { VAGUE[name] = true; });
       }
       BUILT = index.built_at || "";
-      state.everything = index.everything && index.everything.file ? index.everything : null;   // 모든 시대 산지(tupandactyl 007)
-      $("everything-row").hidden = !state.everything;
       $("slider").max = state.frames.length - 1;
       sources(index.sources || []);
       initTimescale(index.timescale || { units: [] });
@@ -2616,15 +2557,10 @@
     if (proj !== state.proj) setProjection(proj);
     else if (proj === "moll") rotateTo(Mollweide.lon0);
     if (proj === "globe") state.globeView = null; else fitWorld();
-    // 주소에 시점이 없는 첫 화면은 홀로세(0 Ma) 지도에 모든 시대의 산지를 오늘날 자리로(tupandactyl 007).
-    // 주소의 all=1 도 같다 — 첫 화면에서 새로고침해도 그대로
-    state.all = !!state.everything && (/[#&]all=1/.test(hash) || (initial && !isFinite(wanted)));
-    if (state.all) wanted = 0;
-    $("everything").checked = state.all;
-    app.classList.toggle("all-eras", state.all);
+    // 주소에 시점이 없는 첫 화면은 홀로세(0 Ma) 지도(tupandactyl 007)
     var first = state.frames.findIndex(function (f) { return f.age === wanted; });
     if (first < 0) first = initial ? state.frames.findIndex(function (f) { return f.age === 0; }) : state.i;
-    show(first < 0 ? 0 : first, { all: state.all });
+    show(first < 0 ? 0 : first);
   }
 
   // ── 언어(027) ────────────────────────────────────────────────────
@@ -2633,6 +2569,24 @@
     b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
   });
   document.documentElement.classList.remove("i18n-pending");
+
+  // ── 머리말 엠블럼(tupandactyl 007) ─────────────────────────────────
+  // 대기 화면의 끝 모습 — 베게너 초상 메달을 메소사우루스가 두르고 그 몸에 뼈대가 드러난 것. 가죽 머리말 위라 몸은 금박,
+  // 뼈는 가죽색으로 판다(금박 장정의 음각처럼). 자리 계산은 meso.js 의 엠블럼 값과 같다(emblem.svg 와 같은 틀)
+  (function drawBrandMark() {
+    var cv = $("brand-mark"), Meso = window.WegenerMeso;
+    if (!cv || !cv.getContext || !Meso) return;
+    var img = new Image();
+    img.onload = function () {
+      var css = cv.clientWidth || 52, dpr = Math.min(3, window.devicePixelRatio || 1), size = css * dpr;
+      cv.width = cv.height = Math.round(size);
+      var c = cv.getContext("2d"), probe = Meso.emblemRing(0, 0, 1), half = probe.R + .075 * probe.L;
+      var Rm = size / 2 / half, ring = Meso.emblemRing(size / 2, size / 2, Rm), iw = 2 * Rm * 480 / 472;
+      c.drawImage(img, size / 2 - iw / 2, size / 2 - iw / 2, iw, iw);
+      Meso.draw(c, ring.P, ring.L, { fill: "#d8b467", eye: "#3b2415", tuck: 1, teeth: size > 90, bones: 1, boneColor: "#3b2415" });
+    };
+    img.src = cv.dataset.medal;
+  })();
 
   // ── 화면 밝기(tupandactyl 006) ───────────────────────────────────────
   // 자동(컴퓨터 설정) · 밝게(양피지) · 어둡게(흑단). 고른 것은 브라우저에 기억하고 <html data-theme> 로 입힌다 —
