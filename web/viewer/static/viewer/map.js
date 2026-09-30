@@ -460,8 +460,9 @@
     redrawLines(frame());
   }
 
-  // 몰바이데에서 끌기: 지구(타원) 안을 눌러 끌면 가로로 움직인 만큼 가운데 경선을 돌리고(적도에서 손가락 밑의
-  // 땅이 따라오게) 세로는 지도를 옮긴다. 타원 밖을 눌러 끌면 가로·세로 모두 지도를 옮긴다(koprifossillab 029).
+  // 몰바이데에서 끌기: 지구(타원) 안을 눌러 끌면 가로로 움직인 만큼 가운데 경선을 돌린다(적도에서 손가락 밑의
+  // 땅이 따라오게). 세로 움직임은 버린다 — 돌리는 도중 손이 떨려 지구가 오르내리지 않게(koprifossillab 030).
+  // 타원 밖을 눌러 끌면 가로·세로 모두 지도를 옮긴다(koprifossillab 029).
   // 어느 쪽인지는 누른 자리로 정한다 — 끄는 도중 경계를 넘어도 바뀌지 않는다. 움직임은 한 프레임에 한 번만 반영한다. 끈 뒤에 오는 click 은 삼킨다 — 점을 누른 것으로
   // 보고 팝업을 열지 않게.
   var spin = null, spinPending = { dx: 0, dy: 0, frame: 0, rotate: true }, pointers = {};
@@ -472,7 +473,6 @@
     if (state.proj !== "moll") return;
     if (spinPending.rotate) {
       if (dx) rotateTo(Mollweide.lon0 - dx * 360 / (512 * Math.pow(2, map.getZoom())));
-      if (dy) map.panBy([0, -dy], { animate: false });
     } else if (dx || dy) {
       map.panBy([-dx, -dy], { animate: false });
     }
@@ -511,6 +511,9 @@
     window.addEventListener("pointercancel", end);
   })();
   map.on("zoomend", function () {
+    // 몰바이데는 이동 범위를 위경도 사각형으로 가둘 수 없다(024). 휠은 커서를 가운데로 확대·축소해, 지구 전체가
+    // 들어오는 크기까지 줄여도 지구가 옆에 남았다 — 그 크기에서는 가운데로 돌려놓는다(koprifossillab 030).
+    if (state.proj === "moll" && map.getZoom() <= worldZoom()) map.setView(worldCenter(), map.getZoom(), { animate: false });
     var f = frame();
     if (!f) return;
     var url = reliefUrl(f);
@@ -1940,16 +1943,30 @@
       initCountries(index.countries || []);
       if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다
       bind();
-      // 주소를 먼저 읽는다 — 투영을 바꾸면 주소를 다시 쓴다
-      var wanted = parseFloat((location.hash.match(/age=([\d.]+)/) || [])[1]);
-      var lonWanted = parseFloat((location.hash.match(/lon=(-?[\d.]+)/) || [])[1]);
-      if (isFinite(lonWanted)) Mollweide.lon0 = wrap180(lonWanted);
       $("proj-row").hidden = !hasMollweide();
-      if (hasMollweide() && /proj=moll/.test(location.hash)) setProjection("moll");
-      var first = state.frames.findIndex(function (f) { return f.age === wanted; });
-      if (first < 0) first = state.frames.findIndex(function (f) { return f.age === 250; });
-      show(first < 0 ? 0 : first);
+      applyHash(true);
+      // 같은 페이지에서 # 만 바뀐 주소로 가면(주소창에 붙여 넣기 등) 다시 불러오지 않는다 — 주소대로 다시 맞춘다.
+      // history.replaceState(writeHash)는 hashchange 를 부르지 않는다.
+      window.addEventListener("hashchange", function () { applyHash(false); });
     }).catch(function (err) { console.error(err); });
+  }
+
+  // 주소(#age=…&proj=moll&lon=…&lang=en)대로 시점·투영·가운데 경선을 맞추고 지구 전체를 가운데 둔다.
+  // 주소는 옮긴(pan)·확대 상태를 담지 않는다 — 가운데 경선(회전)만 담는다(koprifossillab 030).
+  function applyHash(initial) {
+    var hash = location.hash;
+    var langWanted = (hash.match(/lang=(ko|en)/) || [])[1];
+    if (!initial && langWanted && langWanted !== I18N.lang) { location.reload(); return; }   // 언어는 다시 불러와야 바뀐다
+    var wanted = parseFloat((hash.match(/age=([\d.]+)/) || [])[1]);
+    var lonWanted = parseFloat((hash.match(/lon=(-?[\d.]+)/) || [])[1]);
+    Mollweide.lon0 = isFinite(lonWanted) ? wrap180(lonWanted) : 0;
+    var proj = hasMollweide() && /proj=moll/.test(hash) ? "moll" : "eq";
+    if (proj !== state.proj) setProjection(proj);
+    else if (proj === "moll") rotateTo(Mollweide.lon0);
+    fitWorld();
+    var first = state.frames.findIndex(function (f) { return f.age === wanted; });
+    if (first < 0) first = initial ? state.frames.findIndex(function (f) { return f.age === 250; }) : state.i;
+    show(first < 0 ? 0 : first);
   }
 
   // ── 언어(027) ────────────────────────────────────────────────────
