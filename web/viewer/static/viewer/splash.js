@@ -24,7 +24,8 @@
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
   var T_ENTER = .9, T_SWIM = 6.6, T_WRITE = 2.4, T_BONES = 2.0;
-  var T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + .2 + T_WRITE;
+  // 메달을 두르고 T_AFTER 뒤에 뼈대가 떠오르기 시작하고, 같은 순간 펜이 제목을 쓰기 시작한다(연구자: 둘의 시작을 맞춘다)
+  var T_AFTER = .3, T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + T_AFTER + Math.max(T_WRITE, T_BONES);
   var t0 = 0, raf = 0, mapReady = false, skipped = false, closed = false;
 
   // ── 자리 ─────────────────────────────────────────────────────────
@@ -201,7 +202,7 @@
     if (!skipped && !reduce) { emit(t, dt); drawSmoke(dt); }
     if (t >= T_SEATED || skipped || reduce) {
       // 메달을 두르고 나면 검은 몸 속에 흰 뼈대가 머리부터 꼬리 쪽으로 떠오른다
-      var bone = skipped || reduce ? 1 : smooth((t - T_SEATED - .3) / T_BONES);
+      var bone = skipped || reduce ? 1 : smooth((t - T_SEATED - T_AFTER) / T_BONES);
       Meso.draw(ctx, ring.P, ring.L, { fill: INK, eye: PAPER, tuck: 1, teeth: true, bones: bone, boneColor: PAPER });
     } else if (t > T_ENTER) {
       var b = body(t);
@@ -209,7 +210,7 @@
       Meso.draw(ctx, b.P, ring.L, { fill: INK, eye: PAPER, beat: b.beat, tuck: b.settle, teeth: true, neck: .16 - .11 * b.settle });
     }
     // 제목 — 펜이 획을 따라 긋듯(title.json 을 받았으면), 아니면 왼쪽부터 번지는 가림막
-    var w = skipped || reduce ? 1 : Math.max(0, Math.min(1, (t - T_SEATED - .2) / T_WRITE));
+    var w = skipped || reduce ? 1 : Math.max(0, Math.min(1, (t - T_SEATED - T_AFTER) / T_WRITE));
     if (pen) writePen(w); else title.style.setProperty("--ink", (w * 118 - 8).toFixed(1) + "%");
     if (t >= T_DONE || skipped || reduce) { box.classList.add("settled"); maybeClose(); }
     if (!closed && (t < T_DONE + 4 || puffs.length)) raf = requestAnimationFrame(frame);
