@@ -45,6 +45,9 @@ CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.1
 09-30(UTC 09-29 20:37) PBDB 로 다시 가공한 것이 있어 가공물로는 옛것이다. 남은 뜻은 09-29 PBDB 사본(다시 받을 수
 없다) 하나다(TODOs).
 
+**PBDB 자료가 어떻게 받아지고 가공되어 지도에 그려지는지**(빼는 산지·모호한 연대·시점 창·좌표·뷰어의 거르기·분류군 찾기)는
+[docs/PBDB_자료_처리.md](docs/PBDB_자료_처리.md).
+
 ## 1. 한 줄 요약
 
 PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채집지를 시점(0~540 Ma, 109 장)마다
