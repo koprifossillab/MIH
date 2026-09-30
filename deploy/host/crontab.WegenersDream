@@ -2,7 +2,8 @@
 #
 #   (crontab -l; cat deploy/host/crontab.WegenersDream) | crontab -
 #
-# 매주 월요일 02:30 — 운영 자료를 /data/WegenersDream/backups/WegenersDream.<YYYYMMDD>.tar.gz 로 백업하고,
+# 매주 월요일 02:30 — 운영 자료를 /data/WegenersDream/backups/WegenersDream.<YYYYMMDD>.tar.gz 와 NAS
+# (/nfs/temp-share/WegenersDream/backup/)로 백업하고,
 # PBDB 를 새로 받아 산지를 다시 가공해 운영에 옮긴다. 다른 앱의 새벽 일(03:00 phyloserver DB, 04:00 파일,
 # 04:40·05:10 NAS 동기화, 05:00 타임랩스)과 겹치지 않게 비껴 뒀다. 받기·가공·점검이 실패하면 운영은 지난 자료
 # 그대로이고, 결과는 /data/WegenersDream/logs/last_refresh.json 에 남는다. 로그: /data/WegenersDream/logs/weekly_refresh.log

@@ -30,7 +30,8 @@ CI 가 `koprifossillab/wegenersdream:<태그>` 를 Docker Hub 에 올린다(v0.1
 가공물 `data/derived/`(216 MB, 지형 포함)가 그 저장소 폴더에 있다.
 
 **매주 월요일 02:30**(paleoadmin crontab, `deploy/host/crontab.WegenersDream`): `deploy/host/weekly_refresh.sh` 가 운영 자료·PBDB
-원본·state 를 `/data/WegenersDream/backups/WegenersDream.<YYYYMMDD>.tar.gz`(640, 주 140 MB 남짓)로 백업하고, PBDB 를 새로
+원본·state(비밀키 빼고)를 `/data/WegenersDream/backups/WegenersDream.<YYYYMMDD>.tar.gz`(640, 주 140 MB 남짓)와 NAS
+`/nfs/temp-share/WegenersDream/backup/` 에 같은 파일로 백업하고, PBDB 를 새로
 받아 `build --no-relief` 로 산지를 다시 가공해 운영에 옮긴다. 실패·산지 급감이면 운영은 지난 자료 그대로. **paleoadmin 의
 이 저장소 폴더가 `main` 이고 깨끗해야 가공한다** — feature 브랜치에 두고 월요일 새벽을 넘기면 백업만 하고 `fail` 이다.
 결과는 `/data/WegenersDream/logs/last_refresh.json`(koprifossillab 032).
