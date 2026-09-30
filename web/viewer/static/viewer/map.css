@@ -19,19 +19,39 @@
   --taxon: #2ee6a6;
   --warn: #9a5b00;          /* 팝업의 "모호한 연대" 같은 주의 글씨 */
 }
+/* 어두운 판(tupandactyl 006) — 흑단 원목 면과 짙은 가죽 머리말. 컴퓨터 설정을 따르되(자동), 설정 창에서 밝게·어둡게를
+   고르면 <html data-theme> 가 그것을 누른다 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* 어두운 판 — 어두운 가죽 책상 위의 바랜 양피지 */
-    --bg: #1c1712;
-    --panel: #29221a;
-    --ink: #ebe0cb;
-    --muted: #b4a48b;
-    --line: #463a2c;
-    --accent: #dcab6c;
-    --field: #332a20;
-    --leather: #24160d; --leather-hi: #3a2415;
+  :root:not([data-theme="light"]) {
+    --bg: #120d0a;
+    --panel: #1c1510;
+    --ink: #ece2cf;
+    --muted: #b3a189;
+    --line: #3b2d21;
+    --accent: #d8a865;
+    --field: #271d15;
+    --leather: #150c07; --leather-hi: #2a170d; --gilt: #cfa95e; --gilt-dim: #b39a6c;
+    --wood: #2a1d14; --wood-lo: #120b07; --brass-hi: #d9bd84;
+    /* 흑단 결 — 가로로 길게 늘인 잡음이 나뭇결이 된다 */
+    --parch-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.004 .32' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .55 0 0 0 .07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
     --warn: #e6a64a;
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+    --bg: #120d0a;
+    --panel: #1c1510;
+    --ink: #ece2cf;
+    --muted: #b3a189;
+    --line: #3b2d21;
+    --accent: #d8a865;
+    --field: #271d15;
+    --leather: #150c07; --leather-hi: #2a170d; --gilt: #cfa95e; --gilt-dim: #b39a6c;
+    --wood: #2a1d14; --wood-lo: #120b07; --brass-hi: #d9bd84;
+    /* 흑단 결 — 가로로 길게 늘인 잡음이 나뭇결이 된다 */
+    --parch-tex: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.004 .32' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .55 0 0 0 .07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    --warn: #e6a64a;
+    color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

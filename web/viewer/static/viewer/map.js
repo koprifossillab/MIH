@@ -2527,6 +2527,26 @@
   });
   document.documentElement.classList.remove("i18n-pending");
 
+  // ── 화면 밝기(tupandactyl 006) ───────────────────────────────────────
+  // 자동(컴퓨터 설정) · 밝게(양피지) · 어둡게(흑단). 고른 것은 브라우저에 기억하고 <html data-theme> 로 입힌다 —
+  // <head> 의 스크립트가 그리기 전에 같은 값을 먼저 입힌다
+  (function initTheme() {
+    var root = document.documentElement, btns = document.querySelectorAll(".theme [data-theme-pick]");
+    function paint() {
+      var cur = root.dataset.theme || "auto";
+      btns.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.themePick === cur)); });
+    }
+    btns.forEach(function (b) {
+      b.addEventListener("click", function () {
+        var v = b.dataset.themePick;
+        if (v === "auto") delete root.dataset.theme; else root.dataset.theme = v;
+        try { if (v === "auto") localStorage.removeItem("wegener.theme"); else localStorage.setItem("wegener.theme", v); } catch (e) { /* 막힌 저장소 */ }
+        paint();
+      });
+    });
+    paint();
+  })();
+
   // 읽는 법 — 산출 시대의 수를 어떻게 세는지. 기준 건수(OCC_LIMIT)가 여기 있어 문구를 JS 가 채운다(tupandactyl 003)
   $("guide-dist").textContent = tr("guide.dist", { limit: fmtNum(OCC_LIMIT) });
 
