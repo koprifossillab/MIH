@@ -407,6 +407,8 @@
       // 싣기 전이면 다 실은 뒤 그 자리로 연다
       setView: function (v, fly) { if (scene) setView(v, fly); else pending = v; },
       home: function (lon) { if (scene) home(lon); },
+      // 지금 자리에서 높이만 factor 배로(확대·축소 단추, tupandactyl 004)
+      zoom: function (factor) { if (scene) { var v = view(); setView({ lon: v.lon, lat: v.lat, alt: v.alt * factor }, true); } },
       snapshot: snapshot,
       climateOpacity: function (a) { if (climateLayer) { climateLayer.alpha = a; scene.requestRender(); } },
       get active() { return active; },
