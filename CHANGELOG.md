@@ -7,6 +7,7 @@
 
 - **Casual 모드의 한글** — 속·종 학명을 연구자의 표기 규칙(고전 라틴어 표 + 세부 규칙)으로 음차한다(학명은 커서를 대면). 연대 이름은
   층서표의 한글(아르틴스크절), 암상은 한글 사전(셰일·석회질). Scientific 모드와 영어판은 그대로 (tupandactyl 020)
+  — 장음은 따로 적지 않는다(aa ee ii oo uu ww 모두 한 번: kingii 킹기)
 - **찾기** — 관용 표기(티라노사우루스·시조새 …)를 한글로 쳐도 그 학명으로 찾는다. 띄어쓰기로 종까지("Tyrannosaurus rex") (tupandactyl 020)
 - 음차 규칙은 `translit.js` 한 곳, 연구자의 예시 53 개를 CI 의 "학명 음차 시험"(node)으로 본다. 암상 사전은 `pipeline/lithology.py` →
   index.json — **`python -m pipeline lithology`** 로 지금 목록에 붙인다(build 도 싣는다)
