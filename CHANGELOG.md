@@ -6,11 +6,17 @@
 ## 1.0.0 — 2026-10-01 · `feature/static-pages`
 
 첫 정식판. 시점별 PALEOMAP 고지리 지도(현생누대 109 시점 + 에디아카라기)와 PBDB 산지, 층서표·퇴적 환경, 분류군·나라·지층 찾기와 종합 보기,
+지층의 화석 기록(계통 나무),
 지구사 사건 책갈피, Scientific·Casual(한글 학명), 분포 분석(다양성·고위도·비교 분류군), 산지 내려받기, 주간 갱신·백업.
 
 - **연구소 밖에서 보는 사이트** — https://koprifossillab.github.io/WegenersDream/ (GitHub Pages). 연구소 서버는 열지 않고, 뷰어를 고정 사이트로
   구워(`deploy/static_site.py`) 운영 자료의 사본(릴리스 `site-data`)과 함께 올린다. 판 릴리스마다, 그리고 주간 갱신 뒤에 새로 올린다.
   저장소 Settings → Pages → Source 를 "GitHub Actions" 로 켜 두어야 한다 (tupandactyl 029)
+
+## 0.34.0 — 2026-10-01 · `feature/formation-fauna`
+
+- **지층의 화석 기록** — 지층을 걸면 패널에 지층 정보(시대·암상·층군·부층·나라·산지·산출 수)와 모든 산지의 산출을 모은 계통 나무(문 › 강 ›
+  목 › 과 › 속 › 종). 과 이상의 미동정은 계통이 닿는 가장 깊은 마디에 "미동정 n건", 속은 이름 차례, 종은 속 아래, 산지는 접어 둔다 (tupandactyl 030)
 
 ## 0.33.0 — 2026-10-01 · `feature/formation-search`
 
