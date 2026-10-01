@@ -1290,6 +1290,15 @@
   // 종합 보기의 점을 누르면 — 그 칸의 산지들(오래된 것부터). 한 곳이면 곧장 펼친다. 산지를 펼치면 PBDB 에 산출 목록을 묻고,
   // 분류군을 찾는 중이면 그 분류군에 드는 이름을 굵게 앞에 둔다(같은 산지를 base_name 으로 한 번 더 묻는다)
   var OVERVIEW_POP_MAX = 80;
+  // 환경 원 용어가 든 나무의 자리 — 산지 팝업(openCollection)과 같은 "기원 › 환경군"
+  function envPath(env) {
+    var group = state.termGroup[termKey(env || "")], out = "";
+    if (!group) return "";
+    state.tree.forEach(function (top) {
+      top.groups.forEach(function (g) { if (g.id === group) out = labelFor(top.id, top.ko) + " › " + labelFor(g.id, g.ko); });
+    });
+    return out;
+  }
   function openOverviewCell(cell) {
     if (measure.on) return;
     var latlng = L.latLng(cell.lat, cell.lng), recs = cell.recs || [];
@@ -1303,7 +1312,8 @@
         (recs.length === 1 ? "" : "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b> ") +
         "<small>" + esc(interval) + " · " + r.max_ma + "–" + r.min_ma + " Ma</small></summary><dl>" +
         (r.formation ? "<dt>" + tr("pop.formation") + "</dt><dd>" + esc(r.formation) + "</dd>" : "") +
-        "<dt>" + tr("pop.env") + "</dt><dd>" + esc(r.environment || tr("pop.noenv")) + "</dd>" +
+        "<dt>" + tr("pop.env") + "</dt><dd>" + esc(r.environment || tr("pop.noenv")) +
+          (envPath(r.environment) ? "<br><small>" + esc(envPath(r.environment)) + "</small>" : "") + "</dd>" +
         (r.cc ? "<dt>" + tr("pop.country") + "</dt><dd>" + esc(countryName(r.cc)) + "</dd>" : "") +
         "<dt>" + tr("ovpop.now") + "</dt><dd>" + (+r.lat).toFixed(2) + "°, " + (+r.lng).toFixed(2) + "°</dd>" +
         '</dl><a href="' + PBDB_COLL_PAGE + r.collection_no + '" target="_blank" rel="noopener">' + tr("pop.link", { no: r.collection_no }) + "</a>" +
