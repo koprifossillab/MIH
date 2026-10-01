@@ -18,7 +18,8 @@
 #
 # 지키는 것: 받기·가공이 실패하거나 산지 수가 지난번의 95% 밑으로 떨어지면 운영에 옮기지 않는다(지난 자료가
 # 그대로 돈다). 배경·지형은 다시 굽지 않는다(build --no-relief). 가공은 이 저장소 폴더가 main 이고 깨끗할 때만 한다
-# — 다른 브랜치의 파이프라인으로 운영 자료를 만들지 않게. 결과는 logs/last_refresh.json 에 남는다.
+# — 다른 브랜치의 파이프라인으로 운영 자료를 만들지 않게. 가공 전에 main 을 앞으로만 당긴다(025). 운영에 옮긴 뒤 smoke 로 확인한다.
+# 결과는 logs/last_refresh.json 에 남는다.
 set -uo pipefail
 # /data 는 누구나 들어오는 디스크다 — 백업은 paleoadmin 그룹까지만 읽게
 umask 027
@@ -102,6 +103,19 @@ branch=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
 [ "$branch" = "main" ] || fail "저장소가 main 이 아니다($branch) — 가공하지 않는다"
 [ -z "$(git -C "$REPO" status --porcelain --untracked-files=no)" ] || fail "저장소에 커밋 안 한 변경이 있다 — 가공하지 않는다"
 
+# 가공하기 전에 main 을 앞으로만 당긴다(tupandactyl 025) — 새 파이프라인 코드(사건·에디아카라기·한글 찾기 표 …)가 병합돼도 이
+# 폴더가 옛 코드면 build 가 그것을 지운 index.json 을 만들어 운영에 옮긴다(2026-10-01 에 손으로 pull 해야 했다). 묻지 않는 ssh 로,
+# 1 분 안에. 실패하면 지금 코드로 가공하고 결과에 적는다 — 갱신 자체를 막지 않는다
+STEP=pull
+PULL_NOTE=""
+if timeout 60 env GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=20" git -C "$REPO" fetch -q origin main \
+   && git -C "$REPO" merge -q --ff-only origin/main; then
+    echo "코드: $(git -C "$REPO" log -1 --format='%h %s' | cut -c1-80)"
+else
+    PULL_NOTE=" (main 을 당기지 못해 지금 코드로 가공)"
+    echo "코드: main 을 당기지 못했다 — 지금 코드로 가공한다"
+fi
+
 old=$("$PY" -c "import json;print(json.load(open('$REPO/data/sources/pbdb/receipt.json'))['records'])")
 
 STEP=fetch
@@ -118,12 +132,16 @@ STEP=verify
 import json, sys, pathlib
 d = pathlib.Path(sys.argv[1]); ix = json.loads((d / "index.json").read_text(encoding="utf-8"))
 frames = ix["frames"]
-assert len(frames) == 109, f"시점 {len(frames)}"
+# 현생누대 109 + 에디아카라기 1(tupandactyl 019). 에디아카라기는 판 복원만이라 지형이 없다(grid "plates")
+assert len(frames) >= 110, f"시점 {len(frames)}"
 for f in frames:
     for key in ("relief", "fossils"):
         path = f[key] if key == "relief" else f[key]["file"]
         assert (d / path).is_file(), f"{f['age']} Ma {key} 파일 없음"
-    assert f.get("terrain") and (d / f["terrain"]["file"]).is_file(), f"{f['age']} Ma 지형 없음"
+    if f.get("grid") != "plates":
+        assert f.get("terrain") and (d / f["terrain"]["file"]).is_file(), f"{f['age']} Ma 지형 없음"
+assert ix.get("events"), "지구사 사건 없음"
+assert ix.get("lithology"), "암상 한글 없음"
 # 최근의 절 기온(PaleoClim) — index.json 밖의 목록(koprifossillab 033)
 recent = json.loads((d / "climate" / "recent.json").read_text(encoding="utf-8"))
 assert recent["snapshots"], "PaleoClim 스냅숏 없음"
@@ -131,11 +149,11 @@ for s in recent["snapshots"]:
     assert (d / s["file"]).is_file(), f"PaleoClim {s['id']} 그림 없음"
 EOF
 
-[ "$MODE" = "--no-deploy" ] && { status ok "가공까지(운영 안 옮김): 산지 $old → $new"; exit 0; }
+[ "$MODE" = "--no-deploy" ] && { status ok "가공까지(운영 안 옮김): 산지 $old → $new$PULL_NOTE"; exit 0; }
 
 # ── 4. 운영에 옮기기 — index.json 을 맨 나중에 ───────────────────────────
 STEP=deploy
 rsync -a --exclude index.json "$REPO/data/derived/" "$SRV/data/" || fail "rsync 실패"
 rsync -a "$REPO/data/derived/index.json" "$SRV/data/index.json" || fail "index.json rsync 실패"
 "$REPO/deploy/host/smoke.sh" >/dev/null || fail "smoke 실패 — 운영을 확인한다"
-status ok "산지 $old → $new, 운영에 옮겼다"
+status ok "산지 $old → $new, 운영에 옮겼다$PULL_NOTE"
