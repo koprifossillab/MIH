@@ -1194,7 +1194,7 @@
   function overviewUrl() {
     return PBDB + "colls/list.json?" + (state.taxon ? "base_name=" + encodeURIComponent(state.taxon) + "&" : "") +
       (state.country ? "cc=" + encodeURIComponent(state.country) + "&" : "") +
-      "show=loc,geo&vocab=pbdb&limit=" + OVERVIEW_LIMIT;
+      "show=loc,geo,strat&vocab=pbdb&limit=" + OVERVIEW_LIMIT;
   }
   function loadOverview(fit) {
     if (!state.overview) return;
@@ -1210,7 +1210,8 @@
         if (!isFinite(lng) || !isFinite(lat) || !isFinite(old) || !isFinite(young)) return;
         total += 1;
         var key = Math.floor((lng + 180) / OVERVIEW_STEP) + ":" + Math.floor((lat + 90) / OVERVIEW_STEP);
-        var c = grid[key] || (grid[key] = { x: 0, y: 0, n: 0, env: {}, old: old, young: young, mids: [] });
+        var c = grid[key] || (grid[key] = { x: 0, y: 0, n: 0, env: {}, old: old, young: young, mids: [], recs: [] });
+        c.recs.push(r);                                                     // 점을 누르면 이 칸의 산지 목록(openOverviewCell)
         var top = termKey(r.environment || "") === UNLISTED ? "o" : state.termTop[termKey(r.environment || "")];
         c.x += lng; c.y += lat; c.n += 1;
         c.env[top] = (c.env[top] || 0) + 1;
@@ -1220,7 +1221,8 @@
       ov.cells = Object.keys(grid).map(function (k) {
         var c = grid[k], m = c.mids.sort(function (a, b) { return a - b; });
         var env = Object.keys(c.env).sort(function (a, b) { return c.env[b] - c.env[a] || (a < b ? -1 : 1); })[0];
-        return { lat: c.y / c.n, lng: c.x / c.n, n: c.n, env: env, old: c.old, young: c.young, mid: m[Math.floor(m.length / 2)] };
+        return { lat: c.y / c.n, lng: c.x / c.n, n: c.n, env: env, old: c.old, young: c.young, mid: m[Math.floor(m.length / 2)],
+          recs: c.recs.sort(function (a, b) { return +b.max_ma - +a.max_ma; }) };
       }).sort(function (a, b) { return b.n - a.n; });
       ov.total = total;
       ov.truncated = total >= OVERVIEW_LIMIT;
@@ -1272,7 +1274,7 @@
         renderer: renderer, radius: 4.6 + 2.6 * Math.log(c.n) / Math.LN10, weight: 1.4, color: "#2b1d10", opacity: .9,
         fillColor: color, fillOpacity: Math.max(.8, state.opacity),
       }).bindTooltip(tr("overview.tip", { n: fmtNum(c.n), old: c.old, young: c.young }), { direction: "top", opacity: .95 })
-        .on("click", function (e) { if (!measure.on) map.setView(e.latlng, Math.min(map.getMaxZoom(), map.getZoom() + 2)); })
+        .on("click", function (e) { L.DomEvent.stopPropagation(e); openOverviewCell(c); })
         .addTo(fossilLayer);
     });
     document.querySelectorAll("#envtree [data-count]").forEach(function (el) {
@@ -1285,6 +1287,67 @@
     setOverviewStatus(tr("overview.status", { what: what, n: fmtNum(ov.total) }) + (ov.truncated ? tr("overview.truncated", { n: fmtNum(OVERVIEW_LIMIT) }) : ""));
     renderLegend();
   }
+  // 종합 보기의 점을 누르면 — 그 칸의 산지들(오래된 것부터). 한 곳이면 곧장 펼친다. 산지를 펼치면 PBDB 에 산출 목록을 묻고,
+  // 분류군을 찾는 중이면 그 분류군에 드는 이름을 굵게 앞에 둔다(같은 산지를 base_name 으로 한 번 더 묻는다)
+  var OVERVIEW_POP_MAX = 80;
+  function openOverviewCell(cell) {
+    if (measure.on) return;
+    var latlng = L.latLng(cell.lat, cell.lng), recs = cell.recs || [];
+    var el = document.createElement("div");
+    el.className = "pop ovpop";
+    var head = recs.length === 1 ? esc(recs[0].collection_name || tr("pop.noname")) : tr("ovpop.title", { n: fmtNum(cell.n) });
+    var html = "<h3>" + head + "</h3><small>" + tr("ovpop.where", { old: cell.old, young: cell.young }) + "</small>";
+    html += '<div class="ovlist">' + recs.slice(0, OVERVIEW_POP_MAX).map(function (r, k) {
+      var interval = (r.early_interval || "") + (r.late_interval ? " – " + r.late_interval : "");
+      return '<details data-k="' + k + '"' + (recs.length === 1 ? " open" : "") + "><summary>" +
+        (recs.length === 1 ? "" : "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b> ") +
+        "<small>" + esc(interval) + " · " + r.max_ma + "–" + r.min_ma + " Ma</small></summary><dl>" +
+        (r.formation ? "<dt>" + tr("pop.formation") + "</dt><dd>" + esc(r.formation) + "</dd>" : "") +
+        "<dt>" + tr("pop.env") + "</dt><dd>" + esc(r.environment || tr("pop.noenv")) + "</dd>" +
+        (r.cc ? "<dt>" + tr("pop.country") + "</dt><dd>" + esc(countryName(r.cc)) + "</dd>" : "") +
+        "<dt>" + tr("ovpop.now") + "</dt><dd>" + (+r.lat).toFixed(2) + "°, " + (+r.lng).toFixed(2) + "°</dd>" +
+        '</dl><a href="' + PBDB_COLL_PAGE + r.collection_no + '" target="_blank" rel="noopener">' + tr("pop.link", { no: r.collection_no }) + "</a>" +
+        '<div class="muted taxa-box">' + tr("pop.loading", { n: r.n_occs || "" }) + "</div></details>";
+    }).join("") + "</div>" +
+      (recs.length > OVERVIEW_POP_MAX ? '<p class="muted">' + tr("ovpop.more", { n: fmtNum(recs.length - OVERVIEW_POP_MAX) }) + "</p>" : "") +
+      '<button type="button" class="tool ovzoom">' + tr("ovpop.zoom") + "</button>";
+    el.innerHTML = html;
+    var popup = state.proj === "globe" ? globe.popup(latlng, el)
+      : L.popup({ maxWidth: 360, autoPan: true, autoPanPaddingTopLeft: L.point(24, 150), autoPanPaddingBottomRight: L.point(96, 48) })
+        .setLatLng(latlng).setContent(el).openOn(map);
+    var refresh = function () { if (popup.update) popup.update(); if (state.proj !== "globe") flipPopup(popup); };
+    if (state.proj !== "globe") refresh();
+    function loadTaxa(d) {
+      if (d.dataset.loaded) return;
+      d.dataset.loaded = "1";
+      var r = recs[+d.dataset.k], box = d.querySelector(".taxa-box"), no = r.collection_no;
+      var all = getJSON(PBDB + "occs/list.json?coll_id=" + no + "&show=class&vocab=pbdb&limit=500");
+      var hit = state.taxon ? getJSON(PBDB + "occs/list.json?coll_id=" + no + "&base_name=" + encodeURIComponent(state.taxon) + "&vocab=pbdb&limit=500")
+        .catch(function () { return {}; }) : Promise.resolve({});
+      Promise.all([all, hit]).then(function (res) {
+        var mark = {};
+        (res[1].records || []).forEach(function (x) { mark[x.occurrence_no] = true; });
+        var items = (res[0].records || []).map(function (x) {
+          var grp = [x.phylum, x["class"]].filter(function (v) { return v && v !== "NO_CLASS_SPECIFIED"; }).join(" · ");
+          var name = "<i>" + esc(x.accepted_name || x.identified_name) + "</i>";
+          return { hit: !!mark[x.occurrence_no], html: "<li>" + (mark[x.occurrence_no] ? "<b>" + name + "</b>" : name) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>" };
+        }).sort(function (a, b) { return b.hit - a.hit; });
+        box.className = items.length ? "" : "muted";
+        box.innerHTML = items.length ? '<ul class="taxa">' + items.map(function (x) { return x.html; }).join("") + "</ul>" : tr("pop.none");
+        refresh();
+      }).catch(function () { box.textContent = tr("pop.fail"); refresh(); });
+    }
+    el.querySelectorAll("details").forEach(function (d) {
+      d.addEventListener("toggle", function () { if (d.open) loadTaxa(d); refresh(); });
+      if (d.open) loadTaxa(d);
+    });
+    el.querySelector(".ovzoom").addEventListener("click", function () {
+      if (state.proj === "globe") { globe.setView({ lon: cell.lng, lat: cell.lat, alt: spanAlt(6) }, true); return; }
+      map.closePopup();
+      map.setView(latlng, Math.min(map.getMaxZoom(), Math.max(map.getZoom() + 2, 5)));
+    });
+  }
+
   function setOverviewStatus(text) {
     if (state.taxon) $("taxon-status").textContent = text;
     $("overview-note").textContent = text;

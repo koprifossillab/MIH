@@ -669,3 +669,11 @@ button, input, select { font-family: inherit; }
 
 /* 아래로 편 팝업 — 꼬리를 위로(tupandactyl 012) */
 .leaflet-popup.below .leaflet-popup-tip-container { top: -20px; transform: rotate(180deg); }
+
+/* 종합 보기의 칸 팝업(tupandactyl 012) — 산지마다 펼친다 */
+.ovpop .ovlist { max-height: 300px; overflow-y: auto; margin: 6px 0; }
+.ovpop details { border-top: 1px solid var(--line, rgba(0,0,0,.12)); padding: 4px 0; }
+.ovpop summary { cursor: pointer; line-height: 1.4; }
+.ovpop details[open] summary { margin-bottom: 2px; }
+.ovpop .taxa { max-height: 150px; }
+.ovpop .ovzoom { margin-top: 4px; }
