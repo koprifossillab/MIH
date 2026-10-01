@@ -55,3 +55,7 @@ Kotlin crisis(~550 Ma)는 가장 오래된 지도(540 Ma, PaleoDEM 이 현생누
 `pipeline/events.py` 한 곳 → index.json 의 `events`. 경계와 겹치는 나이는 `boundary` 로 적어 timescale.py 의 ICS 2024 값을 그대로 쓴다.
 경계와 상관없는 나이(Sinsk·Lau·Taghanic·Carnian·Toarcian·Kotlin)는 문헌의 대략 값과 불확실 범위. 규모 수치는 문헌마다 달라 대표 값
 하나와 근거를 붙인다 — **연구자 검토를 거친다**.
+
+> **바뀐 것(017)** — 풀이와 한글 이름은 빼고 영어 이름·나이만. 6 절의 "패널 카드" 는 층서표의 **책갈피**로 바꿨다
+> ([017](20261001_tupandactyl_017_event_bookmarks.md)).
+

@@ -23,11 +23,11 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(by["kpg"]["age"], base["Danian"])
         self.assertEqual((by["lome"]["old"], by["lome"]["young"]), (base["Hirnantian"], base["Rhuddanian"]))
 
-    def test_names_and_causes(self):
+    def test_names_and_refs(self):
         for e in self.flat:
-            self.assertTrue(e["en"] and e["cause"]["ko"] and e["cause"]["en"] and e["refs"], e["id"])
-            if e["tier"] == 2:
-                self.assertEqual(e["ko"], e["en"], e["id"])     # 2 등급은 영어 이름뿐(연구자)
+            self.assertTrue(e["en"] and e["refs"], e["id"])
+            self.assertNotIn("ko", e)                               # 이름은 영어로만, 풀이도 없다(연구자, 017)
+            self.assertNotIn("cause", e)
             self.assertGreaterEqual(e["old"], e["age"])
             self.assertGreaterEqual(e["age"], e["young"])
 

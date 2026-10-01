@@ -50,7 +50,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var state = {
-    events: [],          // 지구사 사건(index.json 의 events, tupandactyl 016)
+    events: [], evPin: null,   // 지구사 사건(index.json 의 events, tupandactyl 016) · 단추로 옮긴 사건(017)
     frames: [], i: 0, taxon: "", playing: null,
     proj: "eq",                             // 투영: eq(정거원통) · moll(몰바이데, 024) · globe(지구본, wetherilli P01)
     units: {}, kids: {}, focus: null,       // 층서표: 고른 단위(없으면 지금 지도의 절)
@@ -728,6 +728,7 @@
         if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
         b.title = u.full + (EN ? "" : " · " + (SCI ? u.kn : u.en)) + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? tr("chip.now") : "") +
           (n !== null ? tr("chip.taxon", { taxon: state.taxon, n: fmtNum(n) }) : "");
+        ribbonChip(b, u);                      // 사건이 끝나는 단위에 책갈피 리본(tupandactyl 017)
         b.addEventListener("click", function () { focusUnit(u); });
         box.appendChild(b);
       });
@@ -1681,7 +1682,7 @@
         var line = document.createElement("i");
         line.className = "ev-line";
         line.style.left = ((OLDEST - p.age) / OLDEST * 100) + "%";
-        line.title = evName(p);
+        line.title = p.en;
         strip.appendChild(line);
       });
     });
@@ -2113,12 +2114,13 @@
     input.addEventListener("blur", function () { setTimeout(closeSuggest, 150); });
   }
 
-  // ── 지구사 사건(tupandactyl 016) ──────────────────────────────────────
+  // ── 지구사 사건(tupandactyl 016·017) ──────────────────────────────────
   // 목록은 index.json 의 events(pipeline/events.py 한 곳). 대멸종 다섯(1 등급)과 Sinsk·토아르시움 규모의 전 지구 사건(2 등급).
-  // 시점 막대 위에 박동은 표식, 기간(데본기 후기 위기)은 띠로. 지금 시점의 창에 걸린 사건은 패널의 카드로 — 직전·직후 시점으로 옮겨
-  // 사건 전후의 산지를 맞대어 본다. 직전은 창이 사건보다 완전히 오래된 마지막 시점, 직후는 완전히 젊은 첫 시점이다(걸친 시점에는
-  // 전후의 화석이 섞인다). 2 등급은 영어 이름뿐이다(연구자). 지도 앞의 사건(Kotlin crisis, ~550 Ma)은 막대 왼쪽 끝 밖에 표식만.
-  function evName(e) { return EN || SCI ? e.en : e.ko; }
+  // 이름은 영어로만, 풀이는 적지 않는다(연구자 — 017). 시점 막대 위에 박동은 표식, 기간(데본기 후기 위기)은 띠.
+  // 층서표(책)에는 **책갈피**로 — 사건이 끝나는 단위의 칩에 작은 리본, 지금 시점에 걸린 사건은 층서표 머리에 늘어뜨린 책갈피.
+  // 책갈피의 단추로 직전·사건·직후 시점을 오간다. 직전은 창이 사건보다 완전히 오래된 마지막 시점, 직후는 완전히 젊은 첫 시점이다
+  // (걸친 시점에는 전후의 화석이 섞인다). 단추로 옮겨도 책갈피는 남는다 — 직전~직후 밖으로 나가야 걷힌다(state.evPin).
+  // 지도 앞의 사건(Kotlin crisis, ~550 Ma)은 막대 왼쪽 끝 밖에 표식, 가장 오래된 지도에 책갈피.
   function evAge(e) {
     if (e.old === e.young) return e.age + " Ma";
     if (e.unc) return "~" + e.age + " Ma (±" + e.unc + ")";
@@ -2138,74 +2140,82 @@
     state.frames.forEach(function (f, j) { if (Math.abs(f.age - e.age) < Math.abs(state.frames[best].age - e.age)) best = j; });
     return best;
   }
+  function evAll() {
+    var out = [];
+    state.events.forEach(function (e) { out.push(e); (e.pulses || []).forEach(function (p) { p.parent = e; out.push(p); }); });
+    return out;
+  }
+  function evGo(e, j) { stopTour(); state.evPin = e.id; show(j); }
   function initEvents(list) {
     state.events = list;
     var row = $("strip-events");
     row.hidden = !list.length;
-    list.forEach(function (e) {
+    evAll().forEach(function (e) {
+      var mark = document.createElement("span");
+      mark.title = e.en + " · " + evAge(e) + (e.outside ? " · " + tr("ev.outside") : "");
       if (e.kind === "interval") {
-        var band = document.createElement("span");
-        band.className = "ev-band t" + e.tier;
-        band.style.left = ((OLDEST - e.old) / OLDEST * 100) + "%";
-        band.style.width = ((e.old - e.young) / OLDEST * 100) + "%";
-        band.title = evName(e) + " · " + evAge(e);
-        band.addEventListener("click", function () { stopTour(); show(evNearest(e)); });
-        row.appendChild(band);
+        mark.className = "ev-band t" + e.tier;
+        mark.style.left = ((OLDEST - e.old) / OLDEST * 100) + "%";
+        mark.style.width = ((e.old - e.young) / OLDEST * 100) + "%";
+      } else {
+        mark.className = "ev-mark t" + e.tier + (e.outside ? " outside" : "");
+        mark.style.left = e.outside ? "0" : ((OLDEST - e.age) / OLDEST * 100) + "%";
+        mark.textContent = e.outside ? "◂" : "▼";
       }
-      [e.kind === "pulse" ? e : null].concat(e.pulses || []).forEach(function (p) {
-        if (!p) return;
-        var mark = document.createElement("span");
-        mark.className = "ev-mark t" + p.tier + (p.outside ? " outside" : "");
-        mark.style.left = p.outside ? "0" : ((OLDEST - p.age) / OLDEST * 100) + "%";
-        mark.textContent = p.outside ? "◂" : "▼";
-        mark.title = evName(p) + " · " + evAge(p) + (p.outside ? " · " + tr("ev.outside") : "");
-        mark.addEventListener("click", function () { stopTour(); show(p.outside ? evNearest({ age: OLDEST }) : evNearest(p)); });
-        row.appendChild(mark);
-      });
+      mark.addEventListener("click", function () { evGo(e, e.outside ? evNearest({ age: OLDEST }) : evNearest(e)); });
+      row.appendChild(mark);
     });
+  }
+  // 층서표 칩의 리본 — 그 단위 안에서 끝나는 사건(경계의 대멸종은 경계 아래 단위: 페름기 말 → 페름기·창싱절)
+  function evInUnit(u) {
+    return evAll().filter(function (e) { return e.kind === "pulse" && !e.outside && e.old >= u.top && e.young < u.base; });
+  }
+  function ribbonChip(b, u) {
+    if (u.rank === "era") return;                 // 대는 거의 다 걸려 리본이 뜻이 없다 — 기·세·절에만
+    var evs = evInUnit(u);
+    if (!evs.length) return;
+    var top = Math.min.apply(null, evs.map(function (e) { return e.tier; }));
+    b.classList.add("marked", "mt" + top);
+    b.title += "\n" + evs.map(function (e) { return "▼ " + e.en + " · " + evAge(e); }).join("\n");
   }
   function renderEvents(f) {
-    var box = $("events-box"), sec = $("events-sec");
+    var box = $("bookmarks");
     if (!box) return;
-    var cards = [];
-    state.events.forEach(function (e) {
-      var pulses = e.pulses || [];
-      var outside = e.outside && f.age >= OLDEST;           // 가장 오래된 지도에서 그 앞의 사건을 알린다
-      if (!outside && !inWin(f, e.old, e.young)) return;
-      cards.push(evCard(e, f, outside));
-      pulses.forEach(function (p) { if (inWin(f, p.old, p.young)) cards.push(evCard(p, f, false, e)); });
+    var shown = [], pinned = null;
+    evAll().forEach(function (e) {
+      var hit = e.outside ? f.age >= OLDEST : inWin(f, e.old, e.young);
+      if (hit) shown.push(e);
+      if (e.id === state.evPin) pinned = e;
     });
-    sec.hidden = !cards.length;
-    box.innerHTML = "";
-    cards.forEach(function (c) { box.appendChild(c); });
-  }
-  function evCard(e, f, outside, parent) {
-    var el = document.createElement("div");
-    el.className = "ev-card t" + e.tier + (e.kind === "interval" ? " interval" : "");
-    var badge = e.big_five || (e.tier === 1 && e.kind === "pulse") ? tr("ev.bigfive") : e.kind === "interval" ? tr("ev.interval") : tr("ev.global");
-    var other = EN || SCI ? (e.ko !== e.en ? e.ko : "") : (e.ko !== e.en ? e.en : "");
-    var html = '<h3><span class="ev-name">' + esc(evName(e)) + '</span> <span class="ev-badge">' + badge + "</span></h3>" +
-      (other ? '<p class="ev-other">' + esc(other) + "</p>" : "") +
-      '<p class="ev-age">' + evAge(e) + (outside ? " · " + tr("ev.outside") : "") +
-      (parent ? " · " + tr("ev.within", { name: esc(evName(parent)) }) : "") + "</p>" +
-      '<p class="ev-cause">' + esc(e.cause[EN ? "en" : "ko"]) + "</p>";
-    var nav = [];
-    if (!outside) {
-      var fr = evFrames(e), here = state.i;
-      if (fr.before !== null) nav.push('<button type="button" class="tool" data-go="' + fr.before + '"' + (fr.before === here ? " disabled" : "") + ">" +
-        tr(e.kind === "interval" ? "ev.start" : "ev.before", { age: fmtAge(state.frames[fr.before].age) }) + "</button>");
-      if (fr.after !== null) nav.push('<button type="button" class="tool" data-go="' + fr.after + '"' + (fr.after === here ? " disabled" : "") + ">" +
-        tr(e.kind === "interval" ? "ev.end" : "ev.after", { age: fmtAge(state.frames[fr.after].age) }) + "</button>");
-      (e.pulses || []).forEach(function (p) {
-        var j = evNearest(p);
-        nav.push('<button type="button" class="tool ev-pulse" data-go="' + j + '"' + (j === here ? " disabled" : "") + ">" + esc(evName(p)) + " · " + evAge(p) + "</button>");
-      });
+    // 단추로 옮긴 사건은 직전~직후 안에 있는 동안 남긴다
+    if (pinned && shown.indexOf(pinned) < 0) {
+      var fr = evFrames(pinned), lo = fr.after === null ? -1 : state.frames[fr.after].age,
+          hi = fr.before === null ? Infinity : state.frames[fr.before].age;
+      if (f.age >= lo && f.age <= hi) shown.push(pinned); else state.evPin = null;
     }
-    if (nav.length) html += '<div class="ev-nav">' + nav.join("") + "</div>";
-    html += '<p class="ev-refs">' + e.refs.map(esc).join("; ") + "</p>";
+    box.innerHTML = "";
+    box.hidden = !shown.length;
+    shown.forEach(function (e) { box.appendChild(bookmark(e, f, inWin(f, e.old, e.young) || (e.outside && f.age >= OLDEST))); });
+  }
+  function bookmark(e, f, during) {
+    var el = document.createElement("div");
+    el.className = "bookmark t" + e.tier + (during ? "" : " away");
+    el.title = e.refs.join("; ");
+    var html = '<div class="ribbon"><span class="ev-name">' + esc(e.en) + '</span> <span class="ev-age">' + evAge(e) +
+      (e.outside ? " · " + tr("ev.outside") : "") + "</span></div>";
+    if (!e.outside) {
+      var here = state.i, fr = evFrames(e), steps = [];
+      if (fr.before !== null) steps.push({ j: fr.before, label: tr(e.kind === "interval" ? "ev.start" : "ev.before", { age: fmtAge(state.frames[fr.before].age) }) });
+      if (e.kind === "interval") (e.pulses || []).forEach(function (p) { steps.push({ j: evNearest(p), label: p.en.replace(/ (event|mass extinction)/, "") }); });
+      else steps.push({ j: evNearest(e), label: tr("ev.at", { age: fmtAge(state.frames[evNearest(e)].age) }) });
+      if (fr.after !== null) steps.push({ j: fr.after, label: tr(e.kind === "interval" ? "ev.end" : "ev.after", { age: fmtAge(state.frames[fr.after].age) }) });
+      html += '<div class="ev-nav">' + steps.map(function (st) {
+        return '<button type="button" class="tool' + (st.j === here ? " on" : "") + '" data-go="' + st.j + '">' + esc(st.label) + "</button>";
+      }).join("") + "</div>";
+    }
     el.innerHTML = html;
     el.querySelectorAll("[data-go]").forEach(function (b) {
-      b.addEventListener("click", function () { stopTour(); show(+b.dataset.go); });
+      b.addEventListener("click", function () { evGo(e, +b.dataset.go); });
     });
     return el;
   }

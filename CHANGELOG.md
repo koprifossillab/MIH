@@ -5,9 +5,11 @@
 
 ## 0.30.0 — 2026-10-01 · `feature/geo-events`
 
-- **지구사 사건** — 대멸종 다섯과 Sinsk·토아르시움 규모의 전 지구 사건 14 건(Kotlin crisis 부터 Eocene–Oligocene Transition 까지).
-  시점 막대 위에 박동은 ▼, 긴 위기(데본기 후기)는 띠. 패널의 "지구사 사건" 카드에 나이·풀이·근거와 직전·직후 시점 단추. 분류군을 찾으면
-  산출 막대에 대멸종 다섯의 세로선. 2 등급 사건은 영어 이름으로만 (tupandactyl P01·016)
+- **지구사 사건** — 대멸종 다섯과 Sinsk·토아르시움 규모의 전 지구 사건 14 건(Kotlin crisis 부터 Eocene–Oligocene Transition 까지),
+  이름은 영어로, 풀이 없이 이름과 나이만. 시점 막대 위에 박동은 ▼, 긴 위기(데본기 후기)는 띠 (tupandactyl P01·016·017)
+- **층서표의 책갈피** — 지금 시점에 걸린 사건을 층서표 머리에 가죽 리본으로, 사건이 끝나는 기·세·절 칩에 작은 리본. 책갈피의 단추로
+  직전 · 사건 · 직후 시점을 오가고, 옮겨도 직전~직후 안에서는 책갈피가 남는다 (tupandactyl 017)
+- 분류군을 찾으면 산출 막대에 대멸종 다섯의 세로선 (tupandactyl 016)
 - 목록은 `pipeline/events.py` 한 곳 → index.json 의 `events`. **`python -m pipeline events` 로 지금 목록에 붙인다**(build 도 싣는다)
 
 ## 0.28.1 — 2026-10-01 · `feature/splash-speed`

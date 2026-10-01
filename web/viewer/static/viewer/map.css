@@ -697,20 +697,28 @@ button, input, select { font-family: inherit; }
 .ev-row .ev-mark.outside { transform: translateX(-100%); }
 .ev-row .ev-mark:hover { color: var(--accent); }
 .strip-row.taxon-row .ev-line { position: absolute; top: -2px; bottom: 0; width: 0; border-left: 1px dashed #8b1e1e; pointer-events: none; }
-.ev-card { border-left: 3px solid rgba(110, 90, 70, .6); padding: 2px 0 4px 9px; margin: 0 0 10px; }
-.ev-card.t1 { border-left-color: #8b1e1e; }
-.ev-card h3 { margin: 0; font-size: 14px; line-height: 1.35; }
-.ev-card .ev-badge { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
-.ev-card.t1 .ev-badge { color: #8b1e1e; }
-.ev-card p { margin: 2px 0; }
-.ev-card .ev-other, .ev-card .ev-age, .ev-card .ev-refs { color: var(--muted); font-size: 12px; }
-.ev-card .ev-refs { font-size: 11px; }
-.ev-card .ev-nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0 3px; }
-.ev-card .ev-nav .tool { margin: 0; font-size: 12px; }
-.ev-card .ev-nav .tool:disabled { opacity: .45; cursor: default; }
-:root[data-theme="dark"] .ev-card.t1 { border-left-color: #d06a5a; }
-:root[data-theme="dark"] .ev-card.t1 .ev-badge, :root[data-theme="dark"] .ev-row .ev-mark.t1 { color: #e08a78; }
+/* 책갈피(tupandactyl 017) — 층서표(책)에 끼운 가죽 리본. 끝을 제비꼬리로 판다. 1 등급은 붉은 가죽, 2 등급은 갈색 */
+.bookmarks { display: grid; gap: 6px; margin: -2px 0 8px; }
+.bookmark { --rib: #8b1e1e; --rib-ink: #f6e9d2; }
+.bookmark.t2 { --rib: #7a5a36; }
+.bookmark .ribbon { position: relative; margin-left: -14px; padding: 3px 22px 3px 12px; width: fit-content; max-width: calc(100% + 2px);
+  background: linear-gradient(180deg, rgba(255,255,255,.12), transparent 45%, rgba(0,0,0,.18)), var(--rib); color: var(--rib-ink);
+  font-size: 12.5px; line-height: 1.35; box-shadow: 0 1px 2px rgba(0,0,0,.35);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%); }
+.bookmark .ribbon::before { content: ""; position: absolute; left: 0; top: 100%; border: 3px solid transparent;
+  border-top-color: rgba(0,0,0,.45); border-right-color: rgba(0,0,0,.45); }   /* 책장 뒤로 접혀 들어간 자리 */
+.bookmark .ev-name { font-weight: 700; }
+.bookmark .ev-age { opacity: .85; font-size: 11.5px; white-space: nowrap; }
+.bookmark.away .ribbon { opacity: .72; }
+.bookmark .ev-nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0; }
+.bookmark .ev-nav .tool { margin: 0; font-size: 11.5px; padding: 1px 7px; }
+.bookmark .ev-nav .tool.on { border-color: var(--rib); color: var(--rib); font-weight: 700; }
+/* 칩의 리본 — 사건이 끝나는 단위 */
+.chrono .chip.marked { position: relative; }
+.chrono .chip.marked::after { content: ""; position: absolute; top: -3px; right: 5px; width: 6px; height: 11px; background: #8b1e1e;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%); box-shadow: 0 1px 1px rgba(0,0,0,.3); pointer-events: none; }
+.chrono .chip.marked.mt2::after { background: #7a5a36; height: 9px; }
+:root[data-theme="dark"] .bookmark.t1 .ev-nav .tool.on, :root[data-theme="dark"] .ev-row .ev-mark.t1 { color: #e08a78; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .ev-card.t1 { border-left-color: #d06a5a; }
-  :root:not([data-theme="light"]) .ev-card.t1 .ev-badge, :root:not([data-theme="light"]) .ev-row .ev-mark.t1 { color: #e08a78; }
+  :root:not([data-theme="light"]) .bookmark.t1 .ev-nav .tool.on, :root:not([data-theme="light"]) .ev-row .ev-mark.t1 { color: #e08a78; }
 }
