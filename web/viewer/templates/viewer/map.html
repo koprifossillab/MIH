@@ -104,6 +104,7 @@
       <div class="strip" id="strip" aria-hidden="true">
         <div class="strip-row named" id="strip-period"></div>
         <div class="strip-row named" id="strip-epoch"></div>
+        <div class="strip-row ev-row" id="strip-events" hidden></div>
       </div>
       <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점" data-i18n-attr="aria-label:slider">
       <div class="strip"><div class="strip-row taxon-row" id="strip-taxon" hidden></div></div>
@@ -149,6 +150,8 @@
     <aside class="panel" id="panel">
       <section data-sec="time">
         <h2 data-i18n="chrono.pick">층서표로 고르기</h2>
+        <!-- 책갈피(tupandactyl 017) — 지금 시점에 걸린 지구사 사건. 목록은 index.json 의 events -->
+        <div class="bookmarks" id="bookmarks" hidden></div>
         <div class="chrono" id="chrono">
           <div class="chrono-row"><span class="rank" data-i18n="rank.era">대</span><div class="chips" data-rank="era"></div></div>
           <div class="chrono-row"><span class="rank" data-i18n="rank.period">기</span><div class="chips" data-rank="period"></div></div>

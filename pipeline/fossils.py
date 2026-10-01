@@ -14,7 +14,7 @@ import bisect
 import csv
 import json
 
-from .common import DERIVED, WINDOW_MA, age_key, environment_class, manifest, source_path
+from .common import DERIVED, PLATE_ONLY_FROM_MA, WINDOW_MA, age_key, environment_class, manifest, source_path
 from .intervals import is_vague, load_types
 
 FIELDS = ["collection_no", "paleolng", "paleolat", "env", "n_occs", "collection_name",
@@ -54,8 +54,10 @@ def read_collections(path):
                 continue
             plng, plat = number(record.get("paleolng")), number(record.get("paleolat"))
             if plng is None or plat is None:
-                stats["no_pbdb_paleo"] += 1
-                continue
+                # 판 복원만 있는 시점(에디아카라기, 019)에 걸칠 수 있는 산지는 남긴다 — 그 시점에서만, 판으로 돌렸을 때만 쓴다
+                if old + WINDOW_MA < PLATE_ONLY_FROM_MA:
+                    stats["no_pbdb_paleo"] += 1
+                    continue
             environment = (record.get("environment") or "").strip()
             stats["environments"][environment] = stats["environments"].get(environment, 0) + 1
             early = (record.get("early_interval") or "").strip()
@@ -64,7 +66,8 @@ def read_collections(path):
             stats["vague"] += not precise
             rows.append((old, young, [
                 int(record["collection_no"]),
-                round(plng, 2), round(plat, 2),        # PBDB 고좌표 — build 가 시점마다 바꿔 쓴다
+                round(plng, 2) if plng is not None else None,     # PBDB 고좌표 — build 가 시점마다 바꿔 쓴다
+                round(plat, 2) if plat is not None else None,
                 environment_class(environment), int(number(record.get("n_occs")) or 0),
                 (record.get("collection_name") or "").strip(),
                 (record.get("early_interval") or "").strip(),
@@ -120,6 +123,8 @@ def build(ages):
         rlon, rlat, ok = rebuilder.rotate(lons, lats, age)
         members = []
         for item, x, y, rotated in zip(items, rlon, rlat, ok):
+            if item[2][1] is None and (age < PLATE_ONLY_FROM_MA or not rotated):
+                continue                                  # PBDB 고좌표가 없는 산지는 판 복원만 있는 시점에서, 돌렸을 때만(019)
             row = list(item[2])
             if rotated:
                 row[1], row[2], row[-1] = round(float(x), 2), round(float(y), 2), 1

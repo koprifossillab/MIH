@@ -94,5 +94,10 @@
 | tupandactyl 013 | 2026-10-01 | [대기 화면을 빠르게, "느리게 보기"](20261001_tupandactyl_013_splash_speed.md) |
 | tupandactyl 014 | 2026-10-01 | [종합 보기의 툴팁을 시점 찾기와 같게](20261001_tupandactyl_014_overview_tooltip.md) |
 | tupandactyl 015 | 2026-10-01 | [팝업의 산출 이름으로 찾기, 분류군 × 국가, 종합 보기의 암상](20261001_tupandactyl_015_taxon_links_combo.md) |
+| tupandactyl P01 | 2026-10-01 | [지구사 사건(대멸종·전 지구 사건)을 시점에 넣는다 — 계획](20261001_tupandactyl_P01_earth_events.md) |
+| tupandactyl 016 | 2026-10-01 | [지구사 사건을 시점 막대·패널·산출 막대에](20261001_tupandactyl_016_earth_events.md) |
+| tupandactyl 017 | 2026-10-01 | [지구사 사건을 층서표의 책갈피로](20261001_tupandactyl_017_event_bookmarks.md) |
+| tupandactyl 018 | 2026-10-01 | [책갈피는 고를 때만, 멸종은 폭발·기후 사건은 마름모](20261001_tupandactyl_018_event_marks.md) |
+| tupandactyl 019 | 2026-10-01 | [에디아카라기 시점(550 Ma, 판 복원만)](20261001_tupandactyl_019_ediacaran_frame.md) |
 | tupandactyl 020 | 2026-10-01 | [Casual 모드의 한글: 학명 음차·연대·암상](20261001_tupandactyl_020_korean_names.md) |
 | tupandactyl 021 | 2026-10-01 | [한글로 속·종 찾기: 미리 음차한 표](20261001_tupandactyl_021_korean_search.md) |

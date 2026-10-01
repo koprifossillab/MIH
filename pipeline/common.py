@@ -60,6 +60,14 @@ def age_key(age_ma):
 # 채집지가 하나도 없는 시점이 생긴다 — devlog 001.
 WINDOW_MA = 2.5         # 시점 ±2.5 Myr — PaleoDEM 간격(5 Myr)의 절반
 
+# **에디아카라기 시점**(tupandactyl 019) — PaleoDEM·PaleoCoastlines·기온은 540 Ma 까지라 그 앞은 판 복원만 있다(v19o 는 1100 Ma 까지).
+# 한 장만 둔다 — PBDB 에디아카라기 산지의 95 % 가 "Ediacaran"(635–538.8 Ma) 하나로만 매겨져 시점을 나눠도 같은 산지가 뜬다.
+# 550 Ma 는 White Sea–Nama 생물군 무렵. 이 시점은 PBDB 고좌표가 없어도(에디아카라기는 PALEOMAP 고좌표가 거의 없다) 우리가 판으로
+# 돌릴 수 있는 산지를 올린다 — 540 Ma 까지의 시점에는 016 의 규칙(PBDB 고좌표가 없는 산지는 뺀다)이 그대로다.
+EDIACARAN_AGE = 550.0
+EDIACARAN_LABEL = "Ediacaran (plate reconstruction only)"
+PLATE_ONLY_FROM_MA = 545.0      # 이보다 오래된 시점은 판 복원만(지형·해안선·기온 없음)
+
 
 # **연대 범위의 상한은 없다**(015). 범위가 긴 산지도 걸친 모든 시점에 올린다. 013 까지는 "가장 긴 절
 # (21.6 Myr) 이하" 만 올렸고, 그 전에는 20 Myr 로 노릭절이 통째로 빠졌다. 연대가 절 단위로 정해지지 않은
