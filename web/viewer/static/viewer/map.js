@@ -1269,11 +1269,12 @@
       if (!on[c.env]) return;
       shown += c.n;
       var color = state.colorBy === "age" ? ((periodOf(c.mid, c.mid) || {}).color || UNKNOWN_COLOR) : state.topColor[c.env];
-      L.circleMarker([c.lat, c.lng], {
+      var dot = L.circleMarker([c.lat, c.lng], {
         // 찾기 결과의 점(4.6)보다 작지 않게 — 세계 지도에서 한 곳짜리 칸도 보이도록(연구자: 처음엔 2.2 라 안 보였다). 테두리는 짙게
         renderer: renderer, radius: 4.6 + 2.6 * Math.log(c.n) / Math.LN10, weight: 1.4, color: "#2b1d10", opacity: .9,
         fillColor: color, fillOpacity: Math.max(.8, state.opacity),
-      }).bindTooltip(tr("overview.tip", { n: fmtNum(c.n), old: c.old, young: c.young }), { direction: "top", opacity: .95 })
+      });
+      dot.bindTooltip(function () { return overviewTip(c, dot); }, { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { L.DomEvent.stopPropagation(e); openOverviewCell(c); })
         .addTo(fossilLayer);
     });
@@ -1356,6 +1357,43 @@
       map.closePopup();
       map.setView(latlng, Math.min(map.getMaxZoom(), Math.max(map.getZoom() + 2, 5)));
     });
+  }
+
+  // 종합 보기의 점에 커서를 대면 — 시점을 옮겼을 때(taxonTip)와 같은 꼴에 시대 한 줄을 더한다. 칸은 거의 다 산지 한 곳이다.
+  // 찾은 분류군의 산출은 colls/list 에 없어서, 커서를 댄 산지만 PBDB 에 묻고(occs/list?coll_id&base_name) 기억해 둔다
+  var ovTipCache = {};
+  function ovAge(r) {
+    var interval = (r.early_interval || "") + (r.late_interval ? " – " + r.late_interval : "");
+    return '<small class="tip-age">' + esc(interval) + " · " + r.max_ma + "–" + r.min_ma + " Ma</small>";
+  }
+  function overviewTip(cell, dot) {
+    var recs = cell.recs || [];
+    if (recs.length !== 1) {
+      var shown = recs.slice(0, TIP_TAXA_MAX);
+      return "<b>" + tr("ovpop.title", { n: fmtNum(cell.n) }) + "</b><ul>" + shown.map(function (r) {
+        return "<li>" + esc(r.collection_name || tr("pop.noname")) + " " + ovAge(r) + "</li>";
+      }).join("") + "</ul><small>" + tr("ovtip.more") + "</small>";
+    }
+    var r = recs[0], no = r.collection_no, age = ovAge(r);
+    if (!state.taxon) {
+      return "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b>" + age + "<small>" + tr("ovtip.occs", { n: fmtNum(+r.n_occs || 0) }) + "</small>";
+    }
+    var key = state.taxon + "|" + no, got = ovTipCache[key];
+    if (got && got.occs) {
+      var row = { occs: got.occs };
+      row[COLUMNS.collection_name] = r.collection_name;
+      return taxonTip(row, age);
+    }
+    if (!got) {
+      ovTipCache[key] = {};
+      getJSON(PBDB + "occs/list.json?coll_id=" + no + "&base_name=" + encodeURIComponent(state.taxon) + "&vocab=pbdb&limit=500").then(function (data) {
+        ovTipCache[key].occs = (data.records || []).map(function (o) {
+          return { accepted: o.accepted_name || o.identified_name, identified: o.identified_name, rank: o.accepted_rank };
+        });
+        if (dot.isTooltipOpen()) dot.setTooltipContent(overviewTip(cell, dot));
+      }).catch(function () { delete ovTipCache[key]; });
+    }
+    return "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b>" + age + '<small class="muted">' + tr("ovtip.loading") + "</small>";
   }
 
   function setOverviewStatus(text) {
@@ -1501,8 +1539,8 @@
       .catch(function () { return ""; });
   }
 
-  function taxonTip(row) {
-    var head = "<b>" + esc(row[COLUMNS.collection_name] || tr("pop.noname")) + "</b>";
+  function taxonTip(row, extra) {
+    var head = "<b>" + esc(row[COLUMNS.collection_name] || tr("pop.noname")) + "</b>" + (extra || "");
     var taxa = {};
     row.occs.forEach(function (o) { taxa[o.accepted] = 1; });
     var n = Object.keys(taxa).length;

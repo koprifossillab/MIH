@@ -92,3 +92,4 @@
 | tupandactyl 011 | 2026-10-01 | [화면 모드: Scientific(기본)과 Casual](20261001_tupandactyl_011_scientific_mode.md) |
 | tupandactyl 012 | 2026-10-01 | [찾기의 종합 보기, 지도 옮기는 폭, 팝업 자리, 암상](20261001_tupandactyl_012_search_overview.md) |
 | tupandactyl 013 | 2026-10-01 | [대기 화면을 빠르게, "느리게 보기"](20261001_tupandactyl_013_splash_speed.md) |
+| tupandactyl 014 | 2026-10-01 | [종합 보기의 툴팁을 시점 찾기와 같게](20261001_tupandactyl_014_overview_tooltip.md) |

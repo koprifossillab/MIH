@@ -687,3 +687,4 @@ button, input, select { font-family: inherit; }
 .ovpop details[open] summary { margin-bottom: 2px; }
 .ovpop .taxa { max-height: 150px; }
 .ovpop .ovzoom { margin-top: 4px; }
+.occ-tip .tip-age { display: block; margin: 1px 0 2px; }   /* 종합 보기 툴팁의 시대 한 줄(tupandactyl 014) */
