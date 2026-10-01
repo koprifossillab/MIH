@@ -3327,7 +3327,7 @@
         d.className = "fm-node fm-kingdom";
         d.open = true;
         var n = list.reduce(function (a, c) { return a + c.n; }, 0) + (g === "other" ? root.nIndet : 0);
-        d.innerHTML = '<summary><span class="fm-name">' + esc(tr("formation.kingdom." + g)) + '</span> <small>' + esc(tr("formation.n", { n: fmtNum(n) })) + "</small></summary>";
+        d.innerHTML = '<summary><span class="fm-name">' + esc({ Animalia: tr("formation.kingdom.Animalia"), Plantae: tr("formation.kingdom.Plantae"), other: tr("formation.kingdom.other") }[g]) + '</span> <small>' + esc(tr("formation.n", { n: fmtNum(n) })) + "</small></summary>";
         var body = document.createElement("div");
         body.className = "fm-body";
         if (g === "other" && root.nIndet) body.appendChild(indetEl(root));
