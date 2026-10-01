@@ -101,7 +101,8 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 **주간 갱신과 0.30·0.31 의 자료** — 사건·에디아카라기 시점·암상 한글·한글 찾기 표는 10-01 에 운영 자료에 명령으로 붙였고
 (`pipeline ediacaran|events|lithology|taxa_ko`), paleoadmin 클론도 같은 날 `f776c9e` 로 pull 했다. 그래서 주간 갱신의 build 가 모두 다시
 만든다 — 이름표(`taxa.csv`)는 `fetch --refresh-pbdb` 가 처음 받고, 한글 찾기 표는 node(paleoserver v18)로 굽는다. **새 파이프라인 코드가
-병합되면 그 클론을 다시 pull 한다** — 주간 갱신은 그 클론의 코드로 돈다.
+병합되면** 주간 갱신이 가공 전에 그 클론의 main 을 앞으로만 당긴다(tupandactyl 025) — 당기지 못하면 지금 코드로 가공하고 `/healthz` 의
+refresh 에 적는다. 파이썬 의존성이 바뀐 병합은 사람이 venv 를 맞춘다.
 
 `build --no-relief` 는 배경을 다시 그리지 않는다(30 초 남짓). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
 Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값을 `receipt.json` 에 남긴다.
