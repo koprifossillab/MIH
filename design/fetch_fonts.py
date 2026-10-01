@@ -10,6 +10,7 @@ Google Fonts 가 내주는 CSS 를 받아, 글자 묶음별로 잘게 나눈 wof
 둘 다 SIL Open Font License 1.1. 표준 라이브러리만 쓴다.
 """
 import re
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -50,5 +51,28 @@ def main():
     print(n, "faces")
 
 
+def dark_alias():
+    """다크 모드 Casual 의 한글 — 본명조 600 을 400·600 자리에 다시 걸어 둔 별칭 가족 'Noto Serif KR Dark'(tupandactyl 023).
+
+        python design/fetch_fonts.py --dark     # fonts.css 에서 만든다(받지 않는다) → fonts-dark.css
+
+    어두운 바탕에서 400 의 가는 획이 번진다. 글씨체를 굵게(font-weight) 하면 라틴(Spectral)까지 굵어져 화면이 무거워서, 한글
+    글꼴만 굵은 파일로 바꿔 끼운다. 새 파일을 받지 않는다 — 이미 있는 600 묶음을 가리킨다.
+    """
+    css = (OUT / "fonts.css").read_text(encoding="utf-8")
+    faces = [f for f in re.findall(r"@font-face \{.*?\}", css, re.S) if "'Noto Serif KR'" in f and "font-weight: 600" in f]
+    out = []
+    for weight in ("400", "600"):
+        for face in faces:
+            out.append(face.replace("'Noto Serif KR'", "'Noto Serif KR Dark'").replace("font-weight: 600", f"font-weight: {weight}"))
+    (OUT / "fonts-dark.css").write_text(
+        "/* 다크 모드 Casual 의 한글(본명조 600) — design/fetch_fonts.py --dark 가 만든다. 손으로 고치지 않는다 (tupandactyl 023) */\n"
+        + "\n".join(out) + "\n", encoding="utf-8")
+    print(len(out), "faces (dark)")
+
+
 if __name__ == "__main__":
-    main()
+    if "--dark" in sys.argv:
+        dark_alias()
+    else:
+        main()
