@@ -3,6 +3,11 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 0.33.0 — 2026-10-01 · `feature/formation-search`
+
+- **지층으로 찾기** — 찾기 후보에 지층(Formation, PBDB strata/auto). 고르면 그 지층의 모든 시대 산지(오늘날 자리), 시점을 옮기면 그 시대의
+  그 지층 산지만. 분류군·나라와 겹쳐 건다. 이름은 Casual·Scientific 모두 영문으로만 (tupandactyl 028)
+
 ## 0.32.2 — 2026-10-01 · `feature/casual-history`
 
 - **Casual 에서 한글로 안 바뀌던 학명** — PBDB 분류 기준표에 없는 이름(채택 계급 없음)은 동정 계급, 그것도 없으면 이름 꼴로 계급을 본다 (tupandactyl 027)

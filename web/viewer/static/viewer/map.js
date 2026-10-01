@@ -116,11 +116,15 @@
     return envColor(environment);
   }
   // 산지를 보일지 — 켠 환경, 고른 나라, 그리고 연대 거르기(ageOk).
-  function passes(environment, cc, precise, maxMa, minMa) {
+  function passes(environment, cc, precise, maxMa, minMa, formation) {
     if (!state.enabled[termKey(environment)]) return false;
     if (!ageOk(precise, maxMa, minMa)) return false;
+    if (state.formation && formKey(formation) !== formKey(state.formation)) return false;   // 지층(tupandactyl 028)
     return !state.country || cc === state.country;
   }
+  // 지층 이름 견주기 — 대소문자와 끝의 "Formation"·"Fm" 은 가리지 않는다(PBDB 의 지층 칸은 대개 이름만)
+  function formKey(v) { return String(v || "").toLowerCase().replace(/\s+(formation|fm\.?)$/, "").trim(); }
+  function stratParam() { return state.formation ? "&formation=" + encodeURIComponent(state.formation) : ""; }
 
   // 연대로 거르기 — 두 가지를 따로 본다. 모호한 연대(시대 이름의 등급, 016)를 보이기로 했는지, 그리고
   // 연대 범위의 길이가 고른 값 이하인지(018). 등급은 "어떻게 매겼나", 길이는 "시간이 얼마나 불확실한가" 다.
@@ -1167,7 +1171,7 @@
 
   // 분류군을 찾는 동안에는 그 결과만 그린다(drawTaxa). 산지 점은 찾기를 지우면 돌아온다.
   function drawFossils() {
-    $("overview-btn").hidden = !(state.taxon || state.country) || !!state.overview;
+    $("overview-btn").hidden = !(state.taxon || state.country || state.formation) || !!state.overview;
     if (state.overview) { drawOverview(); return; }
     var payload = state.payload;
     fossilLayer.clearLayers();
@@ -1185,7 +1189,7 @@
     var shown = 0, wide = 0;
     payload.rows.forEach(function (row) {
       var precise = rowPrecise(row, col);
-      if (!passes(row[col.environment], row[col.cc], precise, row[col.max_ma], row[col.min_ma])) return;
+      if (!passes(row[col.environment], row[col.cc], precise, row[col.max_ma], row[col.min_ma], row[col.formation])) return;
       shown += 1;
       if (!precise) wide += 1;
       marker([row[col.paleolat], row[col.paleolng]], pointColor(row[col.environment], row[col.max_ma], row[col.min_ma]),
@@ -1220,6 +1224,7 @@
   function overviewUrl() {
     return PBDB + "colls/list.json?" + (state.taxon ? baseParam(state.taxon) + "&" : "") +
       (state.country ? "cc=" + encodeURIComponent(state.country) + "&" : "") +
+      (state.formation ? "formation=" + encodeURIComponent(state.formation) + "&" : "") +
       "show=loc,geo,strat,lith&vocab=pbdb&limit=" + OVERVIEW_LIMIT;
   }
   function loadOverview(fit) {
@@ -1255,7 +1260,7 @@
       ov.loading = false;
       drawFossils();
       // 패널에 절이 생기며 지도 크기가 바뀌면(invalidateSize) 날아가던 지도가 멈춘다 — 자리가 잡힌 뒤에 옮긴다
-      if (fit && state.taxon && !state.country) setTimeout(fitOverview, 350);
+      if (fit && (state.taxon || state.formation) && !state.country) setTimeout(fitOverview, 350);
     }).catch(function (err) {
       if (seq !== overviewSeq || !state.overview) return;
       ov.loading = false; ov.error = String(err.message || err);
@@ -1285,7 +1290,8 @@
   function drawOverview() {
     fossilLayer.clearLayers();
     taxonLayer.clearLayers();
-    var ov = state.overview, what = [koTaxon(state.taxon, state.taxonRank), state.country ? countryName(state.country) : ""].filter(Boolean).join(" · ");
+    var ov = state.overview, what = [koTaxon(state.taxon, state.taxonRank), state.formation ? state.formation + " Fm." : "",
+      state.country ? countryName(state.country) : ""].filter(Boolean).join(" · ");
     if (ov.loading) { $("fossil-count").textContent = tr("overview.loading"); setOverviewStatus(tr("overview.asking", { what: what })); return; }
     if (ov.error) { $("fossil-count").textContent = ""; setOverviewStatus(tr("taxon.fail", { err: ov.error })); return; }
     var on = {}, shown = 0, byTop = { m: 0, t: 0, o: 0 };
@@ -1771,8 +1777,8 @@
   // 절 안 산출 = sampled_in_bin), 그리고 산출이 OCC_LIMIT 건 이하이면 산출 하나하나(나이·환경·PBDB 고위도). 찾은 분류군(A)의
   // 분포와 비교 분류군(B)이 같은 함수로 받는다
   function fetchSeries(name, withApp) {
-    var key = name + "|" + (state.country || "");
-    var cc = state.country ? "&cc=" + encodeURIComponent(state.country) : "";
+    var key = name + "|" + (state.country || "") + "|" + (state.formation || "");
+    var cc = (state.country ? "&cc=" + encodeURIComponent(state.country) : "") + stratParam();
     return Promise.all([
       getJSON(PBDB + "occs/diversity.json?" + baseParam(name) + cc + "&count=genera&time_reso=stage&vocab=pbdb"),
       withApp ? getJSON(PBDB + "taxa/single.json?" + singleParam(name) + "&show=app&vocab=pbdb").catch(function () { return {}; }) : Promise.resolve({}),
@@ -1799,7 +1805,7 @@
   }
 
   function loadDistribution(name) {
-    var key = name + "|" + (state.country || "");
+    var key = name + "|" + (state.country || "") + "|" + (state.formation || "");
     if (state.dist && state.dist.key === key) return Promise.resolve(state.dist);
     return fetchSeries(name, true).then(function (base) {
       if (state.taxon !== name) return null;
@@ -1933,7 +1939,7 @@
     var w = win(f);
     return PBDB + "occs/list.json?" + baseParam(name) +
       "&max_ma=" + w[1] + "&min_ma=" + w[0] +
-      (state.country ? "&cc=" + encodeURIComponent(state.country) : "") +
+      (state.country ? "&cc=" + encodeURIComponent(state.country) : "") + stratParam() +
       "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class,env,loc&vocab=pbdb&limit=" + TAXON_LIMIT;
   }
 
@@ -1979,7 +1985,7 @@
   }
 
   function searchTaxon(name, fromFind) {
-    if (fromFind) remember({ t: name, cc: state.country || null });   // 최근 찾은 것(027)
+    if (fromFind) remember({ t: name, cc: state.country || null, f: state.formation || null });   // 최근 찾은 것(027)
     var changed = state.taxon !== name;
     if (fromFind) { state.taxon = name; startOverview(); }        // 찾기 칸에서 골랐으면 먼저 모든 시대를 오늘날 자리에
     var f = frame();
@@ -2148,7 +2154,7 @@
     placeTaxa(rows);
     var shown = 0, occs = 0, visible = [];
     var ok = function (row) {
-      return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma]);
+      return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma], row[COLUMNS.formation]);
     };
     var inCountry = function (row) { return !state.country || row[COLUMNS.cc] === state.country; };
     rows.forEach(function (row) { if (ok(row)) visible.push(row); });
@@ -2201,7 +2207,7 @@
     $("taxon-chip").hidden = true;
     $("taxon-status").textContent = "";
     $("taxon-sec").hidden = true;       // 찾기 전에는 패널에 절을 두지 않는다 — 찾기 칸은 찾기 막대에 있다(wetherilli 011)
-    if (state.overview) { if (state.country) loadOverview(); else endOverview(); }
+    if (state.overview) { if (state.country || state.formation) loadOverview(); else endOverview(); }
     drawFossils();
   }
 
@@ -2273,6 +2279,15 @@
   function suggestFetch(text) {
     var seq = ++suggest.seq;
     var q = encodeURIComponent(text);
+    // 지층 후보(028) — 분류군 후보와 따로 오면 그 밑에 붙인다
+    suggest.formations = [];
+    getJSON(PBDB + "strata/auto.json?name=" + q + "&limit=5").then(function (d) {
+      if (seq !== suggest.seq) return;
+      suggest.formations = (d.records || []).filter(function (r) { return r.typ === "str" && r.rnk === "Fm"; }).map(function (r) {
+        return { name: r.nam, cc: r.cc2 || "", colls: +r.nco || 0, occs: +r.noc || 0 };
+      });
+      if (suggest.formations.length) renderSuggest(suggest.lastTaxa || [], suggest.lastDone);
+    }).catch(function () {});
     var prefix = getJSON(PBDB + "taxa/auto.json?name=" + q + "&limit=12").then(function (d) {
       return (d.records || []).filter(function (r) { return r.typ === "txn" && /^[A-Z]/.test(r.nam); }).map(function (r) {
         return { name: r.nam, rank: RANK_KO[r.rnk] || "", rk: r.rnk, occs: +r.noc || 0, group: "" };
@@ -2334,9 +2349,11 @@
 
   function renderSuggest(taxa, done) {
     var list = $("find-list"), text = $("find").value.trim();
+    suggest.lastTaxa = taxa; suggest.lastDone = done;
     var countries = countryMatches(text).map(function (c) { return { kind: "country", c: c }; });
     var waitTaxa = text.length >= 2;
-    suggest.items = countries.concat((taxa || []).map(function (it) { return { kind: "taxon", t: it }; }));
+    var forms = HANGUL.test(text) ? [] : (suggest.formations || []).map(function (f) { return { kind: "formation", f: f }; });
+    suggest.items = countries.concat((taxa || []).map(function (it) { return { kind: "taxon", t: it }; })).concat(forms);
     suggest.active = -1;
     var re = text ? new RegExp("(" + text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i") : null;
     var mark = function (v) { var e = esc(v); return re ? e.replace(re, "<b>$1</b>") : e; };
@@ -2345,8 +2362,14 @@
       if (k === 0 && it.kind === "country") html += '<li class="sg-head" role="presentation">' + tr("suggest.countries") + "</li>";
       if (it.kind === "taxon" && (k === 0 || suggest.items[k - 1].kind !== "taxon"))
         html += '<li class="sg-head" role="presentation">' + tr("suggest.taxa") + "</li>";
+      if (it.kind === "formation" && (k === 0 || suggest.items[k - 1].kind !== "formation"))
+        html += '<li class="sg-head" role="presentation">' + tr("suggest.formations") + "</li>";
       var li = '<li role="option" id="sg-' + k + '" data-k="' + k + '">';
-      if (it.kind === "country") {
+      if (it.kind === "formation") {
+        var fm = it.f;
+        html += li + '<span class="nm-plain">' + mark(fm.name) + " <small>Fm.</small></span>" +
+          '<span class="meta">' + esc(fm.cc) + tr("formation.meta", { colls: fmtNum(fm.colls), occs: fmtNum(fm.occs) }) + "</span></li>";
+      } else if (it.kind === "country") {
         var c = it.c;
         html += li + '<span class="nm-plain">' + mark(c.ko) + (c.en !== c.ko ? " <small>" + mark(c.en) + "</small>" : "") +
           '</span><span class="meta">' + esc(c.cc) + tr("country.colls", { n: fmtNum(c.collections) }) + "</span></li>";
@@ -2378,11 +2401,11 @@
   // 찾기 칸에서 찾은 분류군·나라(함께 건 것도)를 5 개까지 이 브라우저에 기억한다. 찾기 칸이 비어 있을 때 누르면 띄운다
   var RECENT_KEY = "wegener.recent", RECENT_MAX = 5;
   function recentList() {
-    try { return (JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") || []).filter(function (e) { return e && (e.t || e.cc); }); } catch (e) { return []; }
+    try { return (JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") || []).filter(function (e) { return e && (e.t || e.cc || e.f); }); } catch (e) { return []; }
   }
   function remember(entry) {
-    var key = (entry.t || "") + "|" + (entry.cc || "");
-    var list = recentList().filter(function (e) { return (e.t || "") + "|" + (e.cc || "") !== key; });
+    var key = (entry.t || "") + "|" + (entry.cc || "") + "|" + (entry.f || "");
+    var list = recentList().filter(function (e) { return (e.t || "") + "|" + (e.cc || "") + "|" + (e.f || "") !== key; });
     list.unshift(entry);
     try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX))); } catch (e) {}
   }
@@ -2394,6 +2417,7 @@
     box.innerHTML = '<li class="sg-head" role="presentation">' + tr("suggest.recent") + "</li>" + list.map(function (e, k) {
       var parts = [];
       if (e.t) parts.push('<span class="nm">' + esc(koTaxon(e.t, "")) + (koTaxon(e.t, "") !== plainName(e.t) ? " <small>" + esc(plainName(e.t)) + "</small>" : "") + "</span>");
+      if (e.f) parts.push('<span class="nm-plain">' + esc(e.f) + " <small>Fm.</small></span>");
       if (e.cc) parts.push('<span class="nm-plain">' + esc(countryName(e.cc)) + "</span>");
       return '<li role="option" id="sg-' + k + '" data-k="' + k + '">' + parts.join(" · ") + "</li>";
     }).join("") + '<li class="sg-clear" role="presentation"><button type="button" id="recent-clear">' + tr("suggest.recentClear") + "</button></li>";
@@ -2407,6 +2431,15 @@
   }
   function useRecent(e) {
     stopTour();
+    if ((e.f || null) !== (state.formation || null)) {          // 그때 걸었던 지층 그대로
+      state.formation = e.f || null;
+      $("formation-chip").hidden = !e.f;
+      $("formation-chip-name").textContent = e.f || "";
+    }
+    if (e.f && !e.t) {
+      if ((e.cc || null) !== (state.country || null)) { state.country = e.cc || null; $("country-chip").hidden = !e.cc; $("country-chip-name").textContent = e.cc ? countryName(e.cc) : ""; noteCountry(); }
+      setFormation(e.f, true); return;
+    }
     if (e.cc && !e.t) { setCountry(e.cc, true); return; }
     if ((e.cc || null) !== (state.country || null)) {           // 그때 걸었던 나라 그대로 — 없었으면 푼다
       state.country = e.cc || null;
@@ -2422,6 +2455,7 @@
     var it = suggest.items[k];
     if (!it) return;
     if (it.kind === "recent") { $("find").value = ""; closeSuggest(); useRecent(it.e); return; }
+    if (it.kind === "formation") { $("find").value = ""; closeSuggest(); stopTour(); setFormation(it.f.name, true); return; }
     $("find").value = "";
     closeSuggest();
     if (it.kind === "country") { setCountry(it.c.cc, true); return; }
@@ -2705,7 +2739,7 @@
     if (!cmp || !cmp.rows || state.overview) { renderAnalysis(); return; }
     placeTaxa(cmp.rows);
     cmp.visible = cmp.rows.filter(function (row) {
-      return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma]);
+      return passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma], row[COLUMNS.formation]);
     });
     cmp.visible.forEach(function (row) {
       L.circleMarker([row[COLUMNS.paleolat], row[COLUMNS.paleolng]], {
@@ -2925,7 +2959,7 @@
   function buildLatFrames(base, button) {
     if (base.latFrames || base.latLoading) return;
     base.latLoading = true;
-    var cc = state.country ? "&cc=" + encodeURIComponent(state.country) : "";
+    var cc = (state.country ? "&cc=" + encodeURIComponent(state.country) : "") + stratParam();
     var todo = state.frames.map(function (f, j) { return { f: f, j: j }; }).filter(function (t) {
       return base.stages.some(function (st) { return inWin(t.f, st.base, st.top); });
     });
@@ -3087,7 +3121,7 @@
     if (state.payload) {
       var col = columns(state.payload);
       state.payload.rows.forEach(function (row) {
-        if (passes(row[col.environment], row[col.cc], row[col.precise], row[col.max_ma], row[col.min_ma])) push(row, col, "");
+        if (passes(row[col.environment], row[col.cc], row[col.precise], row[col.max_ma], row[col.min_ma], row[col.formation])) push(row, col, "");
       });
     }
     return out;
@@ -3133,7 +3167,7 @@
   }
 
   function setCountry(cc, fromFind) {
-    if (fromFind && cc) remember({ t: state.taxon || null, cc: cc });
+    if (fromFind && cc) remember({ t: state.taxon || null, cc: cc, f: state.formation || null });
     state.country = cc;
     if (fromFind && cc) { startOverview(); }
     $("country-chip").hidden = !cc;
@@ -3141,9 +3175,27 @@
     noteCountry();
     drawBorders(frame(), true);
     if (state.overview) {
-      if (!cc && !state.taxon) { endOverview(); redraw(); return; }
+      if (!cc && !state.taxon && !state.formation) { endOverview(); redraw(); return; }
       if (!fromFind) loadOverview();                               // 나라를 바꾸거나 지우면 종합 보기도 다시
       if (state.taxon) searchTaxon(state.taxon);                   // 산출 시대 분포도 그 나라로 다시 센다(종합 보기 중에는 준비만)
+      return;
+    }
+    if (state.taxon) searchTaxon(state.taxon); else redraw();
+  }
+
+  // ── 지층(tupandactyl 028) ───────────────────────────────────────────
+  // PBDB 의 지층(Formation) 이름으로 거른다 — 찾기 후보는 strata/auto, 거르기는 PBDB 질의의 formation= 과 지도의 산지 칸(formKey).
+  // 이름은 영문 그대로(Casual 에서도) — 지층 이름은 옮기지 않는다(연구자). 분류군·나라와 겹쳐 건다
+  function setFormation(name, fromFind) {
+    if (fromFind && name) remember({ t: state.taxon || null, cc: state.country || null, f: name });
+    state.formation = name || null;
+    $("formation-chip").hidden = !name;
+    $("formation-chip-name").textContent = name || "";
+    if (fromFind && name) { startOverview(); if (state.taxon) searchTaxon(state.taxon); return; }
+    if (state.overview) {
+      if (!name && !state.taxon && !state.country) { endOverview(); redraw(); return; }
+      loadOverview();
+      if (state.taxon) searchTaxon(state.taxon);
       return;
     }
     if (state.taxon) searchTaxon(state.taxon); else redraw();
@@ -3753,12 +3805,12 @@
     var seen = {};
     var add = function (maxMa, minMa) { var p = periodOf(maxMa, minMa); if (p) seen[p.id] = p; };
     if (state.taxon && state.taxa) {
-      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
+      state.taxa.forEach(function (row) { if (passes(row[COLUMNS.environment], row[COLUMNS.cc], row[COLUMNS.precise], row[COLUMNS.max_ma], row[COLUMNS.min_ma], row[COLUMNS.formation])) add(row[COLUMNS.max_ma], row[COLUMNS.min_ma]); });
     } else if (state.overview && state.overview.cells) {
       state.overview.cells.forEach(function (c) { add(c.mid, c.mid); });
     } else if (state.payload) {
       var col = columns(state.payload);
-      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col), row[col.max_ma], row[col.min_ma])) add(row[col.max_ma], row[col.min_ma]); });
+      state.payload.rows.forEach(function (row) { if (passes(row[col.environment], row[col.cc], rowPrecise(row, col), row[col.max_ma], row[col.min_ma], row[col.formation])) add(row[col.max_ma], row[col.min_ma]); });
     }
     // 색은 산지 연대 범위의 **중간값이 드는 기**다. 범위가 긴 산지는 지금 시점을 걸쳐도 중간값이 다른 기에 들어,
     // 지금의 기가 아닌 기도 범례에 뜬다(연구자가 물었다) — 그래서 범례 머리에 기준을 적고, 지금 시점의 기를 앞에 굵게 둔다
@@ -3783,7 +3835,7 @@
     });
     $("tour").addEventListener("click", function () { if (tour.on) stopTour(); else startTour(); });
     $("coeval").addEventListener("change", drawTaxa);
-    $("overview-btn").addEventListener("click", function () { if (state.taxon || state.country) startOverview(); });
+    $("overview-btn").addEventListener("click", function () { if (state.taxon || state.country || state.formation) startOverview(); });
     // 비교 분류군(tupandactyl 024) — 학명, Casual 이면 한글(관용 표기·한글 찾기 표)도
     $("cmp-form").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -3809,6 +3861,7 @@
       });
     });
     $("cmp-clear").addEventListener("click", clearCmp);
+    $("formation-clear").addEventListener("click", function () { setFormation(null); });
     $("div-metric").addEventListener("change", renderAnalysis);
     $("anal-big").addEventListener("click", function () { $("anal-dialog").showModal(); renderBig(); });
     window.addEventListener("resize", function () { if (state.taxon) renderAnalysis(); });
