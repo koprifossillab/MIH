@@ -59,6 +59,8 @@
     "ev.after": ["직후 {age} ▶", "After · {age} ▶"],
     "ev.start": ["◀ 위기 전 {age}", "◀ Before · {age}"],
     "ev.end": ["위기 뒤 {age} ▶", "After · {age} ▶"],
+    "suggest.recent": ["최근 찾은 것", "Recent searches"],
+    "suggest.recentClear": ["기록 지우기", "Clear history"],
     "suggest.homonym": ["같은 이름", "homonym"],
     "cmp.homonym": ["‘{name}’ 은(는) 같은 이름의 분류군이 여럿이다 — 고른다:", "‘{name}’ names more than one taxon — pick one:"],
     "suggest.alias": ["관용 표기 ‘{name}’", "common name ‘{name}’"],

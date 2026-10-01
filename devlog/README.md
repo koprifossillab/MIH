@@ -106,3 +106,4 @@
 | tupandactyl 024 | 2026-10-01 | [분포 분석: 다양성 곡선·비교 분류군·고위도·내려받기·잘림 알림](20261001_tupandactyl_024_research_tools.md) |
 | tupandactyl 025 | 2026-10-01 | [주간 갱신이 main 을 스스로 당기고, 에디아카라기 시점을 받아들인다](20261001_tupandactyl_025_refresh_autopull.md) |
 | tupandactyl 026 | 2026-10-01 | [같은 이름의 분류군(동명)을 따로 찾는다](20261001_tupandactyl_026_homonyms.md) |
+| tupandactyl 027 | 2026-10-01 | [한글로 안 바뀌던 학명, 최근 찾은 것](20261001_tupandactyl_027_ko_fallback_recent.md) |

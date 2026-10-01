@@ -1369,7 +1369,7 @@
         (res[1].records || []).forEach(function (x) { mark[x.occurrence_no] = true; });
         var items = (res[0].records || []).map(function (x) {
           var grp = [x.phylum, x["class"]].filter(function (v) { return v && v !== "NO_CLASS_SPECIFIED"; }).join(" · ");
-          var name = taxonLink(x.accepted_name || x.identified_name, taxonHtml(x.accepted_name || x.identified_name, x.accepted_rank));
+          var name = taxonLink(x.accepted_name || x.identified_name, taxonHtml(x.accepted_name || x.identified_name, rankOf(x)));
           return { hit: !!mark[x.occurrence_no], html: "<li>" + (mark[x.occurrence_no] ? "<b>" + name + "</b>" : name) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>" };
         }).sort(function (a, b) { return b.hit - a.hit; });
         box.className = items.length ? "" : "muted";
@@ -1418,7 +1418,7 @@
       ovTipCache[key] = {};
       getJSON(PBDB + "occs/list.json?coll_id=" + no + "&" + baseParam(state.taxon) + "&vocab=pbdb&limit=500").then(function (data) {
         ovTipCache[key].occs = (data.records || []).map(function (o) {
-          return { accepted: o.accepted_name || o.identified_name, identified: o.identified_name, rank: o.accepted_rank };
+          return { accepted: o.accepted_name || o.identified_name, identified: o.identified_name, rank: rankOf(o) };
         });
         if (dot.isTooltipOpen()) dot.setTooltipContent(overviewTip(cell, dot));
       }).catch(function () { delete ovTipCache[key]; });
@@ -1502,7 +1502,7 @@
       var items = (data.records || []).map(function (r) {
         var grp = [r.phylum, r["class"]].filter(function (x) { return x && x !== "NO_CLASS_SPECIFIED"; }).join(" · ");
         var nm = r.accepted_name || r.identified_name;
-        return "<li>" + taxonLink(nm, taxonHtml(nm, r.accepted_rank)) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
+        return "<li>" + taxonLink(nm, taxonHtml(nm, rankOf(r))) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
       });
       box.className = items.length ? "" : "muted";
       box.innerHTML = items.length ? '<ul class="taxa">' + items.join("") + "</ul>" +
@@ -1600,8 +1600,13 @@
 
   // 학명 — Casual 이면 속·종(아속·아종)을 한글로 음차하고 학명은 커서를 대면. 그 위 계급(과·목 …)은 학명 그대로(연구자, 020)
   var LOW_RANK = { species: 1, subspecies: 1, genus: 1, subgenus: 1, 2: 1, 3: 1, 4: 1, 5: 1 };
+  // 산출 기록의 계급 — PBDB 분류 기준표에 없는 이름은 채택 계급이 없고 동정 계급만 있다(Cenomanian·미국 표본 3,000 건 중 52 건). 그것도
+  // 없으면 이름 꼴로("속 종" 두 낱말이면 종). 그래서 Casual 에서 한글로 바뀌지 않는 학명이 있었다(연구자, tupandactyl 027)
+  function rankOf(r) { return r.accepted_rank || r.identified_rank || guessRank(r.accepted_name || r.identified_name); }
+  function guessRank(n) { return /^[A-Z][a-z]+( \([A-Z][a-z]+\))?( \?)? [a-z][a-z-]+/.test(plainName(n)) ? "species" : ""; }
   function koTaxon(name, rank) {
     name = plainName(name);
+    if (!rank) rank = guessRank(name);
     return KO && name && LOW_RANK[rank] && window.WegenerKo ? window.WegenerKo.name(name) : name;
   }
   // 같은 이름의 다른 분류군(동명, 예: Tardigrada — 완보동물문과 나무늘보 무리, tupandactyl 026). 고른 것은 "이름#PBDB 번호" 로 들고
@@ -1974,6 +1979,7 @@
   }
 
   function searchTaxon(name, fromFind) {
+    if (fromFind) remember({ t: name, cc: state.country || null });   // 최근 찾은 것(027)
     var changed = state.taxon !== name;
     if (fromFind) { state.taxon = name; startOverview(); }        // 찾기 칸에서 골랐으면 먼저 모든 시대를 오늘날 자리에
     var f = frame();
@@ -2034,7 +2040,7 @@
       row[COLUMNS.n_occs] += 1;
       var taxon = r.accepted_name || r.identified_name;
       if (row.matched.indexOf(taxon) < 0) row.matched.push(taxon);
-      row.occs.push({ accepted: taxon, identified: r.identified_name, rank: r.accepted_rank || r.identified_rank });
+      row.occs.push({ accepted: taxon, identified: r.identified_name, rank: rankOf(r) });
     });
     return rows;
   }
@@ -2368,9 +2374,54 @@
     $("find").removeAttribute("aria-activedescendant");
   }
 
+  // ── 최근 찾은 것(tupandactyl 027) ───────────────────────────────────
+  // 찾기 칸에서 찾은 분류군·나라(함께 건 것도)를 5 개까지 이 브라우저에 기억한다. 찾기 칸이 비어 있을 때 누르면 띄운다
+  var RECENT_KEY = "wegener.recent", RECENT_MAX = 5;
+  function recentList() {
+    try { return (JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") || []).filter(function (e) { return e && (e.t || e.cc); }); } catch (e) { return []; }
+  }
+  function remember(entry) {
+    var key = (entry.t || "") + "|" + (entry.cc || "");
+    var list = recentList().filter(function (e) { return (e.t || "") + "|" + (e.cc || "") !== key; });
+    list.unshift(entry);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX))); } catch (e) {}
+  }
+  function renderRecent() {
+    var list = recentList(), box = $("find-list");
+    suggest.items = list.map(function (e) { return { kind: "recent", e: e }; });
+    suggest.active = -1;
+    if (!list.length) { closeSuggest(); return; }
+    box.innerHTML = '<li class="sg-head" role="presentation">' + tr("suggest.recent") + "</li>" + list.map(function (e, k) {
+      var parts = [];
+      if (e.t) parts.push('<span class="nm">' + esc(koTaxon(e.t, "")) + (koTaxon(e.t, "") !== plainName(e.t) ? " <small>" + esc(plainName(e.t)) + "</small>" : "") + "</span>");
+      if (e.cc) parts.push('<span class="nm-plain">' + esc(countryName(e.cc)) + "</span>");
+      return '<li role="option" id="sg-' + k + '" data-k="' + k + '">' + parts.join(" · ") + "</li>";
+    }).join("") + '<li class="sg-clear" role="presentation"><button type="button" id="recent-clear">' + tr("suggest.recentClear") + "</button></li>";
+    box.hidden = false;
+    $("find").setAttribute("aria-expanded", "true");
+    $("recent-clear").addEventListener("mousedown", function (ev) {
+      ev.preventDefault();
+      try { localStorage.removeItem(RECENT_KEY); } catch (e) {}
+      closeSuggest();
+    });
+  }
+  function useRecent(e) {
+    stopTour();
+    if (e.cc && !e.t) { setCountry(e.cc, true); return; }
+    if ((e.cc || null) !== (state.country || null)) {           // 그때 걸었던 나라 그대로 — 없었으면 푼다
+      state.country = e.cc || null;
+      $("country-chip").hidden = !e.cc;
+      $("country-chip-name").textContent = e.cc ? countryName(e.cc) : "";
+      noteCountry();
+      drawBorders(frame(), !!e.cc);
+    }
+    searchTaxon(e.t, true);
+  }
+
   function pickSuggest(k) {
     var it = suggest.items[k];
     if (!it) return;
+    if (it.kind === "recent") { $("find").value = ""; closeSuggest(); useRecent(it.e); return; }
     $("find").value = "";
     closeSuggest();
     if (it.kind === "country") { setCountry(it.c.cc, true); return; }
@@ -2453,7 +2504,7 @@
       clearTimeout(suggest.timer);
       suggest.seq += 1;
       var text = input.value.trim();
-      if (!text) { closeSuggest(); return; }
+      if (!text) { renderRecent(); return; }                     // 비우면 최근 찾은 것(027)
       if (HANGUL.test(text)) {                                  // 한글 — 관용 표기와 한글 찾기 표(020·021)
         renderSuggest(aliasMatches(text), !state.taxaKo);
         if (state.taxaKo) suggest.timer = setTimeout(function () { koSuggest(text); }, 150);
@@ -2462,6 +2513,9 @@
       renderSuggest([], text.length < 2);
       if (text.length >= 2) suggest.timer = setTimeout(function () { suggestFetch(text); }, 250);
     });
+    var showRecent = function () { if (!input.value.trim()) renderRecent(); };
+    input.addEventListener("focus", showRecent);
+    input.addEventListener("click", showRecent);
     input.addEventListener("keydown", function (e) {
       if ($("find-list").hidden) return;
       if (e.key === "ArrowDown") { moveActive(1); e.preventDefault(); }
@@ -3079,6 +3133,7 @@
   }
 
   function setCountry(cc, fromFind) {
+    if (fromFind && cc) remember({ t: state.taxon || null, cc: cc });
     state.country = cc;
     if (fromFind && cc) { startOverview(); }
     $("country-chip").hidden = !cc;
