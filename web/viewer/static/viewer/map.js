@@ -1268,8 +1268,9 @@
       shown += c.n;
       var color = state.colorBy === "age" ? ((periodOf(c.mid, c.mid) || {}).color || UNKNOWN_COLOR) : state.topColor[c.env];
       L.circleMarker([c.lat, c.lng], {
-        renderer: renderer, radius: 2.2 + 1.3 * Math.log(c.n) / Math.LN10, weight: .8, color: "#ffffff", opacity: Math.min(1, state.opacity + .15),
-        fillColor: color, fillOpacity: state.opacity,
+        // 찾기 결과의 점(4.6)보다 작지 않게 — 세계 지도에서 한 곳짜리 칸도 보이도록(연구자: 처음엔 2.2 라 안 보였다). 테두리는 짙게
+        renderer: renderer, radius: 4.6 + 2.6 * Math.log(c.n) / Math.LN10, weight: 1.4, color: "#2b1d10", opacity: .9,
+        fillColor: color, fillOpacity: Math.max(.8, state.opacity),
       }).bindTooltip(tr("overview.tip", { n: fmtNum(c.n), old: c.old, young: c.young }), { direction: "top", opacity: .95 })
         .on("click", function (e) { if (!measure.on) map.setView(e.latlng, Math.min(map.getMaxZoom(), map.getZoom() + 2)); })
         .addTo(fossilLayer);
