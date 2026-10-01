@@ -1352,6 +1352,7 @@
       : L.popup({ maxWidth: 360, autoPan: true, autoPanPaddingTopLeft: L.point(24, 150), autoPanPaddingBottomRight: L.point(96, 48) })
         .setLatLng(latlng).setContent(el).openOn(map);
     var refresh = function () { if (popup.update) popup.update(); if (state.proj !== "globe") flipPopup(popup); };
+    addGrips(el, refresh);
     if (state.proj !== "globe") refresh();
     function loadTaxa(d) {
       if (d.dataset.loaded) return;
@@ -1473,6 +1474,7 @@
       popup.update = function () { baseUpdate(); flipPopup(popup); };
       flipPopup(popup);
     }
+    addGrips(el, function () { if (popup.update) popup.update(); });
     // 그때 그 자리의 지표 기온 — 기온 층을 켜지 않아도 적는다.
     var f = frame();
     if (f.climate) {
@@ -1504,11 +1506,70 @@
     }).catch(function () { box.textContent = tr("pop.fail"); });
   }
 
+  // 산지 팝업의 세로 길이를 마우스로 — 위·아래 가장자리를 잡고 끈다(연구자, tupandactyl 022). 위는 위로, 아래는 아래로 끌면 길어진다.
+  // 늘리는 것은 목록(산출 목록·칸의 산지 목록)의 높이다(--pop-grow). 고른 길이는 이 브라우저가 기억해 다음 팝업에도 쓴다
+  var POP_GROW_KEY = "wegener.popGrow", POP_GROW_MIN = -120, POP_GROW_MAX = 900;
+  var popGrow = 0;
+  try { popGrow = Math.max(POP_GROW_MIN, Math.min(POP_GROW_MAX, +localStorage.getItem(POP_GROW_KEY) || 0)); } catch (e) {}
+  function addGrips(el, relayout) {
+    el.style.setProperty("--pop-grow", popGrow + "px");
+    ["top", "bottom"].forEach(function (side) {
+      var grip = document.createElement("div");
+      grip.className = "pop-grip " + side;
+      grip.title = tr("pop.grip");
+      grip.setAttribute("aria-hidden", "true");
+      if (side === "top") el.insertBefore(grip, el.firstChild); else el.appendChild(grip);
+      grip.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var y0 = e.clientY, g0 = popGrow, sign = side === "top" ? -1 : 1, frame = 0;
+        el.classList.add("resizing");
+        el.dataset.lock = "1";                                     // 끄는 동안·끈 뒤에는 점의 위·아래를 뒤집지 않는다
+        // 창에 건다 — Leaflet 의 popup.update() 가 내용을 다시 붙이며 손잡이의 포인터 잡기(capture)를 놓는다
+        var move = function (ev) {
+          var want = Math.max(POP_GROW_MIN, Math.min(POP_GROW_MAX, g0 + sign * (ev.clientY - y0)));
+          if (want > popGrow && overflows()) return;                // 지도 밖으로 나가 잘리면 더 늘리지 않는다
+          popGrow = want;
+          el.style.setProperty("--pop-grow", popGrow + "px");
+          if (!frame) frame = requestAnimationFrame(function () { frame = 0; relayout(); markCovered(); });
+        };
+        var overflows = function () {
+          var node = el.closest(".leaflet-popup, .globe-pop") || el, r = node.getBoundingClientRect(), m = $("map").getBoundingClientRect();
+          return r.top < m.top + 4 || r.bottom > m.bottom - 4;
+        };
+        var up = function () {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+          window.removeEventListener("pointercancel", up);
+          el.classList.remove("resizing");
+          relayout();
+          try { localStorage.setItem(POP_GROW_KEY, String(Math.round(popGrow))); } catch (err) {}
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", up);
+      });
+    });
+  }
+
+  // 팝업과 겹친 지도 위 카드를 흐리게(tupandactyl 022) — 팝업은 지도 층 안이라 카드 위로 올릴 수 없다. 겹친 카드는 마우스도 통과시킨다
+  function markCovered() {
+    var pop = document.querySelector("#map .leaflet-popup"), box = pop && pop.getBoundingClientRect();
+    [$("findfloat"), $("thermo"), document.querySelector(".maptools")].forEach(function (card) {
+      if (!card) return;
+      var r = card.getBoundingClientRect();
+      card.classList.toggle("behind-popup", !!box && r.left < box.right && r.right > box.left && r.top < box.bottom && r.bottom > box.top);
+    });
+  }
+  map.on("popupopen popupclose moveend zoomend", function () { setTimeout(markCovered, 0); });
+
   function flipPopup(popup) {
     var node = popup.getElement && popup.getElement();
     if (!node) return;
+    if (node.querySelector(".pop[data-lock]")) { setTimeout(markCovered, 0); return; }   // 길이를 바꾼 팝업은 위·아래를 바꾸지 않는다
     var top = map.getContainer().getBoundingClientRect().top;
     if (node.classList.contains("below")) { node.classList.remove("below"); popup.options.offset = L.point(0, 7); popup._updatePosition(); }
+    setTimeout(markCovered, 0);
     if (node.getBoundingClientRect().top >= top + 8) return;
     popup.options.offset = L.point(0, node.offsetHeight + 22);
     node.classList.add("below");

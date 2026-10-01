@@ -515,7 +515,7 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 .pop dt { color: var(--muted); }
 .pop dd { margin: 0; }
 .pop small { color: var(--muted); }
-.pop .taxa { max-height: 180px; overflow-y: auto; margin: 6px 0 0; padding-left: 18px; }
+.pop .taxa { max-height: calc(180px + var(--pop-grow, 0px)); overflow-y: auto; margin: 6px 0 0; padding-left: 18px; }
 .pop .muted { color: var(--muted); }
 /* 눌러서 복사하는 좌표 — 글자처럼 보이되 점선 밑줄, 누르면 잠깐 "복사했다" */
 .pop .copy {
@@ -681,11 +681,11 @@ button, input, select { font-family: inherit; }
 .leaflet-popup.below .leaflet-popup-tip-container { top: -20px; transform: rotate(180deg); }
 
 /* 종합 보기의 칸 팝업(tupandactyl 012) — 산지마다 펼친다 */
-.ovpop .ovlist { max-height: 300px; overflow-y: auto; margin: 6px 0; }
+.ovpop .ovlist { max-height: calc(300px + var(--pop-grow, 0px)); overflow-y: auto; margin: 6px 0; }
 .ovpop details { border-top: 1px solid var(--line, rgba(0,0,0,.12)); padding: 4px 0; }
 .ovpop summary { cursor: pointer; line-height: 1.4; }
 .ovpop details[open] summary { margin-bottom: 2px; }
-.ovpop .taxa { max-height: 150px; }
+.ovpop .taxa { max-height: calc(150px + var(--pop-grow, 0px) / 2); }
 .ovpop .ovzoom { margin-top: 4px; }
 .occ-tip .tip-age { display: block; margin: 1px 0 2px; }   /* 종합 보기 툴팁의 시대 한 줄(tupandactyl 014) */
 /* 팝업의 산출 이름 — 누르면 그 분류군으로 찾는다(tupandactyl 015) */
@@ -740,3 +740,17 @@ button, input, select { font-family: inherit; }
 /* Casual 의 한글 학명(tupandactyl 020) — 학명은 커서를 대면 */
 .ko-taxon { font-style: normal; }
 .suggest .nm .ko-taxon { font-weight: 600; margin-right: 2px; }
+
+/* 팝업의 세로 길이 손잡이(tupandactyl 022) — 위·아래 가장자리. 가운데 짧은 줄이 잡는 자리 */
+.pop { position: relative; }
+.pop-grip { position: absolute; left: 0; right: 0; height: 9px; cursor: ns-resize; touch-action: none; z-index: 2; }
+.pop-grip.top { top: -13px; }
+.pop-grip.bottom { bottom: -13px; }
+.pop-grip::after { content: ""; position: absolute; left: 50%; top: 3px; width: 34px; height: 3px; margin-left: -17px; border-radius: 2px;
+  background: var(--muted); opacity: .35; transition: opacity .15s; }
+.pop-grip:hover::after, .pop.resizing .pop-grip::after { opacity: .9; }
+.pop.resizing { user-select: none; }
+.guide-ko .ref { display: inline-block; margin-top: 3px; color: var(--muted); line-height: 1.45; }
+/* 팝업과 겹친 지도 위 카드(찾기·온도계·도구)는 흐리게 하고 마우스를 통과시킨다(tupandactyl 022) — Leaflet 의 팝업은 지도 층 안에 있어
+   z-index 로 카드 위에 올릴 수 없다. 지도를 더 옮길 수 없는 자리에서 팝업 윗부분과 위 손잡이가 찾기 카드 밑에 깔려 잡히지 않았다 */
+.behind-popup { opacity: .18 !important; pointer-events: none !important; transition: opacity .15s; }
