@@ -805,3 +805,6 @@ button, input, select { font-family: inherit; }
 .suggest .homonym { display: inline-block; padding: 0 4px; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); font-size: 10px; }
 .anal .homonym-pick { margin: 4px 0 0; font-size: 12px; text-align: left; }
 .fchip .homonym-of { margin-left: 3px; color: var(--muted); font-size: 10.5px; }
+/* 최근 찾은 것(tupandactyl 027) */
+.suggest .sg-clear { padding: 2px 8px 4px; text-align: right; }
+.suggest .sg-clear button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
