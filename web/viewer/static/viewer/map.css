@@ -808,3 +808,22 @@ button, input, select { font-family: inherit; }
 /* 최근 찾은 것(tupandactyl 027) */
 .suggest .sg-clear { padding: 2px 8px 4px; text-align: right; }
 .suggest .sg-clear button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; text-decoration: underline; }
+
+/* 지층의 화석 기록(tupandactyl 030) */
+.fm-info { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 4px 0 8px; font-size: 12.5px; }
+.fm-info dt { color: var(--muted); }
+.fm-info dd { margin: 0; }
+.fm-head { font-size: 13px; margin: 8px 0 4px; }
+.fm-tree { font-size: 12.5px; max-height: 520px; overflow-y: auto; border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+.fm-tree details { margin: 1px 0; }
+.fm-tree summary { cursor: pointer; line-height: 1.5; }
+.fm-tree .fm-body { margin-left: 12px; border-left: 1px dotted var(--line); padding-left: 6px; }
+.fm-tree .fm-name { font-weight: 600; }
+.fm-tree .lv-phylum > summary .fm-name { font-size: 13px; }
+.fm-tree .fm-rank, .fm-tree small { color: var(--muted); }
+.fm-tree .fm-indet > summary, .fm-tree .fm-sp { color: var(--muted); font-style: italic; }
+.fm-tree .fm-sp { margin: 1px 0; }
+.fm-tree .fm-indet ul, .fm-tree .fm-colls ul { margin: 2px 0 4px; padding-left: 18px; }
+.fm-tree .fm-colls > summary { color: var(--muted); font-size: 11.5px; }
+.fm-tree .taxon-link { all: unset; cursor: pointer; border-bottom: 1px dotted currentColor; }
+.fm-tree .taxon-link:hover { color: var(--accent); }
