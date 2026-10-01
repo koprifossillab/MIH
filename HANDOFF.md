@@ -98,10 +98,10 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 | 에디아카라기 | 오늘날 육지를 PALEOMAP v19o 로 550 Ma 자리까지(판 복원만) | `relief/*/5500.webp` 등 — `pipeline ediacaran` (tupandactyl 019) |
 | 한글 찾기 | PBDB 속·종 이름표(`taxa.csv`)를 node 로 translit.js 에 태워 | `taxa_ko/<첫 글자>.json`(558 파일, 18 MB) — `pipeline taxa_ko` (021) |
 
-**⚠ paleoadmin 클론(`/home/paleoadmin/projects/WegenersDream`)을 `git pull` 해야 한다** — 주간 갱신은 그 클론의 코드로 build 해
-index.json 을 덮는다. 0.30·0.31 의 사건·에디아카라기 시점·암상 한글·한글 찾기 표는 10-01 에 운영 자료에 **명령으로 붙여 둔 것**
-(`pipeline ediacaran|events|lithology|taxa_ko`)이라, 클론이 옛 코드면 다음 월요일 갱신에 사라진다. pull 하면 build 가 모두 다시 만든다
-(한글 찾기 표는 node 가 있어야 한다 — paleoserver v18).
+**주간 갱신과 0.30·0.31 의 자료** — 사건·에디아카라기 시점·암상 한글·한글 찾기 표는 10-01 에 운영 자료에 명령으로 붙였고
+(`pipeline ediacaran|events|lithology|taxa_ko`), paleoadmin 클론도 같은 날 `f776c9e` 로 pull 했다. 그래서 주간 갱신의 build 가 모두 다시
+만든다 — 이름표(`taxa.csv`)는 `fetch --refresh-pbdb` 가 처음 받고, 한글 찾기 표는 node(paleoserver v18)로 굽는다. **새 파이프라인 코드가
+병합되면 그 클론을 다시 pull 한다** — 주간 갱신은 그 클론의 코드로 돈다.
 
 `build --no-relief` 는 배경을 다시 그리지 않는다(30 초 남짓). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
 Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값을 `receipt.json` 에 남긴다.
