@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.28.1` (10-01, PR #1~#31) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `0.31.0` (10-01, PR #1~#34) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
 (CLAUDE.md "커밋과 PR"). **병합 직전에 `deploy/host/premerge.sh <PR>`**(충돌·뒤처짐·판·CI, wetherilli 010).
@@ -17,7 +17,7 @@
 몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
 `build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
 
-**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.28.1`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.31.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
 운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
@@ -94,7 +94,14 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 | 화석 | PBDB 채집지 전체(`pgm=scotese`, `show=loc,…`) | `fossils/*.json` (국가 코드 포함) |
 | 국경 | Natural Earth 50m + PaleoCoastlines 안의 PALEOMAP 모델, pygplates | `countries/*.json` (41 MB) |
 | 고기후 | Scotese 2021 지표 기온(Zenodo 8238875) | `climate/*.png` (회색조, 0.7 MB) |
-| 목록 | 층서표·환경 나무·국가 목록·출처 | `index.json` |
+| 목록 | 층서표·환경 나무·국가 목록·출처·지구사 사건(`events.py`)·암상 한글(`lithology.py`) | `index.json` |
+| 에디아카라기 | 오늘날 육지를 PALEOMAP v19o 로 550 Ma 자리까지(판 복원만) | `relief/*/5500.webp` 등 — `pipeline ediacaran` (tupandactyl 019) |
+| 한글 찾기 | PBDB 속·종 이름표(`taxa.csv`)를 node 로 translit.js 에 태워 | `taxa_ko/<첫 글자>.json`(558 파일, 18 MB) — `pipeline taxa_ko` (021) |
+
+**⚠ paleoadmin 클론(`/home/paleoadmin/projects/WegenersDream`)을 `git pull` 해야 한다** — 주간 갱신은 그 클론의 코드로 build 해
+index.json 을 덮는다. 0.30·0.31 의 사건·에디아카라기 시점·암상 한글·한글 찾기 표는 10-01 에 운영 자료에 **명령으로 붙여 둔 것**
+(`pipeline ediacaran|events|lithology|taxa_ko`)이라, 클론이 옛 코드면 다음 월요일 갱신에 사라진다. pull 하면 build 가 모두 다시 만든다
+(한글 찾기 표는 node 가 있어야 한다 — paleoserver v18).
 
 `build --no-relief` 는 배경을 다시 그리지 않는다(30 초 남짓). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
 Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값을 `receipt.json` 에 남긴다.
@@ -184,3 +191,6 @@ playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPR
 | 0.27.0 | 화면 모드 Scientific(기본: Pretendard, 층서·환경·계급 영문)·Casual(빈티지 글씨·한글 용어), 설정 창에서 고른다 | tupandactyl 011 |
 | 0.28.0 | 찾기의 종합 보기(0 Ma 지도에 모든 시대 산지, 분류군 범위로 지도 이동, 점 → 산지 목록·산출), 지도 옮기는 폭 두 배, 팝업 자리, 암상 | tupandactyl 012 |
 | 0.28.1 | 대기 화면 1.85 배 빠르게, "느리게 보기" | tupandactyl 013 |
+| 0.29.0 | 종합 보기 툴팁(산지·산출·시대), 팝업 산출 이름으로 찾기, 분류군 × 국가 한 줄, PBDB 산지 링크 403 고침 | tupandactyl 014·015 |
+| 0.30.0 | 지구사 사건 14 건(층서표 책갈피·폭발/마름모 표식), 에디아카라기 시점 550 Ma(판 복원만) | tupandactyl P01·016~019 |
+| 0.31.0 | Casual 모드의 한글 — 속·종 학명 음차(translit.js), 연대·암상 한글, 한글로 찾기(미리 음차한 표) | tupandactyl 020·021 |
