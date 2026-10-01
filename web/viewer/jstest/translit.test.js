@@ -31,8 +31,8 @@ var CASES = {
   Nanuqsaurus: "나누크사우루스", Qinglongopterus: "큉글롱곱테루스",
   // 종명 끝의 -i·-ii 는 [-ㅣ](연구자)
   "Coelophysis bauri": "코일로피시스 바우리", "Diplodocus carnegii": "디플로도쿠스 카르네기", "Elrathia kingii": "엘라티아 킹기",
-  // 장음은 어디서든 한 번 — aa ee ii oo uu ww(연구자)
-  Shiikia: "시키아", Kaatedocus: "카테도쿠스", "Pentaceratops sternbergii": "펜타케라톱스 스테른베르기",
+  // 장음은 어디서든 한 번 — aa ee ii oo uu ww yy(연구자)
+  Shiikia: "시키아", Kaatedocus: "카테도쿠스", "Pentaceratops sternbergii": "펜타케라톱스 스테른베르기", Hyyla: "힐라",
 };
 var fail = 0;
 Object.keys(CASES).forEach(function (latin) {

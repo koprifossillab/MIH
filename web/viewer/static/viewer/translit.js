@@ -1,7 +1,7 @@
 /* 학명 음차(tupandactyl 020) — 속·종 이름을 한글로. Casual 모드에서만 쓴다(Scientific·영어판은 학명 그대로).
  *
  * 기준은 연구자가 준 표(고전 라틴어의 글자 → 한글)와 세부 규칙이다. 규칙 번호는 연구자의 것이고, 예시는 시험(web/viewer/jstest/translit.test.js, CI)에 걸었다.
- * - 모음 a e i o u y → ㅏ ㅔ ㅣ ㅗ ㅜ ㅣ. 종명 끝의 -i·-ii 는 [-ㅣ] 하나(바우리, 카르네기) — [-아이]로 읽지 않는다. AE·OE → 아이·오이, AU·EU·EI 는 글자대로(아우·에우·에이). 장모음(aa ee ii oo uu)과 ww 는 한 번(제7항)
+ * - 모음 a e i o u y → ㅏ ㅔ ㅣ ㅗ ㅜ ㅣ. 종명 끝의 -i·-ii 는 [-ㅣ] 하나(바우리, 카르네기) — [-아이]로 읽지 않는다. AE·OE → 아이·오이, AU·EU·EI 는 글자대로(아우·에우·에이). 장모음(aa ee ii oo uu)과 ww·yy 는 한 번(제7항)
  * - j 는 뒤 모음과 합쳐 야·예·요·유, 못 합치면(ji) 이. 앞 자음은 그 음절의 첫소리가 된다(니녜미스)
  * - y 는 어두·모음 사이에서 뒤 모음과 합치고(얀타로게코), 자음과 모음 사이면 앞 자음과만 합친다(티아니울롱). 그 밖에는 모음 ㅣ
  * - w 는 뒤 모음과 합쳐 와·웨·위·워, 앞 자음이 k·g·h·x 면 그것까지(루콰티탄), 그 밖의 자음이면 앞 자음에 '으'(심바쿠브와)
@@ -39,7 +39,7 @@
   // 단위: {v: 모음 자모, glide: "j"|"w"|"sh"|null} 또는 {c: 자음}. 자음 이름은 ONSET 의 열쇠(k p t …), ng 는 n 에 표시.
   function tokens(word) {
     var w = word.toLowerCase().replace(/[^a-z]/g, "");
-    w = w.replace(/([aeiouw])\1+/g, "$1");     // 장음은 따로 적지 않는다 — aa ee ii oo uu ww 모두 한 번(제7항, 연구자)
+    w = w.replace(/([aeiouwy])\1+/g, "$1");    // 장음은 따로 적지 않는다 — aa ee ii oo uu ww yy 모두 한 번(제7항, 연구자)
     w = w.replace(/ck/g, "k").replace(/([bcdfgklprstvz])\1/g, "$1");                          // 겹자음 한 번 — mm·nn 은 남긴다(제14항)
     var out = [], i = 0, n = w.length;
     var isV = function (ch) { return ch && "aeiouy".indexOf(ch) >= 0; };
