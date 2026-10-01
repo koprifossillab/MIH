@@ -20,7 +20,8 @@
   var BUILT = "";
   function dataUrl(path) { return DATA + path + (BUILT ? "?b=" + encodeURIComponent(BUILT) : ""); }
   var PBDB = "https://paleobiodb.org/data1.2/";
-  var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
+  // 산지 상세 쪽. basicCollectionSearch 는 2026-10 에 PBDB 가 403 을 내기 시작했다(연구자) — displayCollectionDetails 는 열린다(tupandactyl 014)
+  var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/displayCollectionDetails?collection_no=";
   // 산지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
   var WINDOW_MA = 2.5;
   var VAGUE = {};                 // 모호한 등급(세·기·대 …)의 PBDB 시대 이름 — index.json 의 rules.vague_intervals(016)
@@ -1214,7 +1215,7 @@
   function overviewUrl() {
     return PBDB + "colls/list.json?" + (state.taxon ? "base_name=" + encodeURIComponent(state.taxon) + "&" : "") +
       (state.country ? "cc=" + encodeURIComponent(state.country) + "&" : "") +
-      "show=loc,geo,strat&vocab=pbdb&limit=" + OVERVIEW_LIMIT;
+      "show=loc,geo,strat,lith&vocab=pbdb&limit=" + OVERVIEW_LIMIT;
   }
   function loadOverview(fit) {
     if (!state.overview) return;
@@ -1279,7 +1280,7 @@
   function drawOverview() {
     fossilLayer.clearLayers();
     taxonLayer.clearLayers();
-    var ov = state.overview, what = state.taxon || countryName(state.country);
+    var ov = state.overview, what = [state.taxon, state.country ? countryName(state.country) : ""].filter(Boolean).join(" · ");
     if (ov.loading) { $("fossil-count").textContent = tr("overview.loading"); setOverviewStatus(tr("overview.asking", { what: what })); return; }
     if (ov.error) { $("fossil-count").textContent = ""; setOverviewStatus(tr("taxon.fail", { err: ov.error })); return; }
     var on = {}, shown = 0, byTop = { m: 0, t: 0, o: 0 };
@@ -1289,11 +1290,12 @@
       if (!on[c.env]) return;
       shown += c.n;
       var color = state.colorBy === "age" ? ((periodOf(c.mid, c.mid) || {}).color || UNKNOWN_COLOR) : state.topColor[c.env];
-      L.circleMarker([c.lat, c.lng], {
+      var dot = L.circleMarker([c.lat, c.lng], {
         // 찾기 결과의 점(4.6)보다 작지 않게 — 세계 지도에서 한 곳짜리 칸도 보이도록(연구자: 처음엔 2.2 라 안 보였다). 테두리는 짙게
         renderer: renderer, radius: 4.6 + 2.6 * Math.log(c.n) / Math.LN10, weight: 1.4, color: "#2b1d10", opacity: .9,
         fillColor: color, fillOpacity: Math.max(.8, state.opacity),
-      }).bindTooltip(tr("overview.tip", { n: fmtNum(c.n), old: c.old, young: c.young }), { direction: "top", opacity: .95 })
+      });
+      dot.bindTooltip(function () { return overviewTip(c, dot); }, { className: "occ-tip", sticky: true, direction: "auto", opacity: 0.96 })
         .on("click", function (e) { L.DomEvent.stopPropagation(e); openOverviewCell(c); })
         .addTo(fossilLayer);
     });
@@ -1334,6 +1336,7 @@
         (r.formation ? "<dt>" + tr("pop.formation") + "</dt><dd>" + esc(r.formation) + "</dd>" : "") +
         "<dt>" + tr("pop.env") + "</dt><dd>" + esc(r.environment || tr("pop.noenv")) +
           (envPath(r.environment) ? "<br><small>" + esc(envPath(r.environment)) + "</small>" : "") + "</dd>" +
+        "<dt>" + tr("pop.lith") + "</dt><dd>" + lithHtml(r) + "</dd>" +
         (r.cc ? "<dt>" + tr("pop.country") + "</dt><dd>" + esc(countryName(r.cc)) + "</dd>" : "") +
         "<dt>" + tr("ovpop.now") + "</dt><dd>" + (+r.lat).toFixed(2) + "°, " + (+r.lng).toFixed(2) + "°</dd>" +
         '</dl><a href="' + PBDB_COLL_PAGE + r.collection_no + '" target="_blank" rel="noopener">' + tr("pop.link", { no: r.collection_no }) + "</a>" +
@@ -1342,6 +1345,7 @@
       (recs.length > OVERVIEW_POP_MAX ? '<p class="muted">' + tr("ovpop.more", { n: fmtNum(recs.length - OVERVIEW_POP_MAX) }) + "</p>" : "") +
       '<button type="button" class="tool ovzoom">' + tr("ovpop.zoom") + "</button>";
     el.innerHTML = html;
+    bindTaxonLinks(el);
     var popup = state.proj === "globe" ? globe.popup(latlng, el)
       : L.popup({ maxWidth: 360, autoPan: true, autoPanPaddingTopLeft: L.point(24, 150), autoPanPaddingBottomRight: L.point(96, 48) })
         .setLatLng(latlng).setContent(el).openOn(map);
@@ -1359,7 +1363,7 @@
         (res[1].records || []).forEach(function (x) { mark[x.occurrence_no] = true; });
         var items = (res[0].records || []).map(function (x) {
           var grp = [x.phylum, x["class"]].filter(function (v) { return v && v !== "NO_CLASS_SPECIFIED"; }).join(" · ");
-          var name = "<i>" + esc(x.accepted_name || x.identified_name) + "</i>";
+          var name = taxonLink(x.accepted_name || x.identified_name, "<i>" + esc(x.accepted_name || x.identified_name) + "</i>");
           return { hit: !!mark[x.occurrence_no], html: "<li>" + (mark[x.occurrence_no] ? "<b>" + name + "</b>" : name) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>" };
         }).sort(function (a, b) { return b.hit - a.hit; });
         box.className = items.length ? "" : "muted";
@@ -1376,6 +1380,43 @@
       map.closePopup();
       map.setView(latlng, Math.min(map.getMaxZoom(), Math.max(map.getZoom() + 2, 5)));
     });
+  }
+
+  // 종합 보기의 점에 커서를 대면 — 시점을 옮겼을 때(taxonTip)와 같은 꼴에 시대 한 줄을 더한다. 칸은 거의 다 산지 한 곳이다.
+  // 찾은 분류군의 산출은 colls/list 에 없어서, 커서를 댄 산지만 PBDB 에 묻고(occs/list?coll_id&base_name) 기억해 둔다
+  var ovTipCache = {};
+  function ovAge(r) {
+    var interval = (r.early_interval || "") + (r.late_interval ? " – " + r.late_interval : "");
+    return '<small class="tip-age">' + esc(interval) + " · " + r.max_ma + "–" + r.min_ma + " Ma</small>";
+  }
+  function overviewTip(cell, dot) {
+    var recs = cell.recs || [];
+    if (recs.length !== 1) {
+      var shown = recs.slice(0, TIP_TAXA_MAX);
+      return "<b>" + tr("ovpop.title", { n: fmtNum(cell.n) }) + "</b><ul>" + shown.map(function (r) {
+        return "<li>" + esc(r.collection_name || tr("pop.noname")) + " " + ovAge(r) + "</li>";
+      }).join("") + "</ul><small>" + tr("ovtip.more") + "</small>";
+    }
+    var r = recs[0], no = r.collection_no, age = ovAge(r);
+    if (!state.taxon) {
+      return "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b>" + age + "<small>" + tr("ovtip.occs", { n: fmtNum(+r.n_occs || 0) }) + "</small>";
+    }
+    var key = state.taxon + "|" + no, got = ovTipCache[key];
+    if (got && got.occs) {
+      var row = { occs: got.occs };
+      row[COLUMNS.collection_name] = r.collection_name;
+      return taxonTip(row, age);
+    }
+    if (!got) {
+      ovTipCache[key] = {};
+      getJSON(PBDB + "occs/list.json?coll_id=" + no + "&base_name=" + encodeURIComponent(state.taxon) + "&vocab=pbdb&limit=500").then(function (data) {
+        ovTipCache[key].occs = (data.records || []).map(function (o) {
+          return { accepted: o.accepted_name || o.identified_name, identified: o.identified_name, rank: o.accepted_rank };
+        });
+        if (dot.isTooltipOpen()) dot.setTooltipContent(overviewTip(cell, dot));
+      }).catch(function () { delete ovTipCache[key]; });
+    }
+    return "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b>" + age + '<small class="muted">' + tr("ovtip.loading") + "</small>";
   }
 
   function setOverviewStatus(text) {
@@ -1419,6 +1460,7 @@
     el.innerHTML = html;
     var box = el.querySelector(".taxa-box");
     el.querySelector(".copy").addEventListener("click", function () { copyCoords(this); });
+    bindTaxonLinks(el);
     // 팝업이 화면 가장자리·온도계·찾기 카드·도구 묶음에 가리지 않게 지도를 옮겨 띄운다(autoPan 의 여백)
     var popup = state.proj === "globe" ? globe.popup(latlng, el)
       : L.popup({ maxWidth: 340, autoPan: true, autoPanPaddingTopLeft: L.point(24, 150), autoPanPaddingBottomRight: L.point(96, 48) })
@@ -1443,22 +1485,16 @@
     }
     // 암상(lithology) — PBDB 산지의 주 암상 둘(lithology1·2)과 그 형용·부 암상. PBDB 의 원 용어 그대로(tupandactyl 012)
     getJSON(PBDB + "colls/single.json?id=" + no + "&show=lith&vocab=pbdb").then(function (data) {
-      var r = (data.records || [])[0] || {}, cell = el.querySelector(".lith"), parts = [];
-      var clean = function (v) { return String(v || "").replace(/"/g, "").trim(); };
-      [1, 2].forEach(function (k) {
-        var main = clean(r["lithology" + k]);
-        if (!main) return;
-        var adj = [r["lithadj" + k], r["lithification" + k], r["minor_lithology" + k]].map(clean).filter(Boolean);
-        parts.push(esc(main) + (adj.length ? " <small>(" + esc(adj.join(", ")) + ")</small>" : ""));
-      });
-      cell.className = parts.length ? "lith" : "lith muted";
-      cell.innerHTML = parts.length ? parts.join("<br>") : tr("pop.noLith");
+      var r = (data.records || [])[0] || {}, cell = el.querySelector(".lith");
+      cell.className = "lith";
+      cell.innerHTML = lithHtml(r);
       popup.update();
     }).catch(function () { var cell = el.querySelector(".lith"); cell.textContent = tr("pop.noLith"); });
     getJSON(PBDB + "occs/list.json?coll_id=" + no + "&show=class&vocab=pbdb&limit=500").then(function (data) {
       var items = (data.records || []).map(function (r) {
         var grp = [r.phylum, r["class"]].filter(function (x) { return x && x !== "NO_CLASS_SPECIFIED"; }).join(" · ");
-        return "<li><i>" + esc(r.accepted_name || r.identified_name) + "</i>" + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
+        var nm = r.accepted_name || r.identified_name;
+        return "<li>" + taxonLink(nm, "<i>" + esc(nm) + "</i>") + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
       });
       box.className = items.length ? "" : "muted";
       box.innerHTML = items.length ? '<ul class="taxa">' + items.join("") + "</ul>" : tr("pop.none");
@@ -1475,6 +1511,33 @@
     popup.options.offset = L.point(0, node.offsetHeight + 22);
     node.classList.add("below");
     popup._updatePosition();
+  }
+
+  // 암상 — PBDB 산지의 주 암상 둘(lithology1·2)과 그 형용·굳기·부 암상. 원 용어 그대로(tupandactyl 012)
+  function lithHtml(r) {
+    var parts = [], clean = function (v) { return String(v || "").replace(/"/g, "").trim(); };
+    [1, 2].forEach(function (k) {
+      var main = clean(r["lithology" + k]);
+      if (!main) return;
+      var adj = [r["lithadj" + k], r["lithification" + k], r["minor_lithology" + k]].map(clean).filter(Boolean);
+      parts.push(esc(main) + (adj.length ? " <small>(" + esc(adj.join(", ")) + ")</small>" : ""));
+    });
+    return parts.length ? parts.join("<br>") : '<span class="muted">' + tr("pop.noLith") + "</span>";
+  }
+
+  // 팝업의 산출 이름을 누르면 그 분류군으로 찾는다(종합 보기부터) — 같은 산지의 다른 화석이 어디서 나오는지 바로 본다(tupandactyl 015)
+  function taxonLink(name, inner) {
+    return '<button type="button" class="taxon-link" data-taxon="' + esc(name) + '" title="' + esc(tr("pop.searchTaxon", { name: name })) + '">' + inner + "</button>";
+  }
+  function bindTaxonLinks(el) {
+    el.addEventListener("click", function (e) {
+      var b = e.target.closest(".taxon-link");
+      if (!b) return;
+      e.preventDefault();
+      if (state.proj === "globe") globe.closePopup && globe.closePopup(); else map.closePopup();
+      stopTour();
+      searchTaxon(b.dataset.taxon, true);
+    });
   }
 
   // 좌표를 눌러 복사한다(wetherilli 006). 운영은 http 라 navigator.clipboard 가 없다(보안 맥락에서만 열린다) —
@@ -1521,8 +1584,8 @@
       .catch(function () { return ""; });
   }
 
-  function taxonTip(row) {
-    var head = "<b>" + esc(row[COLUMNS.collection_name] || tr("pop.noname")) + "</b>";
+  function taxonTip(row, extra) {
+    var head = "<b>" + esc(row[COLUMNS.collection_name] || tr("pop.noname")) + "</b>" + (extra || "");
     var taxa = {};
     row.occs.forEach(function (o) { taxa[o.accepted] = 1; });
     var n = Object.keys(taxa).length;
@@ -2103,7 +2166,34 @@
     $("find").value = "";
     if (exact) { setCountry(exact.cc, true); return; }
     stopTour();
+    // "Mesosauridae 브라질", "한국, Trilobita" — 앞이나 뒤의 낱말이 나라 이름이면 둘을 함께 건다(tupandactyl 015)
+    var both = splitCountry(text);
+    if (both) {
+      state.country = both.cc;
+      $("country-chip").hidden = false;
+      $("country-chip-name").textContent = countryName(both.cc);
+      noteCountry();
+      drawBorders(frame(), true);
+      searchTaxon(both.taxon, true);
+      return;
+    }
     searchTaxon(text, true);
+  }
+  function countryOf(text) {
+    var q = normName(text);
+    return q && state.countries.filter(function (c) {
+      return normName(c.ko) === q || normName(c.en) === q || normName(c.cc) === q || normName(c.iso) === q ||
+        (c.aka || []).some(function (x) { return normName(x) === q; });
+    })[0];
+  }
+  function splitCountry(text) {
+    var words = text.split(/[\s,]+/).filter(Boolean);
+    for (var i = 1; i < words.length; i++) {
+      var head = words.slice(0, i).join(" "), tail = words.slice(i).join(" "), c;
+      if ((c = countryOf(tail)) && !countryOf(head)) return { taxon: head, cc: c.cc };
+      if ((c = countryOf(head)) && !countryOf(tail)) return { taxon: tail, cc: c.cc };
+    }
+    return null;
   }
 
   function bindSuggest() {
@@ -2275,7 +2365,9 @@
     noteCountry();
     drawBorders(frame(), true);
     if (state.overview) {
-      if (!cc && !state.taxon) { endOverview(); redraw(); } else if (!fromFind) loadOverview();   // 나라를 바꾸거나 지우면 종합 보기도 다시
+      if (!cc && !state.taxon) { endOverview(); redraw(); return; }
+      if (!fromFind) loadOverview();                               // 나라를 바꾸거나 지우면 종합 보기도 다시
+      if (state.taxon) searchTaxon(state.taxon);                   // 산출 시대 분포도 그 나라로 다시 센다(종합 보기 중에는 준비만)
       return;
     }
     if (state.taxon) searchTaxon(state.taxon); else redraw();

@@ -687,6 +687,10 @@ button, input, select { font-family: inherit; }
 .ovpop details[open] summary { margin-bottom: 2px; }
 .ovpop .taxa { max-height: 150px; }
 .ovpop .ovzoom { margin-top: 4px; }
+.occ-tip .tip-age { display: block; margin: 1px 0 2px; }   /* 종합 보기 툴팁의 시대 한 줄(tupandactyl 014) */
+/* 팝업의 산출 이름 — 누르면 그 분류군으로 찾는다(tupandactyl 015) */
+.pop .taxon-link { all: unset; cursor: pointer; color: inherit; border-bottom: 1px dotted currentColor; }
+.pop .taxon-link:hover, .pop .taxon-link:focus-visible { color: var(--accent); border-bottom-style: solid; }
 
 /* 지구사 사건(tupandactyl 016) — 시점 막대 위 표식·띠, 패널 카드, 산출 막대의 세로선 */
 .strip-row.ev-row { height: 15px; margin-top: 1px; }
