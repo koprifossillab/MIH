@@ -754,3 +754,8 @@ button, input, select { font-family: inherit; }
 /* 팝업과 겹친 지도 위 카드(찾기·온도계·도구)는 흐리게 하고 마우스를 통과시킨다(tupandactyl 022) — Leaflet 의 팝업은 지도 층 안에 있어
    z-index 로 카드 위에 올릴 수 없다. 지도를 더 옮길 수 없는 자리에서 팝업 윗부분과 위 손잡이가 찾기 카드 밑에 깔려 잡히지 않았다 */
 .behind-popup { opacity: .18 !important; pointer-events: none !important; transition: opacity .15s; }
+/* 다크 모드 Casual 의 한글은 본명조 600(tupandactyl 023) — 어두운 바탕에서 400 의 가는 획이 번진다. 라틴(Spectral)은 그대로 */
+:root.mode-casual[data-theme="dark"] { --font: "Spectral", "Noto Serif KR Dark", Georgia, "Batang", serif; }
+@media (prefers-color-scheme: dark) {
+  :root.mode-casual:not([data-theme="light"]) { --font: "Spectral", "Noto Serif KR Dark", Georgia, "Batang", serif; }
+}

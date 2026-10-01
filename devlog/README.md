@@ -102,3 +102,4 @@
 | tupandactyl 020 | 2026-10-01 | [Casual 모드의 한글: 학명 음차·연대·암상](20261001_tupandactyl_020_korean_names.md) |
 | tupandactyl 021 | 2026-10-01 | [한글로 속·종 찾기: 미리 음차한 표](20261001_tupandactyl_021_korean_search.md) |
 | tupandactyl 022 | 2026-10-01 | [산지 팝업의 세로 길이를 끌어서, 읽는 법에 학명 표기의 근거](20261001_tupandactyl_022_popup_resize.md) |
+| tupandactyl 023 | 2026-10-01 | [다크 모드 Casual 의 한글을 본명조 600 으로](20261001_tupandactyl_023_dark_hangul_weight.md) |

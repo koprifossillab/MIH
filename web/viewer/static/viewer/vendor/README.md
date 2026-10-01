@@ -7,7 +7,7 @@
 | Leaflet | 1.9.4 | https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/ (2026-09-29) | BSD 2-Clause, (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade |
 | CesiumJS | 1.145.0 | https://registry.npmjs.org/cesium/-/cesium-1.145.0.tgz 의 `Build/Cesium/` (2026-09-30, GSM `vendor/cesium/` 과 같은 것) | Apache-2.0, `cesium/LICENSE.md` |
 | La Belle Aurore(글씨체) | Google Fonts v23, 라틴 부분만 | https://fonts.gstatic.com/s/labelleaurore/v23/ (2026-09-30) | SIL OFL 1.1, (c) 2010 Kimberly Geswein, `fonts/OFL-LaBelleAurore.txt` |
-| 본명조 Noto Serif KR(글씨체) | Google Fonts v31, 400·600, 한글·한자 묶음 | https://fonts.gstatic.com/s/notoserifkr/v31/ (2026-09-30) | SIL OFL 1.1, `fonts/OFL-NotoSerifKR.txt` |
+| 본명조 Noto Serif KR(글씨체) | Google Fonts v31, 400·600, 한글·한자 묶음 — 다크 모드 Casual 은 600 을 별칭 가족으로(`fonts-dark.css`, 023) | https://fonts.gstatic.com/s/notoserifkr/v31/ (2026-09-30) | SIL OFL 1.1, `fonts/OFL-NotoSerifKR.txt` |
 | Spectral(글씨체) | Google Fonts, 400·600·400 기울임, latin·latin-ext | https://fonts.gstatic.com/s/spectral/ (2026-09-30) | SIL OFL 1.1, (c) 2017 The Spectral Project Authors, `fonts/OFL-Spectral.txt` |
 | Pretendard(글씨체) | npm pretendard 1.3.9, 가변 글꼴의 글자 묶음 92 개 | https://registry.npmjs.org/pretendard/-/pretendard-1.3.9.tgz 의 `dist/web/variable/` (2026-10-01) | SIL OFL 1.1, (c) 2021 Kil Hyung-jin, `fonts/OFL-Pretendard.txt` |
 
