@@ -1,8 +1,9 @@
 # Wegener's Dream (베게너의 꿈) — 고지리 화석 지도
 
 시대별 고지리 지도 위에 그 시대의 화석 기록을 올려 보는 2D 지도 뷰어.
-현생누대(0–540 Ma)를 5 Myr 간격 109 시점으로 넘겨 본다. 운영: **http://paleolab/WegenersDream/**
-(연구소 망 안, `172.16.116.98`).
+현생누대(0–540 Ma)를 5 Myr 간격 109 시점으로, 그리고 에디아카라기 한 시점(550 Ma, 판 복원만)으로 넘겨 본다.
+운영: **http://paleolab/WegenersDream/**(연구소 망 안, `172.16.116.98`) · 연구소 밖: **https://koprifossillab.github.io/WegenersDream/**
+(같은 뷰어의 고정 사본 — GitHub Pages, `deploy/static_site.py`·`.github/workflows/pages.yml`).
 
 - 층서표(대·기·세·절)로 시점을 고르고, 밀대로 넘기거나 차례로 본다
 - 산지를 퇴적기원(해양·육상)·퇴적 환경·연대 범위·국가로 거르고, 점을 퇴적기원 또는 시대 색으로 칠한다

@@ -1,0 +1,58 @@
+# 연구소 밖에서 보는 고정 사이트 — https://koprifossillab.github.io/WegenersDream/ (tupandactyl 029)
+#
+# 연구소 서버(paleoserver)는 밖에서 닿지 않고, 열지도 않는다. 대신 뷰어를 고정 사이트로 구워 GitHub Pages 에 올린다 —
+# 첫 화면은 Django 로 한 번 그리고(deploy/static_site.py), 자료는 릴리스 `site-data` 에 붙은 wegener-data.tar.gz(운영 자료의 사본,
+# 주간 갱신이 올린다)를 받는다. 자료는 저장소에 넣지 않는다(250 MB, 매주 바뀐다).
+# 판 릴리스(v*)마다, 그리고 주간 갱신이 자료를 올린 뒤(workflow_dispatch) 돈다.
+# 저장소 Settings → Pages → Source 를 "GitHub Actions" 로 한 번 켜 두어야 한다(저장소 관리자).
+name: 바깥에서 보는 사이트
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-web.txt
+      - name: 자료 받기(릴리스 site-data)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download site-data --pattern wegener-data.tar.gz --dir .
+          mkdir site-data
+          tar -xzf wegener-data.tar.gz -C site-data
+      - name: 고정 사이트 굽기
+        run: python deploy/static_site.py _site site-data
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

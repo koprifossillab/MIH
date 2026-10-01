@@ -156,4 +156,21 @@ STEP=deploy
 rsync -a --exclude index.json "$REPO/data/derived/" "$SRV/data/" || fail "rsync 실패"
 rsync -a "$REPO/data/derived/index.json" "$SRV/data/index.json" || fail "index.json rsync 실패"
 "$REPO/deploy/host/smoke.sh" >/dev/null || fail "smoke 실패 — 운영을 확인한다"
-status ok "산지 $old → $new, 운영에 옮겼다$PULL_NOTE"
+
+# ── 5. 바깥에서 보는 사이트(GitHub Pages, tupandactyl 029) ────────────────
+# 운영 자료의 사본을 릴리스 site-data 에 올리고 Pages 워크플로를 부른다. gh 가 로그인돼 있을 때만 — 안 되면 바깥 사이트가
+# 지난 자료로 남을 뿐 갱신은 성공이다
+STEP=publish
+PUB_NOTE=" (바깥 사이트는 그대로 — gh 로그인 없음)"
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    PUB=$(mktemp -d)
+    if tar -czf "$PUB/wegener-data.tar.gz" -C "$SRV/data" . \
+       && timeout 1800 gh release upload site-data "$PUB/wegener-data.tar.gz" --clobber --repo koprifossillab/WegenersDream \
+       && gh workflow run pages.yml --repo koprifossillab/WegenersDream --ref main; then
+        PUB_NOTE=", 바깥 사이트 자료를 올렸다"
+    else
+        PUB_NOTE=" (바깥 사이트 자료 올리기 실패)"
+    fi
+    rm -rf "$PUB"
+fi
+status ok "산지 $old → $new, 운영에 옮겼다$PULL_NOTE$PUB_NOTE"

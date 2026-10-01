@@ -3,6 +3,15 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 1.0.0 — 2026-10-01 · `feature/static-pages`
+
+첫 정식판. 시점별 PALEOMAP 고지리 지도(현생누대 109 시점 + 에디아카라기)와 PBDB 산지, 층서표·퇴적 환경, 분류군·나라·지층 찾기와 종합 보기,
+지구사 사건 책갈피, Scientific·Casual(한글 학명), 분포 분석(다양성·고위도·비교 분류군), 산지 내려받기, 주간 갱신·백업.
+
+- **연구소 밖에서 보는 사이트** — https://koprifossillab.github.io/WegenersDream/ (GitHub Pages). 연구소 서버는 열지 않고, 뷰어를 고정 사이트로
+  구워(`deploy/static_site.py`) 운영 자료의 사본(릴리스 `site-data`)과 함께 올린다. 판 릴리스마다, 그리고 주간 갱신 뒤에 새로 올린다.
+  저장소 Settings → Pages → Source 를 "GitHub Actions" 로 켜 두어야 한다 (tupandactyl 029)
+
 ## 0.33.0 — 2026-10-01 · `feature/formation-search`
 
 - **지층으로 찾기** — 찾기 후보에 지층(Formation, PBDB strata/auto). 고르면 그 지층의 모든 시대 산지(오늘날 자리), 시점을 옮기면 그 시대의
