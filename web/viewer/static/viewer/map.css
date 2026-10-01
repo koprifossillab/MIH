@@ -801,3 +801,7 @@ button, input, select { font-family: inherit; }
 .export-menu { display: flex; flex-direction: column; gap: 4px; }
 .export-menu button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 3px 8px; font: inherit; font-size: 12px; cursor: pointer; text-align: left; }
 .export-menu button:hover { border-color: var(--accent); color: var(--accent); }
+/* 같은 이름의 분류군(tupandactyl 026) */
+.suggest .homonym { display: inline-block; padding: 0 4px; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); font-size: 10px; }
+.anal .homonym-pick { margin: 4px 0 0; font-size: 12px; text-align: left; }
+.fchip .homonym-of { margin-left: 3px; color: var(--muted); font-size: 10.5px; }
