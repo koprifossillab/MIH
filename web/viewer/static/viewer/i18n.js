@@ -59,6 +59,7 @@
     "ev.after": ["직후 {age} ▶", "After · {age} ▶"],
     "ev.start": ["◀ 위기 전 {age}", "◀ Before · {age}"],
     "ev.end": ["위기 뒤 {age} ▶", "After · {age} ▶"],
+    "suggest.alias": ["관용 표기 ‘{name}’", "common name ‘{name}’"],
     "ovpop.title": ["산지 {n}곳", "{n} localities"],
     "ovpop.where": ["{old}–{young} Ma · 오늘날 자리(0.25° 칸)", "{old}–{young} Ma · present-day position (0.25° cell)"],
     "ovpop.now": ["지금 좌표", "Present coords"],

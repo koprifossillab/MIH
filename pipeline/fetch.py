@@ -123,12 +123,29 @@ def fetch_pbdb_intervals(refresh=False):
     print(f"  시대 이름 {len(records)} 개")
 
 
+def fetch_pbdb_taxa(refresh=False):
+    """PBDB 유효 속·아속·종 이름표 — 한글 찾기 표(taxa_ko.py)의 원본(tupandactyl 021)."""
+    spec = manifest("pbdb")["taxa"]
+    target = source_path(spec["path"])
+    if target.exists() and not refresh:
+        print(f"있음  {spec['path']}")
+        return
+    temp = download(spec["url"], target, timeout=900)
+    head = temp.read_text(encoding="utf-8", errors="replace")[:400]
+    if "taxon_name" not in head or "n_occs" not in head:
+        temp.unlink(missing_ok=True)
+        raise SystemExit("PBDB 이름표에 taxon_name·n_occs 칸이 없다 — 질의를 확인한다")
+    temp.replace(target)
+    print("  속·종 이름표를 받았다")
+
+
 def fetch_pbdb(refresh=False):
     spec = manifest("pbdb")
     query = spec["query"]
     target = source_path(query["path"])
     receipt = target.parent / "receipt.json"
     fetch_pbdb_intervals(refresh)
+    fetch_pbdb_taxa(refresh)
     if target.exists() and receipt.exists() and not refresh:
         print(f"있음  {query['path']} ({json.loads(receipt.read_text())['retrieved_at']} 에 받음)")
         return

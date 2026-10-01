@@ -99,3 +99,5 @@
 | tupandactyl 017 | 2026-10-01 | [지구사 사건을 층서표의 책갈피로](20261001_tupandactyl_017_event_bookmarks.md) |
 | tupandactyl 018 | 2026-10-01 | [책갈피는 고를 때만, 멸종은 폭발·기후 사건은 마름모](20261001_tupandactyl_018_event_marks.md) |
 | tupandactyl 019 | 2026-10-01 | [에디아카라기 시점(550 Ma, 판 복원만)](20261001_tupandactyl_019_ediacaran_frame.md) |
+| tupandactyl 020 | 2026-10-01 | [Casual 모드의 한글: 학명 음차·연대·암상](20261001_tupandactyl_020_korean_names.md) |
+| tupandactyl 021 | 2026-10-01 | [한글로 속·종 찾기: 미리 음차한 표](20261001_tupandactyl_021_korean_search.md) |

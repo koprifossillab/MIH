@@ -737,3 +737,6 @@ button, input, select { font-family: inherit; }
   box-shadow: 0 0 0 .5px rgba(255, 240, 220, .6); }
 /* 판 복원만 있는 시점에 쓸 수 없는 겹쳐 보기 */
 .panel label.off { opacity: .4; cursor: not-allowed; }
+/* Casual 의 한글 학명(tupandactyl 020) — 학명은 커서를 대면 */
+.ko-taxon { font-style: normal; }
+.suggest .nm .ko-taxon { font-weight: 600; margin-right: 2px; }

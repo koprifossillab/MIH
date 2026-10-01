@@ -12,6 +12,8 @@
   var I18N = window.WegenerI18n, tr = I18N.t, EN = I18N.lang === "en";
   // Scientific 모드(tupandactyl 011) — 층서·퇴적 환경·분류 계급을 영문으로. 한국어판에서만 뜻이 있다(영어판은 이미 영문)
   var SCI = I18N.mode === "sci" && !EN;
+  // Casual 모드의 한글 — 속·종 학명의 음차(translit.js), 연대 이름(층서표의 한글), 암상(index.json 의 lithology). tupandactyl 020
+  var KO = !EN && !SCI;
   I18N.apply();
   var DATA = app.dataset.dataBase.replace(/x$/, "");
   var LABELS_URL = app.dataset.labelsUrl;
@@ -1280,7 +1282,7 @@
   function drawOverview() {
     fossilLayer.clearLayers();
     taxonLayer.clearLayers();
-    var ov = state.overview, what = [state.taxon, state.country ? countryName(state.country) : ""].filter(Boolean).join(" · ");
+    var ov = state.overview, what = [koTaxon(state.taxon, state.taxonRank), state.country ? countryName(state.country) : ""].filter(Boolean).join(" · ");
     if (ov.loading) { $("fossil-count").textContent = tr("overview.loading"); setOverviewStatus(tr("overview.asking", { what: what })); return; }
     if (ov.error) { $("fossil-count").textContent = ""; setOverviewStatus(tr("taxon.fail", { err: ov.error })); return; }
     var on = {}, shown = 0, byTop = { m: 0, t: 0, o: 0 };
@@ -1329,7 +1331,7 @@
     var head = recs.length === 1 ? esc(recs[0].collection_name || tr("pop.noname")) : tr("ovpop.title", { n: fmtNum(cell.n) });
     var html = "<h3>" + head + "</h3><small>" + tr("ovpop.where", { old: cell.old, young: cell.young }) + "</small>";
     html += '<div class="ovlist">' + recs.slice(0, OVERVIEW_POP_MAX).map(function (r, k) {
-      var interval = (r.early_interval || "") + (r.late_interval ? " – " + r.late_interval : "");
+      var interval = intervalText(r.early_interval, r.late_interval);
       return '<details data-k="' + k + '"' + (recs.length === 1 ? " open" : "") + "><summary>" +
         (recs.length === 1 ? "" : "<b>" + esc(r.collection_name || tr("pop.noname")) + "</b> ") +
         "<small>" + esc(interval) + " · " + r.max_ma + "–" + r.min_ma + " Ma</small></summary><dl>" +
@@ -1363,7 +1365,7 @@
         (res[1].records || []).forEach(function (x) { mark[x.occurrence_no] = true; });
         var items = (res[0].records || []).map(function (x) {
           var grp = [x.phylum, x["class"]].filter(function (v) { return v && v !== "NO_CLASS_SPECIFIED"; }).join(" · ");
-          var name = taxonLink(x.accepted_name || x.identified_name, "<i>" + esc(x.accepted_name || x.identified_name) + "</i>");
+          var name = taxonLink(x.accepted_name || x.identified_name, taxonHtml(x.accepted_name || x.identified_name, x.accepted_rank));
           return { hit: !!mark[x.occurrence_no], html: "<li>" + (mark[x.occurrence_no] ? "<b>" + name + "</b>" : name) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>" };
         }).sort(function (a, b) { return b.hit - a.hit; });
         box.className = items.length ? "" : "muted";
@@ -1386,7 +1388,7 @@
   // 찾은 분류군의 산출은 colls/list 에 없어서, 커서를 댄 산지만 PBDB 에 묻고(occs/list?coll_id&base_name) 기억해 둔다
   var ovTipCache = {};
   function ovAge(r) {
-    var interval = (r.early_interval || "") + (r.late_interval ? " – " + r.late_interval : "");
+    var interval = intervalText(r.early_interval, r.late_interval);
     return '<small class="tip-age">' + esc(interval) + " · " + r.max_ma + "–" + r.min_ma + " Ma</small>";
   }
   function overviewTip(cell, dot) {
@@ -1428,7 +1430,7 @@
   function openCollection(latlng, row, col) {
     if (measure.on) return;          // 거리를 재는 동안 누른 것은 점 찍기다(wetherilli 014)
     var no = row[col.collection_no];
-    var interval = row[col.early_interval] + (row[col.late_interval] ? " – " + row[col.late_interval] : "");
+    var interval = intervalText(row[col.early_interval], row[col.late_interval]);
     var env = row[col.environment];
     var group = state.termGroup[termKey(env)];
     var groupName = "";
@@ -1494,7 +1496,7 @@
       var items = (data.records || []).map(function (r) {
         var grp = [r.phylum, r["class"]].filter(function (x) { return x && x !== "NO_CLASS_SPECIFIED"; }).join(" · ");
         var nm = r.accepted_name || r.identified_name;
-        return "<li>" + taxonLink(nm, "<i>" + esc(nm) + "</i>") + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
+        return "<li>" + taxonLink(nm, taxonHtml(nm, r.accepted_rank)) + (grp ? " <small>" + esc(grp) + "</small>" : "") + "</li>";
       });
       box.className = items.length ? "" : "muted";
       box.innerHTML = items.length ? '<ul class="taxa">' + items.join("") + "</ul>" : tr("pop.none");
@@ -1516,14 +1518,44 @@
   // 암상 — PBDB 산지의 주 암상 둘(lithology1·2)과 그 형용·굳기·부 암상. 원 용어 그대로(tupandactyl 012)
   function lithHtml(r) {
     var parts = [], clean = function (v) { return String(v || "").replace(/"/g, "").trim(); };
+    var lith = KO && state.lith, term = function (t) { return lith && lith.terms[t] || t; };
+    var adjKo = function (list) {                                 // 형용은 쉼표로 여럿 — 하나씩 옮긴다
+      return list.map(function (v) { return v.split(",").map(function (a) { a = a.trim(); return lith && lith.adjectives[a] || a; }).join(", "); });
+    };
     [1, 2].forEach(function (k) {
       var main = clean(r["lithology" + k]);
       if (!main) return;
-      var adj = [r["lithadj" + k], r["lithification" + k], r["minor_lithology" + k]].map(clean).filter(Boolean);
-      parts.push(esc(main) + (adj.length ? " <small>(" + esc(adj.join(", ")) + ")</small>" : ""));
+      var adj = adjKo([r["lithadj" + k], r["lithification" + k], r["minor_lithology" + k]].map(clean).filter(Boolean));
+      parts.push((lith ? '<span title="' + esc(main) + '">' + esc(term(main)) + "</span>" : esc(main)) +
+        (adj.length ? " <small>(" + esc(adj.join(", ")) + ")</small>" : ""));
     });
     return parts.length ? parts.join("<br>") : '<span class="muted">' + tr("pop.noLith") + "</span>";
   }
+
+  // 학명 — Casual 이면 속·종(아속·아종)을 한글로 음차하고 학명은 커서를 대면. 그 위 계급(과·목 …)은 학명 그대로(연구자, 020)
+  var LOW_RANK = { species: 1, subspecies: 1, genus: 1, subgenus: 1, 2: 1, 3: 1, 4: 1, 5: 1 };
+  function koTaxon(name, rank) {
+    return KO && name && LOW_RANK[rank] && window.WegenerKo ? window.WegenerKo.name(name) : name;
+  }
+  function taxonHtml(name, rank) {
+    var k = koTaxon(name, rank);
+    return k === name ? "<i>" + esc(name) + "</i>" : '<span class="ko-taxon" title="' + esc(name) + '">' + esc(k) + "</span>";
+  }
+  // 연대 이름 — Casual 이면 층서표의 한글 이름으로(절·세·기). "Early Cenomanian" 같은 아절은 "전기 세노마눔절"(연구자). 지역 시대 이름은 그대로
+  var QUAL_KO = { Early: "전기", Middle: "중기", Late: "후기" };
+  function koInterval(name) {
+    if (!KO || !name) return name || "";
+    if (!state.unitByEn) {
+      state.unitByEn = {};
+      Object.keys(state.units).forEach(function (id) { var u = state.units[id]; if (u.en) state.unitByEn[u.en] = u; });
+    }
+    var u = state.unitByEn[name];
+    if (u) return u.full;
+    var m = /^(Early|Middle|Late) (.+)$/.exec(name);
+    if (m && state.unitByEn[m[2]]) return QUAL_KO[m[1]] + " " + state.unitByEn[m[2]].full;
+    return name;
+  }
+  function intervalText(early, late) { return koInterval(early) + (late ? " – " + koInterval(late) : ""); }
 
   // 팝업의 산출 이름을 누르면 그 분류군으로 찾는다(종합 보기부터) — 같은 산지의 다른 화석이 어디서 나오는지 바로 본다(tupandactyl 015)
   function taxonLink(name, inner) {
@@ -1600,8 +1632,8 @@
       lines.push(byKey[key] = { o: o, n: 1 });
     });
     return head + "<ul>" + lines.map(function (l) {
-      var o = l.o, shown = "<i>" + esc(o.accepted) + "</i>";
-      if (o.identified && o.identified !== o.accepted) shown += " <small>(" + esc(o.identified) + ")</small>";
+      var o = l.o, shown = taxonHtml(o.accepted, o.rank);
+      if (o.identified && o.identified !== o.accepted) shown += " <small>(" + esc(koTaxon(o.identified, o.rank)) + ")</small>";
       return "<li>" + shown + (o.rank && o.rank !== "species" ? " <small>" + esc(RANK_KO[o.rank] || o.rank) + "</small>" : "") +
         (l.n > 1 ? " <small>" + tr("tip.times", { n: l.n }) + "</small>" : "") + "</li>";
     }).join("") + "</ul>";
@@ -1829,10 +1861,14 @@
     lookupRank(name).then(function (rank) {
       if (seq !== taxonSeq) return;
       state.taxonRank = rank;
+      var shownName = koTaxon(name, rank);                        // Casual 의 한글 이름은 계급을 안 뒤에(속·종만)
+      if (shownName !== name) { $("taxon-chip-name").textContent = shownName; $("taxon-chip-name").title = name; }
+      if (state.overview && shownName !== name) { drawFossils(); return; }   // 종합 보기의 안내도 한글 이름으로
       drawTaxa();
     });
     $("taxon-chip").hidden = false;
     $("taxon-chip-name").textContent = name;
+    $("taxon-chip-name").title = "";
     $("taxon-sec").hidden = false;
     if (state.overview) { drawFossils(); return Promise.resolve(); }   // 종합 보기는 overview 가 그린다
     $("taxon-status").textContent = tr("taxon.asking", { name: name, age: fmtAge(f.age) });
@@ -1997,7 +2033,7 @@
         .addTo(taxonLayer);
     });
     $("taxon-status").textContent = tr("taxon.status", {
-      name: state.taxon, rank: state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "",
+      name: koTaxon(state.taxon, state.taxonRank), rank: state.taxonRank ? " (" + (RANK_KO[state.taxonRank] || state.taxonRank) + ")" : "",
       age: fmtAge(frame().age), n: fmtNum(shown), occ: fmtNum(occs),
       country: state.country ? ", " + countryName(state.country) : "" });
     renderLegend();
@@ -2049,12 +2085,54 @@
   }
   var suggest = { seq: 0, items: [], active: -1, timer: null };
 
+  // 한글로 친 것 — 연구자가 준 관용 표기(translit.js 의 ALIASES)만 학명으로 받는다. 국가 이름은 국가 후보가 따로 받는다
+  var HANGUL = /[\u3131-\u318e\uac00-\ud7a3]/;
+  function aliasMatches(text) {
+    var ko = window.WegenerKo, q = text.replace(/\s+/g, "");
+    if (!ko) return [];
+    var seen = {};
+    return Object.keys(ko.aliases).filter(function (k) { return k.replace(/\s+/g, "").indexOf(q) >= 0; }).map(function (k) {
+      var latin = ko.aliases[k];
+      if (seen[latin]) return null;
+      seen[latin] = true;
+      return { name: latin, rank: tr("suggest.alias", { name: k }), rk: latin.indexOf(" ") > 0 ? "species" : "genus", occs: 0, group: "" };
+    }).filter(Boolean).slice(0, 12);
+  }
+  // 한글 찾기 표(tupandactyl 021) — PBDB 속·종 이름을 파이프라인이 미리 음차해 첫 글자마다 나눈 것(taxa_ko.py). 친 글자의 첫 글자
+  // 파일만 받는다. 한 줄은 [띄어쓰기를 뺀 한글, 학명, 계급(g·s), 산출 수], 산출이 많은 것부터
+  function koShard(text) {
+    var q = text.replace(/\s+/g, "");
+    if (!state.taxaKo || !q || !/[\uac00-\ud7a3]/.test(q[0])) return Promise.resolve({ q: q, rows: [] });
+    return getJSON(dataUrl(state.taxaKo.dir + "/" + q.charCodeAt(0).toString(16) + ".json"))
+      .then(function (d) { return { q: q, rows: d.rows || [] }; }).catch(function () { return { q: q, rows: [] }; });
+  }
+  function koSuggest(text) {
+    var seq = suggest.seq;
+    koShard(text).then(function (got) {
+      if (seq !== suggest.seq) return;
+      var found = got.rows.filter(function (r) { return r[0].indexOf(got.q) === 0; }).slice(0, 12).map(function (r) {
+        return { name: r[1], rank: RANK_KO[r[2] === "s" ? "species" : "genus"] || "", rk: r[2] === "s" ? "species" : "genus", occs: r[3], group: "" };
+      });
+      renderSuggest(merge(aliasMatches(text), found), true);
+    });
+  }
+  // Enter 로 친 한글 — 관용 표기, 아니면 한글 찾기 표에서 똑같은 이름(여럿이면 산출이 많은 것)
+  function latinOf(text) {
+    if (!HANGUL.test(text) || !window.WegenerKo) return Promise.resolve(text);
+    var alias = window.WegenerKo.fromKorean(text);
+    if (alias) return Promise.resolve(alias);
+    return koShard(text).then(function (got) {
+      var hit = got.rows.filter(function (r) { return r[0] === got.q; })[0];
+      return hit ? hit[1] : null;
+    });
+  }
+
   function suggestFetch(text) {
     var seq = ++suggest.seq;
     var q = encodeURIComponent(text);
     var prefix = getJSON(PBDB + "taxa/auto.json?name=" + q + "&limit=12").then(function (d) {
       return (d.records || []).filter(function (r) { return r.typ === "txn" && /^[A-Z]/.test(r.nam); }).map(function (r) {
-        return { name: r.nam, rank: RANK_KO[r.rnk] || "", occs: +r.noc || 0, group: "" };
+        return { name: r.nam, rank: RANK_KO[r.rnk] || "", rk: r.rnk, occs: +r.noc || 0, group: "" };
       });
     }).catch(function () { return []; });
     var middle = text.length < 3 ? Promise.resolve([]) :
@@ -2062,7 +2140,7 @@
         .then(function (d) {
           return (d.records || []).map(function (r) {
             var grp = [r.phylum, r["class"]].filter(function (x) { return x && x !== "NO_CLASS_SPECIFIED" && x !== r.taxon_name; }).join(" · ");
-            return { name: r.taxon_name, rank: RANK_KO[r.taxon_rank] || r.taxon_rank, occs: +r.n_occs || 0, group: grp };
+            return { name: r.taxon_name, rank: RANK_KO[r.taxon_rank] || r.taxon_rank, rk: r.taxon_rank, occs: +r.n_occs || 0, group: grp };
           });
         }).catch(function () { return []; });
     // 앞부분 후보가 먼저 오면 먼저 보이고, 가운데 후보가 오면 합쳐서 다시 그린다.
@@ -2114,8 +2192,8 @@
         html += li + '<span class="nm-plain">' + mark(c.ko) + (c.en !== c.ko ? " <small>" + mark(c.en) + "</small>" : "") +
           '</span><span class="meta">' + esc(c.cc) + tr("country.colls", { n: fmtNum(c.collections) }) + "</span></li>";
       } else {
-        var t = it.t;
-        html += li + '<span class="nm">' + mark(t.name) + "</span>" +
+        var t = it.t, kn = koTaxon(t.name, t.rk);
+        html += li + '<span class="nm">' + (kn !== t.name ? '<span class="ko-taxon">' + esc(kn) + "</span> " + mark(t.name) : mark(t.name)) + "</span>" +
           '<span class="meta">' + esc(t.rank) + (t.group ? " · " + esc(t.group) : "") + tr("suggest.occ", { n: fmtNum(t.occs) }) + "</span></li>";
       }
     });
@@ -2168,16 +2246,27 @@
     stopTour();
     // "Mesosauridae 브라질", "한국, Trilobita" — 앞이나 뒤의 낱말이 나라 이름이면 둘을 함께 건다(tupandactyl 015)
     var both = splitCountry(text);
-    if (both) {
-      state.country = both.cc;
-      $("country-chip").hidden = false;
-      $("country-chip-name").textContent = countryName(both.cc);
-      noteCountry();
-      drawBorders(frame(), true);
-      searchTaxon(both.taxon, true);
+    if (both && HANGUL.test(both.taxon)) {                       // 한글 분류군 + 나라 — 학명을 찾은 뒤에 건다
+      latinOf(both.taxon).then(function (latin) {
+        if (!latin) { $("find").value = text; renderSuggest([], true); return; }
+        both.taxon = latin;
+        applyBoth(both);
+      });
       return;
     }
-    searchTaxon(text, true);
+    if (both) { applyBoth(both); return; }
+    latinOf(text).then(function (latin) {
+      if (!latin) { $("find").value = text; renderSuggest([], true); return; }   // 표에 없는 한글 — 후보 없음을 보인다
+      searchTaxon(latin, true);
+    });
+  }
+  function applyBoth(both) {
+    state.country = both.cc;
+    $("country-chip").hidden = false;
+    $("country-chip-name").textContent = countryName(both.cc);
+    noteCountry();
+    drawBorders(frame(), true);
+    searchTaxon(both.taxon, true);
   }
   function countryOf(text) {
     var q = normName(text);
@@ -2203,6 +2292,11 @@
       suggest.seq += 1;
       var text = input.value.trim();
       if (!text) { closeSuggest(); return; }
+      if (HANGUL.test(text)) {                                  // 한글 — 관용 표기와 한글 찾기 표(020·021)
+        renderSuggest(aliasMatches(text), !state.taxaKo);
+        if (state.taxaKo) suggest.timer = setTimeout(function () { koSuggest(text); }, 150);
+        return;
+      }
       renderSuggest([], text.length < 2);
       if (text.length >= 2) suggest.timer = setTimeout(function () { suggestFetch(text); }, 250);
     });
@@ -3120,6 +3214,8 @@
         return "rgb(" + tempColor(t).join(",") + ")";
       }).join(",") + ")";
       initEnvironments(index.environments || []);
+      state.taxaKo = KO ? index.taxa_ko || null : null;           // 한글 찾기 표 — Casual 에서만(021)
+      state.lith = index.lithology || null;                    // 암상의 한글(Casual, tupandactyl 020)
       initCountries(index.countries || []);
       initEvents(index.events || []);
       if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다
