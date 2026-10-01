@@ -59,6 +59,8 @@
     "ev.after": ["직후 {age} ▶", "After · {age} ▶"],
     "ev.start": ["◀ 위기 전 {age}", "◀ Before · {age}"],
     "ev.end": ["위기 뒤 {age} ▶", "After · {age} ▶"],
+    "suggest.homonym": ["같은 이름", "homonym"],
+    "cmp.homonym": ["‘{name}’ 은(는) 같은 이름의 분류군이 여럿이다 — 고른다:", "‘{name}’ names more than one taxon — pick one:"],
     "suggest.alias": ["관용 표기 ‘{name}’", "common name ‘{name}’"],
     "taxon.truncated": [" PBDB 한도 {n}건에서 잘렸다 — 나라를 걸거나 하위 분류군으로 좁힌다.", " Cut at the PBDB limit of {n} records — narrow by country or a lower taxon."],
     "pop.truncated": ["처음 {n}건만 — 전체는 위의 PBDB 링크에서.", "Only the first {n} — see the PBDB link above for all."],

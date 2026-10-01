@@ -1218,7 +1218,7 @@
     app.classList.remove("overview");
   }
   function overviewUrl() {
-    return PBDB + "colls/list.json?" + (state.taxon ? "base_name=" + encodeURIComponent(state.taxon) + "&" : "") +
+    return PBDB + "colls/list.json?" + (state.taxon ? baseParam(state.taxon) + "&" : "") +
       (state.country ? "cc=" + encodeURIComponent(state.country) + "&" : "") +
       "show=loc,geo,strat,lith&vocab=pbdb&limit=" + OVERVIEW_LIMIT;
   }
@@ -1362,7 +1362,7 @@
       d.dataset.loaded = "1";
       var r = recs[+d.dataset.k], box = d.querySelector(".taxa-box"), no = r.collection_no;
       var all = getJSON(PBDB + "occs/list.json?coll_id=" + no + "&show=class&vocab=pbdb&limit=500");
-      var hit = state.taxon ? getJSON(PBDB + "occs/list.json?coll_id=" + no + "&base_name=" + encodeURIComponent(state.taxon) + "&vocab=pbdb&limit=500")
+      var hit = state.taxon ? getJSON(PBDB + "occs/list.json?coll_id=" + no + "&" + baseParam(state.taxon) + "&vocab=pbdb&limit=500")
         .catch(function () { return {}; }) : Promise.resolve({});
       Promise.all([all, hit]).then(function (res) {
         var mark = {};
@@ -1416,7 +1416,7 @@
     }
     if (!got) {
       ovTipCache[key] = {};
-      getJSON(PBDB + "occs/list.json?coll_id=" + no + "&base_name=" + encodeURIComponent(state.taxon) + "&vocab=pbdb&limit=500").then(function (data) {
+      getJSON(PBDB + "occs/list.json?coll_id=" + no + "&" + baseParam(state.taxon) + "&vocab=pbdb&limit=500").then(function (data) {
         ovTipCache[key].occs = (data.records || []).map(function (o) {
           return { accepted: o.accepted_name || o.identified_name, identified: o.identified_name, rank: o.accepted_rank };
         });
@@ -1601,7 +1601,52 @@
   // 학명 — Casual 이면 속·종(아속·아종)을 한글로 음차하고 학명은 커서를 대면. 그 위 계급(과·목 …)은 학명 그대로(연구자, 020)
   var LOW_RANK = { species: 1, subspecies: 1, genus: 1, subgenus: 1, 2: 1, 3: 1, 4: 1, 5: 1 };
   function koTaxon(name, rank) {
+    name = plainName(name);
     return KO && name && LOW_RANK[rank] && window.WegenerKo ? window.WegenerKo.name(name) : name;
+  }
+  // 같은 이름의 다른 분류군(동명, 예: Tardigrada — 완보동물문과 나무늘보 무리, tupandactyl 026). 고른 것은 "이름#PBDB 번호" 로 들고
+  // 다니며, PBDB 에는 이름 대신 번호로 묻는다(base_id·id). 화면에는 이름만(plainName)
+  // 동명을 골랐으면 딱지에 상위 분류 한 마디(완보동물이면 Panarthropoda, 나무늘보면 Xenarthra)
+  function markHomonym(name) {
+    var chip = $("taxon-chip-name"), old = chip.parentNode.querySelector(".homonym-of");
+    if (old) old.remove();
+    var id = taxonIdOf(name);
+    if (!id) return;
+    homonyms(name).then(function (list) {
+      var h = list.filter(function (x) { return String(x.id) === id; })[0];
+      if (!h || state.taxon !== name || chip.parentNode.querySelector(".homonym-of")) return;
+      var tag = document.createElement("small");
+      tag.className = "homonym-of";
+      tag.textContent = (h.group || h.rank).split(" · ").pop();
+      tag.title = h.group;
+      chip.insertAdjacentElement("afterend", tag);
+    });
+  }
+  function idLabel(n) { return plainName(n) + (taxonIdOf(n) ? " [txn:" + taxonIdOf(n) + "]" : ""); }
+  function plainName(n) { return String(n || "").replace(/#\d+$/, ""); }
+  function taxonIdOf(n) { var m = /#(\d+)$/.exec(n || ""); return m ? m[1] : null; }
+  function baseParam(n) { var id = taxonIdOf(n); return id ? "base_id=txn:" + id : "base_name=" + encodeURIComponent(n); }
+  function singleParam(n) { var id = taxonIdOf(n); return id ? "id=txn:" + id : "name=" + encodeURIComponent(n); }
+  // 이름 하나에 PBDB 분류군이 여럿인가 — 여럿이면 [{name, id, rank, occs, group}] (산출이 많은 것부터). 묻지 못하면 빈 목록
+  var homonymCache = {};
+  function homonyms(name) {
+    name = plainName(name);
+    if (homonymCache[name]) return homonymCache[name];
+    // name= 은 하나만 준다 — match_name 이 같은 이름의 분류군을 모두 준다(orig_no 로 묶는다)
+    homonymCache[name] = getJSON(PBDB + "taxa/list.json?match_name=" + encodeURIComponent(name) + "&show=class,parent&vocab=pbdb").then(function (d) {
+      var groups = {};
+      (d.records || []).forEach(function (r) {
+        if (r.taxon_name !== name) return;
+        var key = r.orig_no || r.taxon_no, g = groups[key];
+        var lineage = [r.phylum, r["class"], r.order].filter(function (x) { return x && x !== name && !/^NO_/.test(x); });
+        if (!g) {                                                  // PBDB 가 먼저 주는 이름표(지금의 계급)를 대표로
+          groups[key] = { name: name, id: key, rk: r.taxon_rank, rank: RANK_KO[r.taxon_rank] || r.taxon_rank || "", occs: +r.n_occs || 0,
+                          group: lineage.join(" · ") || r.parent_name || "" };
+        }
+      });
+      return Object.keys(groups).map(function (k) { return groups[k]; }).sort(function (a, b) { return b.occs - a.occs; });
+    }).catch(function () { return []; });
+    return homonymCache[name];
   }
   function taxonHtml(name, rank) {
     var k = koTaxon(name, rank);
@@ -1677,7 +1722,7 @@
   var TIP_TAXA_MAX = 5;
 
   function lookupRank(name) {
-    return getJSON(PBDB + "taxa/single.json?name=" + encodeURIComponent(name) + "&vocab=pbdb")
+    return getJSON(PBDB + "taxa/single.json?" + singleParam(name) + "&vocab=pbdb")
       .then(function (d) { var r = (d.records || [])[0]; return r ? r.taxon_rank || "" : ""; })
       .catch(function () { return ""; });
   }
@@ -1688,7 +1733,7 @@
     row.occs.forEach(function (o) { taxa[o.accepted] = 1; });
     var n = Object.keys(taxa).length;
     if (n >= TIP_TAXA_MAX) {
-      return head + "<small>" + tr("tip.count", { taxon: esc(state.taxon), n: n }) + "</small>";
+      return head + "<small>" + tr("tip.count", { taxon: esc(plainName(state.taxon)), n: n }) + "</small>";
     }
     // 같은 이름(채택명·원 동정명)의 산출은 한 줄로 묶고 건수를 붙인다 — 한 종이 수십 건인 산지가 있다.
     var lines = [], byKey = {};
@@ -1724,8 +1769,8 @@
     var key = name + "|" + (state.country || "");
     var cc = state.country ? "&cc=" + encodeURIComponent(state.country) : "";
     return Promise.all([
-      getJSON(PBDB + "occs/diversity.json?base_name=" + encodeURIComponent(name) + cc + "&count=genera&time_reso=stage&vocab=pbdb"),
-      withApp ? getJSON(PBDB + "taxa/single.json?name=" + encodeURIComponent(name) + "&show=app&vocab=pbdb").catch(function () { return {}; }) : Promise.resolve({}),
+      getJSON(PBDB + "occs/diversity.json?" + baseParam(name) + cc + "&count=genera&time_reso=stage&vocab=pbdb"),
+      withApp ? getJSON(PBDB + "taxa/single.json?" + singleParam(name) + "&show=app&vocab=pbdb").catch(function () { return {}; }) : Promise.resolve({}),
     ]).then(function (both) {
       var stages = (both[0].records || []).filter(function (r) { return +r.n_occs > 0; }).map(function (r) {
         return { name: r.interval_name, base: +r.max_ma, top: +r.min_ma, n: +r.n_occs,
@@ -1734,7 +1779,7 @@
       var base = { key: key, name: name, stages: stages, app: (both[1].records || [])[0] || null, occs: null,
                    stageTotal: stages.reduce(function (a, s) { return a + s.n; }, 0) };
       if (base.stageTotal > OCC_LIMIT) return base;
-      return getJSON(PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) + cc +
+      return getJSON(PBDB + "occs/list.json?" + baseParam(name) + cc +
                      "&show=env,paleoloc&pgm=scotese&vocab=pbdb&limit=" + (OCC_LIMIT + 1)).then(function (d) {
         var recs = d.records || [];
         if (recs.length <= OCC_LIMIT) {
@@ -1881,7 +1926,7 @@
 
   function taxonUrl(name, f) {
     var w = win(f);
-    return PBDB + "occs/list.json?base_name=" + encodeURIComponent(name) +
+    return PBDB + "occs/list.json?" + baseParam(name) +
       "&max_ma=" + w[1] + "&min_ma=" + w[0] +
       (state.country ? "&cc=" + encodeURIComponent(state.country) : "") +
       "&timerule=overlap&pgm=scotese&show=paleoloc,coll,class,env,loc&vocab=pbdb&limit=" + TAXON_LIMIT;
@@ -1941,16 +1986,18 @@
       if (seq !== taxonSeq) return;
       state.taxonRank = rank;
       var shownName = koTaxon(name, rank);                        // Casual 의 한글 이름은 계급을 안 뒤에(속·종만)
-      if (shownName !== name) { $("taxon-chip-name").textContent = shownName; $("taxon-chip-name").title = name; }
+      if (shownName !== plainName(name)) { $("taxon-chip-name").textContent = shownName; $("taxon-chip-name").title = idLabel(name); }
+      markHomonym(name);
       if (state.overview && shownName !== name) { drawFossils(); return; }   // 종합 보기의 안내도 한글 이름으로
       drawTaxa();
     });
     $("taxon-chip").hidden = false;
-    $("taxon-chip-name").textContent = name;
-    $("taxon-chip-name").title = "";
+    $("taxon-chip-name").textContent = plainName(name);
+    $("taxon-chip-name").title = taxonIdOf(name) ? idLabel(name) : "";
+    markHomonym(name);
     $("taxon-sec").hidden = false;
     if (state.overview) { drawFossils(); return Promise.resolve(); }   // 종합 보기는 overview 가 그린다
-    $("taxon-status").textContent = tr("taxon.asking", { name: name, age: fmtAge(f.age) });
+    $("taxon-status").textContent = tr("taxon.asking", { name: plainName(name), age: fmtAge(f.age) });
     drawFossils();
     // 결과를 그리고 나서 풀리는 약속을 돌려준다 — 차례로 보기(011)가 이것을 기다린다.
     return getJSON(taxonUrl(name, f)).then(function (data) {
@@ -2236,7 +2283,23 @@
     // 앞부분 후보가 먼저 오면 먼저 보이고, 가운데 후보가 오면 합쳐서 다시 그린다.
     prefix.then(function (a) { if (seq === suggest.seq) renderSuggest(merge(a, [])); });
     Promise.all([prefix, middle]).then(function (both) {
-      if (seq === suggest.seq) renderSuggest(merge(both[0], both[1]), true);
+      if (seq !== suggest.seq) return;
+      var list = merge(both[0], both[1]);
+      renderSuggest(list, true);
+      // 같은 이름이 산출 수가 다르게 둘 이상 왔으면 동명이다(026) — PBDB 에 물어 분류군마다 따로 띄운다
+      var occsBy = {};
+      both[0].concat(both[1]).forEach(function (it) { (occsBy[it.name] = occsBy[it.name] || {})[it.occs] = 1; });
+      var dup = list.filter(function (it) { return Object.keys(occsBy[it.name] || {}).length > 1; });
+      if (!dup.length) return;
+      Promise.all(dup.map(function (it) { return homonyms(it.name); })).then(function (groups) {
+        if (seq !== suggest.seq) return;
+        var out = [];
+        list.forEach(function (it) {
+          var k = dup.indexOf(it), g = k >= 0 ? groups[k] : null;
+          if (g && g.length > 1) g.forEach(function (h) { out.push(Object.assign({ homonym: true }, h)); }); else out.push(it);
+        });
+        renderSuggest(out.slice(0, 14), true);
+      });
     });
   }
 
@@ -2284,7 +2347,8 @@
       } else {
         var t = it.t, kn = koTaxon(t.name, t.rk);
         html += li + '<span class="nm">' + (kn !== t.name ? '<span class="ko-taxon">' + esc(kn) + "</span> " + mark(t.name) : mark(t.name)) + "</span>" +
-          '<span class="meta">' + esc(t.rank) + (t.group ? " · " + esc(t.group) : "") + tr("suggest.occ", { n: fmtNum(t.occs) }) + "</span></li>";
+          '<span class="meta">' + (t.homonym ? '<span class="homonym">' + esc(tr("suggest.homonym")) + "</span> " : "") +
+          esc(t.rank) + (t.group ? " · " + esc(t.group) : "") + tr("suggest.occ", { n: fmtNum(t.occs) }) + "</span></li>";
       }
     });
     if (waitTaxa && !(taxa && taxa.length) && (!done || !countries.length)) {
@@ -2311,7 +2375,7 @@
     closeSuggest();
     if (it.kind === "country") { setCountry(it.c.cc, true); return; }
     stopTour();
-    searchTaxon(it.t.name, true);
+    searchTaxon(it.t.id ? it.t.name + "#" + it.t.id : it.t.name, true);
   }
 
   function moveActive(step) {
@@ -2347,7 +2411,15 @@
     if (both) { applyBoth(both); return; }
     latinOf(text).then(function (latin) {
       if (!latin) { $("find").value = text; renderSuggest([], true); return; }   // 표에 없는 한글 — 후보 없음을 보인다
-      searchTaxon(latin, true);
+      return homonyms(latin).then(function (list) {
+        if (list.length > 1) {                                   // 같은 이름의 분류군이 여럿 — 후보로 띄워 고르게(026)
+          $("find").value = latin;
+          renderSuggest(list.map(function (h) { return Object.assign({ homonym: true }, h); }), true);
+          $("find").focus();
+          return;
+        }
+        searchTaxon(latin, true);
+      });
     });
   }
   function applyBoth(both) {
@@ -2545,7 +2617,7 @@
     if (!name || !state.taxon) return;
     state.cmp = { name: name, rank: "", series: null, rows: null, seq: 0 };
     $("cmp-chip").hidden = false;
-    $("cmp-chip-name").textContent = name;
+    $("cmp-chip-name").textContent = plainName(name);
     lookupRank(name).then(function (rank) {
       if (!state.cmp || state.cmp.name !== name) return;
       state.cmp.rank = rank;
@@ -2808,7 +2880,7 @@
       var t = todo.shift();
       if (!t) return Promise.resolve();
       var w = win(t.f);
-      return getJSON(PBDB + "colls/list.json?base_name=" + encodeURIComponent(base.name) + cc + "&max_ma=" + w[1] + "&min_ma=" + w[0] +
+      return getJSON(PBDB + "colls/list.json?" + baseParam(base.name) + cc + "&max_ma=" + w[1] + "&min_ma=" + w[0] +
                      "&timerule=overlap&show=paleoloc&pgm=scotese&vocab=pbdb&limit=all").then(function (d) {
         var lats = (d.records || []).map(function (r) { return r.paleolat == null || r.paleolat === "" ? null : +r.paleolat; })
           .filter(function (v) { return v != null; }).sort(function (a, b) { return a - b; });
@@ -2954,8 +3026,8 @@
       return out;
     }
     if (state.taxon && state.taxaVisible) {
-      state.taxaVisible.forEach(function (row) { push(row, COLUMNS, state.taxon); });
-      if (state.cmp && state.cmp.visible) state.cmp.visible.forEach(function (row) { push(row, COLUMNS, state.cmp.name + " (B)"); });
+      state.taxaVisible.forEach(function (row) { push(row, COLUMNS, idLabel(state.taxon)); });
+      if (state.cmp && state.cmp.visible) state.cmp.visible.forEach(function (row) { push(row, COLUMNS, idLabel(state.cmp.name) + " (B)"); });
       return out;
     }
     if (state.payload) {
@@ -2976,7 +3048,7 @@
   function exportData(kind) {
     var rows = exportRows(), f = frame();
     var stem = "wegener_" + (state.overview ? "all-ages" : String(f.age).replace(".", "_") + "Ma") +
-      (state.taxon ? "_" + state.taxon.replace(/\s+/g, "-") : "") + (state.country ? "_" + state.country : "");
+      (state.taxon ? "_" + plainName(state.taxon).replace(/\s+/g, "-") : "") + (state.country ? "_" + state.country : "");
     if (kind === "csv") {
       var keys = Object.keys(rows[0] || { collection_no: "" });
       var cell = function (v) { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
@@ -3664,9 +3736,21 @@
       if (!text) return;
       latinOf(text).then(function (latin) {
         if (!latin) { $("anal-note").textContent = tr("cmp.notfound", { name: text }); return; }
-        $("cmp-find").value = "";
-        $("anal-note").textContent = "";
-        setCmp(latin);
+        return homonyms(latin).then(function (list) {
+          var note = $("anal-note");
+          $("cmp-find").value = "";
+          note.textContent = "";
+          if (list.length < 2) { setCmp(latin); return; }
+          note.textContent = tr("cmp.homonym", { name: latin });
+          list.forEach(function (h) {                            // 같은 이름의 분류군마다 단추(026)
+            var b = document.createElement("button");
+            b.type = "button"; b.className = "tool homonym-pick";
+            b.textContent = h.name + " — " + (h.group || h.rank) + " · " + tr("suggest.occ", { n: fmtNum(h.occs) }).trim();
+            b.addEventListener("click", function () { note.textContent = ""; setCmp(h.name + "#" + h.id); });
+            note.appendChild(document.createElement("br"));
+            note.appendChild(b);
+          });
+        });
       });
     });
     $("cmp-clear").addEventListener("click", clearCmp);
