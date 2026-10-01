@@ -79,21 +79,36 @@
       </div>
     </section>
     <!-- 읽는 법 — 패널에 늘 떠 있던 설명들(tupandactyl 002) -->
+    <!-- 읽는 법 — 주제마다 접어 둔다. 제목만 보이고 누르면 편다(연구자: 길어져 읽기 어렵다, tupandactyl 031) -->
     <section class="guide">
       <h3 data-i18n="guide">읽는 법</h3>
-      <p class="note" data-i18n="fossils.about">포인트 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
-      <p class="note" data-i18n="env.count">퇴적 환경 옆의 수는 지금 지도의 산지 수다. 분류군을 찾는 동안에는 그 분류군의 산출 건수다.</p>
-      <p class="note" data-i18n="span.about">연대 범위(max − min)가 고른 값 이하인 기록만 보인다. 시대 이름의 등급(▲)과 따로 본다 — 등급은 어떻게 매겼는지, 범위는 시간이 얼마나 불확실한지다.</p>
-      <p class="note" data-i18n="vague.about">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
-      <p class="note" data-i18n="guide.hover">분류군을 찾으면 산지에 커서를 대기만 해도 그 산지에서 나온 찾은 분류군 아래의 기록이 뜬다. 5종 이상이면 수만 적고, 누르면 산지의 산출 목록 전체를 PBDB 에서 읽는다.</p>
-      <p class="note" id="guide-dist"></p>
-      <!-- 학명의 우리말 표기의 근거(연구자, tupandactyl 022) — 규칙은 translit.js -->
-      <p class="note guide-ko" data-i18n-html="guide.ko"><b>학명의 우리말 표기</b>(Casual) — 속·종 이름은 Covington(2010)의 고전 라틴어 발음을 바탕으로,
+      <details class="guide-item"><summary data-i18n="guide.t.points">포인트 — PBDB 산지</summary>
+        <p class="note" data-i18n="fossils.about">포인트 하나가 PBDB 산지 하나다. 연대 범위가 시점 ±2.5 Myr 와 겹치면 오른다 — 범위가 넓은 산지는 걸친 모든 시점에 보인다. 누르면 산출 목록을 PBDB 에서 바로 읽는다.</p>
+      </details>
+      <details class="guide-item"><summary data-i18n="guide.t.vague">▲ 모호한 연대와 연대 범위</summary>
+        <p class="note" data-i18n="vague.about">▲ 모호한 연대 — "Middle Cambrian", "Late Triassic" 처럼 절 단위로 정해지지 않은 기록(PBDB 시대 이름이 세·기·대). 걸친 모든 시점에 세모로 보이고, 자리는 시점마다 그 나이로 계산한다. 절 이름으로 정해진 범위("Norian–Rhaetian")는 ● 정해진 기록이다.</p>
+        <p class="note" data-i18n="span.about">연대 범위(max − min)가 고른 값 이하인 기록만 보인다. 시대 이름의 등급(▲)과 따로 본다 — 등급은 어떻게 매겼는지, 범위는 시간이 얼마나 불확실한지다.</p>
+      </details>
+      <details class="guide-item"><summary data-i18n="guide.t.env">퇴적 환경 옆의 수</summary>
+        <p class="note" data-i18n="env.count">퇴적 환경 옆의 수는 지금 지도의 산지 수다. 분류군을 찾는 동안에는 그 분류군의 산출 건수다.</p>
+      </details>
+      <details class="guide-item"><summary data-i18n="guide.t.taxon">분류군 찾기 — 커서·산출 시대의 수</summary>
+        <p class="note" data-i18n="guide.hover">분류군을 찾으면 산지에 커서를 대기만 해도 그 산지에서 나온 찾은 분류군 아래의 기록이 뜬다. 5종 이상이면 수만 적고, 누르면 산지의 산출 목록 전체를 PBDB 에서 읽는다.</p>
+        <p class="note" id="guide-dist"></p>
+      </details>
+      <details class="guide-item"><summary data-i18n="guide.t.formation">지층의 화석 기록</summary>
+        <p class="note" data-i18n="formation.about">지층을 걸면 패널에 그 지층 전체의 기록을 계통 나무로 모은다(지도의 시점·거르기와 상관없이). 맨 위는 동물·식물·기타, 그 밑은 문부터 접혀 있다. 수는 산출 건수다. 미동정은 과 이상에서 멈춘 동정으로, 계통이 닿는 가장 깊은 마디에 둔다. 속은 이름 차례, 종은 속 아래, 어느 산지인지는 속·종 끝에 접어 둔다. 이름을 누르면 그 분류군으로 찾는다.</p>
+      </details>
+      <details class="guide-item"><summary data-i18n="guide.t.chrono">층서표</summary>
+        <p class="note" data-i18n="chrono.about">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
+      </details>
+      <details class="guide-item"><summary data-i18n="guide.t.ko">학명의 우리말 표기(Casual)</summary>
+        <p class="note guide-ko" data-i18n-html="guide.ko">속·종 이름은 Covington(2010)의 고전 라틴어 발음을 바탕으로,
         국립국어원 외래어 표기법의 「라틴어의 표기 원칙」 전부와 「기타 언어의 표기 원칙」 제1·5·6·8항, 제9항 (나), 제10·11·14·15항,
         「영어의 표기 세칙」 제3항 2와 제7항을 따라 옮겼다. 라틴어에 없는 몇몇 글자 조합에 한해서는 관례를 존중했다.<br>
         <small class="ref">Covington, M. A. 2010. <i>Latin Pronunciation Demystified</i>. Program in Linguistics, University of Georgia.
         <a href="http://www.ai.uga.edu/mc/latinpro.pdf" target="_blank" rel="noopener">ai.uga.edu/mc/latinpro.pdf</a></small></p>
-      <p class="note" data-i18n="chrono.about">이름은 국제지질연대층서표 한글판(2023/04), 경계 나이는 ICS 2024/12 판이다. 지도는 5 Myr 간격이라, 고른 단위의 가운데에 가장 가까운 지도를 보인다.</p>
+      </details>
     </section>
     <section class="sources">
       <h3 data-i18n="sources">자료</h3>

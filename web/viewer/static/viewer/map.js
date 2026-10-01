@@ -2353,7 +2353,8 @@
     var countries = countryMatches(text).map(function (c) { return { kind: "country", c: c }; });
     var waitTaxa = text.length >= 2;
     var forms = HANGUL.test(text) ? [] : (suggest.formations || []).map(function (f) { return { kind: "formation", f: f }; });
-    suggest.items = countries.concat((taxa || []).map(function (it) { return { kind: "taxon", t: it }; })).concat(forms);
+    // 국가 → 지층 → 분류군(연구자, 031) — 분류군 후보가 많으면 뒤의 국가·지층이 목록 밖으로 밀려 안 보였다
+    suggest.items = countries.concat(forms).concat((taxa || []).map(function (it) { return { kind: "taxon", t: it }; }));
     suggest.active = -1;
     var re = text ? new RegExp("(" + text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "i") : null;
     var mark = function (v) { var e = esc(v); return re ? e.replace(re, "<b>$1</b>") : e; };
@@ -3211,6 +3212,16 @@
   var FM_LIMIT = 20000, fmSeq = 0, fmCache = {};
   var FM_LEVELS = ["phylum", "class", "order", "family"];
   function clean(v) { return v && !/^NO_/.test(v) ? v : ""; }
+  var kingdomCache = {};
+  function kingdomOf(name) {
+    if (!kingdomCache[name]) {
+      kingdomCache[name] = getJSON(PBDB + "taxa/list.json?name=" + encodeURIComponent(name) + "&rel=all_parents&vocab=pbdb").then(function (d) {
+        var names = (d.records || []).map(function (r) { return r.taxon_name; });
+        return names.indexOf("Animalia") >= 0 || names.indexOf("Metazoa") >= 0 ? "Animalia" : names.indexOf("Plantae") >= 0 ? "Plantae" : "other";
+      }).catch(function () { return "other"; });
+    }
+    return kingdomCache[name];
+  }
   function loadFormationFauna() {
     var sec = $("formation-sec"), name = state.formation;
     sec.hidden = !name;
@@ -3299,14 +3310,34 @@
     var walk = function (n) { Object.keys(n.children).forEach(function (k) { var c = n.children[k]; if (c.level === "genus") genera += 1; if (c.level === "species") species += 1; walk(c); }); };
     walk(root);
     $("formation-count").textContent = tr("formation.count", { occs: fmtNum(recs.length), genera: fmtNum(genera), species: fmtNum(species) });
-    $("formation-note").textContent = (recs.length >= FM_LIMIT ? tr("formation.truncated", { n: fmtNum(FM_LIMIT) }) + " " : "") + tr("formation.about");
-    var box = $("formation-tree");
-    box.innerHTML = "";
-    if (root.nIndet) box.appendChild(indetEl(root));
-    Object.keys(root.children).sort(function (a, b) {                  // 계통 미상은 맨 뒤
-      return (root.children[a].level === "unplaced") - (root.children[b].level === "unplaced") || (a < b ? -1 : 1);
-    }).forEach(function (k) { box.appendChild(faunaEl(root.children[k], true)); });
+    $("formation-note").textContent = recs.length >= FM_LIMIT ? tr("formation.truncated", { n: fmtNum(FM_LIMIT) }) : "";   // 풀이는 읽는 법(031)
+    var box = $("formation-tree"), seq = fmSeq;
     if (!box.dataset.bound) { box.dataset.bound = "1"; bindTaxonLinks(box); }
+    // 맨 위는 동물·식물·기타(031) — PBDB 산출에는 계(kingdom)가 없어 맨 위 마디마다 조상(rel=all_parents)을 물어 가른다
+    var tops = Object.keys(root.children).filter(function (k) { return root.children[k].level !== "unplaced"; });
+    Promise.all(tops.map(kingdomOf)).then(function (kings) {
+      if (seq !== fmSeq) return;
+      var groups = { Animalia: [], Plantae: [], other: [] };
+      tops.forEach(function (k, i) { groups[kings[i]].push(root.children[k]); });
+      box.innerHTML = "";
+      ["Animalia", "Plantae", "other"].forEach(function (g) {
+        var list = groups[g];
+        if (!list.length && !(g === "other" && root.nIndet)) return;
+        var d = document.createElement("details");
+        d.className = "fm-node fm-kingdom";
+        d.open = true;
+        var n = list.reduce(function (a, c) { return a + c.n; }, 0) + (g === "other" ? root.nIndet : 0);
+        d.innerHTML = '<summary><span class="fm-name">' + esc(tr("formation.kingdom." + g)) + '</span> <small>' + esc(tr("formation.n", { n: fmtNum(n) })) + "</small></summary>";
+        var body = document.createElement("div");
+        body.className = "fm-body";
+        if (g === "other" && root.nIndet) body.appendChild(indetEl(root));
+        list.sort(function (a, b) { return a.name < b.name ? -1 : 1; }).forEach(function (c) { body.appendChild(faunaEl(c, false)); });
+        d.appendChild(body);
+        box.appendChild(d);
+      });
+      Object.keys(root.children).filter(function (k) { return root.children[k].level === "unplaced"; })
+        .forEach(function (k) { box.appendChild(faunaEl(root.children[k], false)); });
+    });
   }
   function collsEl(colls) {
     var ids = Object.keys(colls);
@@ -3329,8 +3360,8 @@
     d.className = "fm-node lv-" + n.level;
     if (open) d.open = true;
     var label = n.level === "genus" || n.level === "species" ? taxonLink(n.name, taxonHtml(n.name, n.level)) : '<span class="fm-name">' + esc(n.name) + "</span>";
-    var rankLabel = n.level === "unplaced" ? "" : EN || SCI ? n.level : RANK_KO[n.level] || n.level;
-    d.innerHTML = "<summary>" + label + (rankLabel ? ' <small class="fm-rank">' + esc(rankLabel) + "</small>" : "") + " <small>" + fmtNum(n.n) + "</small></summary>";
+    // 계급(문·강…)은 적지 않는다 — "문 869" 가 문이 869 개로 읽혔다(연구자, 031). 수는 산출 건수
+    d.innerHTML = "<summary>" + label + ' <small class="fm-n">' + esc(tr("formation.n", { n: fmtNum(n.n) })) + "</small></summary>";
     var body = document.createElement("div");
     body.className = "fm-body";
     if (n.nIndet) body.appendChild(indetEl(n));
