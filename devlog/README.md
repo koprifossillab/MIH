@@ -96,3 +96,4 @@
 | tupandactyl 016 | 2026-10-01 | [지구사 사건을 시점 막대·패널·산출 막대에](20261001_tupandactyl_016_earth_events.md) |
 | tupandactyl 017 | 2026-10-01 | [지구사 사건을 층서표의 책갈피로](20261001_tupandactyl_017_event_bookmarks.md) |
 | tupandactyl 018 | 2026-10-01 | [책갈피는 고를 때만, 멸종은 폭발·기후 사건은 마름모](20261001_tupandactyl_018_event_marks.md) |
+| tupandactyl 019 | 2026-10-01 | [에디아카라기 시점(550 Ma, 판 복원만)](20261001_tupandactyl_019_ediacaran_frame.md) |

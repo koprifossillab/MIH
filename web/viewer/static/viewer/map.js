@@ -43,7 +43,7 @@
   L.TriangleMarker = L.CircleMarker.extend({
     _updatePath: function () { this._renderer._updateTriangle(this); },
   });
-  var OLDEST = 540;
+  var OLDEST = 540;        // 시점 막대의 왼쪽 끝 — 자료의 가장 오래된 시점으로 다시 맞춘다(에디아카라기 550 Ma, tupandactyl 019)
   var WORLD = [[-90, -180], [90, 180]];
   var UNKNOWN_COLOR = "#f5f5f5";
   var UNLISTED = "__unlisted__";
@@ -661,6 +661,15 @@
       band.addEventListener("click", function () { focusUnit(u); });
       rows[u.rank].appendChild(band);
     });
+    // 에디아카라기와 현생누대 사이의 붉은 선(019) — 앞쪽은 판 복원만 있는 시점이다
+    var ediacaran = ts.units.filter(function (u) { return u.en === "Ediacaran"; })[0];
+    if (ediacaran && OLDEST > ediacaran.top) {
+      var eon = document.createElement("div");
+      eon.className = "eon-line";
+      eon.style.left = "calc(7px + (100% - 14px) * " + ((OLDEST - ediacaran.top) / OLDEST) + ")";
+      eon.title = "Ediacaran | Phanerozoic · " + ediacaran.top + " Ma";
+      document.querySelector(".timebar .track").appendChild(eon);
+    }
     fitStripNames();
     if (window.ResizeObserver) new ResizeObserver(fitStripNames).observe($("strip"));
     else window.addEventListener("resize", fitStripNames);
@@ -908,6 +917,12 @@
     renderEvents(f);
     writeHash(f);
 
+    // 판 복원만 있는 시점(에디아카라기, 019)에는 해안선·기온이 없다 — 겹쳐 보기의 그 칸을 끈다(글로 적지 않는다)
+    var plateOnly = f.grid === "plates";
+    ["climate", "coast"].forEach(function (id) {
+      $(id).disabled = plateOnly;
+      $(id).closest("label").classList.toggle("off", plateOnly);
+    });
     relief.setUrl(reliefUrl(f));
     noteRelief(f);
     noteTerrain(f);
@@ -929,7 +944,7 @@
   // 옛 해안선은 새 것이 올 때까지 둔다 — 먼저 지우면 받는 동안 비어 깜박인다(021)
   function drawCoast(f) {
     var note = $("coast-note");
-    if (!f.coastline) { coastLayer.clearLayers(); note.textContent = tr("coast.none"); return; }
+    if (!f.coastline) { coastLayer.clearLayers(); note.textContent = f.grid === "plates" ? "" : tr("coast.none"); return; }
     note.textContent = f.coastline.age === f.age
       ? "PaleoCoastlines " + fmtAge(f.coastline.age) + "."
       : tr("coast.nearest", { age: fmtAge(f.coastline.age) });
@@ -2343,9 +2358,10 @@
     if (globe) globe.mark("climate");
     var on = $("climate").checked, info = f.climate;
     $("temp-legend").hidden = !on;
-    $("climate-note").textContent = !info ? (f.slice ? tr("climate.stageNone", { stage: unit(f.slice.unit).full }) : tr("climate.none")) :
+    $("climate-note").textContent = !info ? (f.grid === "plates" ? "" : f.slice ? tr("climate.stageNone", { stage: unit(f.slice.unit).full }) : tr("climate.none")) :
       (info.source_age === f.age || info.gmst == null ? "" : tr("climate.nearest", { age: fmtAge(info.source_age) })) +
       (info.gmst != null ? tr("climate.gmst", { t: info.gmst.toFixed(1) }) : tr("climate.paleoclim", { what: EN ? info.en : info.ko }));
+    if (f.grid === "plates") $("temp-legend").hidden = true;
     if (!on || !info) { map.removeLayer(climateLayer); map.removeLayer(climateMoll); return; }
     var want = f.age;
     loadGrid(info).then(function (grid) {
@@ -3002,6 +3018,8 @@
       }
       BUILT = index.built_at || "";
       $("slider").max = SLIDER_MAX;
+      OLDEST = Math.max.apply(null, [OLDEST].concat(index.frames.map(function (f) { return f.age; })));
+      document.querySelector(".timebar .ticks span").textContent = fmtAge(OLDEST);
       sources((index.sources || []).concat(recent && recent.citation ? [recent] : []));
       initTimescale(index.timescale || { units: [] });
       buildRecentSlices();

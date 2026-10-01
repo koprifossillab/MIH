@@ -18,7 +18,8 @@
 
 나이는 층서 경계와 겹치면 `boundary`(그 경계 **위** 절의 영어 이름)로 적어 timescale.py 의 ICS 2024 값을 그대로 쓴다. 경계와 상관없는
 나이는 문헌의 대략 값과 불확실 범위(`unc`)로 적는다. 규모의 수치는 문헌마다 달라 대표 값 하나만 적고 근거를 붙인다.
-Kotlin crisis(~550 Ma)는 지도(540 Ma 부터) 앞이라 `outside` — 뷰어는 시점 막대 왼쪽 끝 밖에 표식만 둔다.
+Kotlin crisis(~550 Ma)는 에디아카라기 시점(550 Ma, 019) 안에 든다. 지도 범위 앞의 사건은 `outside=True` 로 적으면 뷰어가 시점 막대 왼쪽
+끝 밖에 표식만 둔다(지금은 없다).
 """
 import json
 
@@ -26,7 +27,7 @@ from .common import DERIVED
 from .timescale import units
 
 EVENTS = [
-    dict(id="kotlin", tier=2, kind="pulse", en="Kotlin crisis", age=550.0, unc=2.0, outside=True,
+    dict(id="kotlin", tier=2, kind="pulse", en="Kotlin crisis", age=550.0, unc=2.0,
          refs=["Evans et al. 2022, PNAS 119:e2207475119"]),
     dict(id="sinsk", tier=2, kind="pulse", en="Sinsk event", age=513.0, unc=1.5,
          refs=["Zhuravlev & Wood 1996, Geology 24:311–314"]),

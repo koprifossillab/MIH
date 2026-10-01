@@ -44,11 +44,12 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(dev["old"], max(p["old"] for p in dev["pulses"]))
         self.assertEqual(dev["young"], min(p["young"] for p in dev["pulses"]))
 
-    def test_only_kotlin_is_outside_the_maps(self):
-        self.assertEqual([e["id"] for e in self.flat if e.get("outside")], ["kotlin"])
+    def test_all_within_the_maps(self):
+        # 에디아카라기 시점(550 Ma, 019)이 생겨 Kotlin crisis 도 지도 안이다 — 가장 오래된 시점의 창(552.5 Ma) 안
+        from pipeline.common import EDIACARAN_AGE, WINDOW_MA
         for e in self.flat:
-            self.assertEqual(e["old"] > 542.5, bool(e.get("outside")), e["id"])
-
+            self.assertFalse(e.get("outside"), e["id"])
+            self.assertLessEqual(e["young"], EDIACARAN_AGE + WINDOW_MA, e["id"])
 
 if __name__ == "__main__":
     unittest.main()

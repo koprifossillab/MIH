@@ -182,7 +182,7 @@ body {
   display: flex; gap: 8px; align-items: center;
   padding: 6px 16px 4px; border-bottom: 1px solid var(--line); background: var(--panel);
 }
-.timebar .track { flex: 1; min-width: 0; }
+.timebar .track { flex: 1; min-width: 0; position: relative; }
 .timebar input[type="range"] { display: block; width: 100%; margin: 3px 0 1px; }
 .timebar .play { flex: none; margin: 0; font-size: 12px; white-space: nowrap; cursor: pointer; }
 /* 기·세 띠. 막대의 손잡이 폭만큼 안쪽에서 시작한다. */
@@ -727,3 +727,9 @@ button, input, select { font-family: inherit; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .bookmark.t1 .ev-nav .tool.on, :root:not([data-theme="light"]) .ev-row .ev-mark.t1 { color: #e08a78; }
 }
+
+/* 에디아카라기 | 현생누대(tupandactyl 019) — 시점 막대를 세로로 가르는 붉은 선. 앞쪽은 판 복원만 있는 시점 */
+.timebar .eon-line { position: absolute; top: 0; bottom: 14px; width: 0; border-left: 2px solid #b0201c; pointer-events: none; z-index: 3;
+  box-shadow: 0 0 0 .5px rgba(255, 240, 220, .6); }
+/* 판 복원만 있는 시점에 쓸 수 없는 겹쳐 보기 */
+.panel label.off { opacity: .4; cursor: not-allowed; }
