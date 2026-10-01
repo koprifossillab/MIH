@@ -31,6 +31,14 @@ class EventsTest(unittest.TestCase):
             self.assertGreaterEqual(e["old"], e["age"])
             self.assertGreaterEqual(e["age"], e["young"])
 
+    def test_types(self):
+        climate = [e["id"] for e in self.flat if e["type"] == "climate"]
+        self.assertEqual(climate, ["cpe", "toae", "oae2", "petm", "eot"])
+        for e in self.flat:
+            self.assertIn(e["type"], ("extinction", "climate"))
+            if e["tier"] == 1:
+                self.assertEqual(e["type"], "extinction", e["id"])
+
     def test_interval_spans_its_pulses(self):
         dev = next(e for e in self.events if e["kind"] == "interval")
         self.assertEqual(dev["old"], max(p["old"] for p in dev["pulses"]))

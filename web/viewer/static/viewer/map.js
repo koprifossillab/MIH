@@ -50,7 +50,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var state = {
-    events: [], evPin: null,   // 지구사 사건(index.json 의 events, tupandactyl 016) · 단추로 옮긴 사건(017)
+    events: [], evSel: null,   // 지구사 사건(index.json 의 events, tupandactyl 016) · 책갈피로 펼친 사건과 그 범위(018)
     frames: [], i: 0, taxon: "", playing: null,
     proj: "eq",                             // 투영: eq(정거원통) · moll(몰바이데, 024) · globe(지구본, wetherilli P01)
     units: {}, kids: {}, focus: null,       // 층서표: 고른 단위(없으면 지금 지도의 절)
@@ -748,6 +748,8 @@
       if (inside && (bestInside < 0 || d < Math.abs(state.frames[bestInside].age - mid))) bestInside = j;
     });
     var j = bestInside >= 0 ? bestInside : best;
+    // 기 이하의 칩 — 그 단위 안의 사건을 책갈피로(018). 단위 안에 지도가 없으면 가장 가까운 지도까지 범위에 넣는다
+    evSelect(u.rank === "era" ? [] : evInUnitAll(u), [Math.min(u.top, state.frames[j].age), Math.max(u.base, state.frames[j].age)]);
     show(j, { focus: u });
     $("chrono-note").textContent = bestInside >= 0
       ? tr("focus.inside", { unit: u.full, base: u.base, top: u.top, age: fmtAge(state.frames[j].age) })
@@ -2117,9 +2119,11 @@
   // ── 지구사 사건(tupandactyl 016·017) ──────────────────────────────────
   // 목록은 index.json 의 events(pipeline/events.py 한 곳). 대멸종 다섯(1 등급)과 Sinsk·토아르시움 규모의 전 지구 사건(2 등급).
   // 이름은 영어로만, 풀이는 적지 않는다(연구자 — 017). 시점 막대 위에 박동은 표식, 기간(데본기 후기 위기)은 띠.
-  // 층서표(책)에는 **책갈피**로 — 사건이 끝나는 단위의 칩에 작은 리본, 지금 시점에 걸린 사건은 층서표 머리에 늘어뜨린 책갈피.
+  // 층서표(책)에는 **책갈피**로 — 사건이 끝나는 단위의 칩에 작은 리본, 층서표 머리에 늘어뜨린 책갈피. 책갈피는 **고를 때만** 편다
+  // (018): 기 이하의 칩(기·세·절)을 누르면 그 단위 안의 사건, 시점 막대의 표식을 누르면 그 사건. 밀대로 지나갈 때는 펴지 않는다.
   // 책갈피의 단추로 직전·사건·직후 시점을 오간다. 직전은 창이 사건보다 완전히 오래된 마지막 시점, 직후는 완전히 젊은 첫 시점이다
-  // (걸친 시점에는 전후의 화석이 섞인다). 단추로 옮겨도 책갈피는 남는다 — 직전~직후 밖으로 나가야 걷힌다(state.evPin).
+  // (걸친 시점에는 전후의 화석이 섞인다). 편 사건들의 직전~직후 안에 있는 동안 책갈피가 남고, 밖으로 나가면 걷힌다(state.evSel).
+  // 표식은 멸종이면 폭발, 기후·해양 사건(type climate)이면 마름모 — 멸종이 아닌 사건에 폭발은 맞지 않는다(018).
   // 지도 앞의 사건(Kotlin crisis, ~550 Ma)은 막대 왼쪽 끝 밖에 표식, 가장 오래된 지도에 책갈피.
   function evAge(e) {
     if (e.old === e.young) return e.age + " Ma";
@@ -2145,7 +2149,28 @@
     state.events.forEach(function (e) { out.push(e); (e.pulses || []).forEach(function (p) { p.parent = e; out.push(p); }); });
     return out;
   }
-  function evGo(e, j) { stopTour(); state.evPin = e.id; show(j); }
+  // span — 고른 단위의 범위[young, old]. 단위 안을 돌아다니는 동안에도 책갈피를 남긴다
+  function evSelect(list, span) {
+    if (!list.length) { state.evSel = null; return; }
+    var lo = span ? span[0] : Infinity, hi = span ? span[1] : -Infinity;
+    list.forEach(function (e) {
+      var fr = evFrames(e);
+      hi = Math.max(hi, fr.before === null ? e.old : state.frames[fr.before].age);
+      lo = Math.min(lo, fr.after === null ? e.young : state.frames[fr.after].age);
+    });
+    state.evSel = { list: list, lo: lo, hi: hi };
+  }
+  function evGo(e, j) {
+    stopTour();
+    if (!state.evSel || state.evSel.list.indexOf(e) < 0) evSelect([e]);
+    show(j);
+  }
+  // 단위 안의 사건 — 박동은 그 단위 안에서 끝나는 것(경계의 대멸종은 경계 아래 단위), 기간은 단위와 겹치는 것
+  function evInUnitAll(u) {
+    return evAll().filter(function (e) {
+      return e.kind === "interval" ? e.old > u.top && e.young < u.base : e.old >= u.top && e.young < u.base;
+    });
+  }
   function initEvents(list) {
     state.events = list;
     var row = $("strip-events");
@@ -2158,9 +2183,9 @@
         mark.style.left = ((OLDEST - e.old) / OLDEST * 100) + "%";
         mark.style.width = ((e.old - e.young) / OLDEST * 100) + "%";
       } else {
-        mark.className = "ev-mark t" + e.tier + (e.outside ? " outside" : "");
+        mark.className = "ev-mark t" + e.tier + " " + e.type + (e.outside ? " outside" : "");
         mark.style.left = e.outside ? "0" : ((OLDEST - e.age) / OLDEST * 100) + "%";
-        mark.textContent = e.outside ? "◂" : "▼";
+        if (e.outside) mark.textContent = "◂";
       }
       mark.addEventListener("click", function () { evGo(e, e.outside ? evNearest({ age: OLDEST }) : evNearest(e)); });
       row.appendChild(mark);
@@ -2168,38 +2193,31 @@
   }
   // 층서표 칩의 리본 — 그 단위 안에서 끝나는 사건(경계의 대멸종은 경계 아래 단위: 페름기 말 → 페름기·창싱절)
   function evInUnit(u) {
-    return evAll().filter(function (e) { return e.kind === "pulse" && !e.outside && e.old >= u.top && e.young < u.base; });
+    return evAll().filter(function (e) { return e.kind === "pulse" && e.old >= u.top && e.young < u.base; });
   }
   function ribbonChip(b, u) {
     if (u.rank === "era") return;                 // 대는 거의 다 걸려 리본이 뜻이 없다 — 기·세·절에만
     var evs = evInUnit(u);
     if (!evs.length) return;
-    var top = Math.min.apply(null, evs.map(function (e) { return e.tier; }));
-    b.classList.add("marked", "mt" + top);
+    var lead = evs.slice().sort(function (a, c) { return a.tier - c.tier || (a.type === "climate") - (c.type === "climate"); })[0];
+    b.classList.add("marked", "mt" + lead.tier, "m-" + lead.type);
     b.title += "\n" + evs.map(function (e) { return "▼ " + e.en + " · " + evAge(e); }).join("\n");
   }
   function renderEvents(f) {
     var box = $("bookmarks");
     if (!box) return;
-    var shown = [], pinned = null;
-    evAll().forEach(function (e) {
-      var hit = e.outside ? f.age >= OLDEST : inWin(f, e.old, e.young);
-      if (hit) shown.push(e);
-      if (e.id === state.evPin) pinned = e;
-    });
-    // 단추로 옮긴 사건은 직전~직후 안에 있는 동안 남긴다
-    if (pinned && shown.indexOf(pinned) < 0) {
-      var fr = evFrames(pinned), lo = fr.after === null ? -1 : state.frames[fr.after].age,
-          hi = fr.before === null ? Infinity : state.frames[fr.before].age;
-      if (f.age >= lo && f.age <= hi) shown.push(pinned); else state.evPin = null;
-    }
+    var sel = state.evSel;
+    if (sel && (f.age < sel.lo || f.age > sel.hi)) sel = state.evSel = null;   // 편 사건들의 직전~직후 밖 — 걷는다
     box.innerHTML = "";
-    box.hidden = !shown.length;
-    shown.forEach(function (e) { box.appendChild(bookmark(e, f, inWin(f, e.old, e.young) || (e.outside && f.age >= OLDEST))); });
+    box.hidden = !sel;
+    if (!sel) return;
+    sel.list.forEach(function (e) {
+      box.appendChild(bookmark(e, f, e.outside ? f.age >= OLDEST : inWin(f, e.old, e.young)));
+    });
   }
   function bookmark(e, f, during) {
     var el = document.createElement("div");
-    el.className = "bookmark t" + e.tier + (during ? "" : " away");
+    el.className = "bookmark t" + e.tier + " " + e.type + (during ? "" : " away");
     el.title = e.refs.join("; ");
     var html = '<div class="ribbon"><span class="ev-name">' + esc(e.en) + '</span> <span class="ev-age">' + evAge(e) +
       (e.outside ? " · " + tr("ev.outside") : "") + "</span></div>";

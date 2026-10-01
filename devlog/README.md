@@ -95,3 +95,4 @@
 | tupandactyl P01 | 2026-10-01 | [지구사 사건(대멸종·전 지구 사건)을 시점에 넣는다 — 계획](20261001_tupandactyl_P01_earth_events.md) |
 | tupandactyl 016 | 2026-10-01 | [지구사 사건을 시점 막대·패널·산출 막대에](20261001_tupandactyl_016_earth_events.md) |
 | tupandactyl 017 | 2026-10-01 | [지구사 사건을 층서표의 책갈피로](20261001_tupandactyl_017_event_bookmarks.md) |
+| tupandactyl 018 | 2026-10-01 | [책갈피는 고를 때만, 멸종은 폭발·기후 사건은 마름모](20261001_tupandactyl_018_event_marks.md) |

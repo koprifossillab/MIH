@@ -10,6 +10,9 @@
   나누지 않고 풀이에 적는다 — 지도에서 구분되지 않는다
 - **interval(기간)** — 창보다 길다. 시점 막대 위 띠, 그 안의 박동을 `pulses` 로. 지금은 데본기 후기 위기 하나
 
+갈래(type): 적지 않으면 멸종(extinction), 기후·해양 사건은 climate — Carnian Pluvial·Toarcian OAE·OAE2·PETM·EOT. 뷰어는 멸종을
+폭발 모양으로, 기후·해양 사건을 마름모로 그린다(연구자, tupandactyl 018 — 멸종이 아닌 사건에 폭발은 맞지 않는다).
+
 등급: 1 = 대멸종 다섯(Big Five), 2 = Sinsk·토아르시움 규모의 전 지구 사건. **이름은 모두 영어로만, 풀이는 적지 않는다** — 중규모 사건은
 마땅한 공식 번역이 없고 음차도 곤란하며, 화면에는 이름과 나이만 있으면 된다(연구자, tupandactyl 017). 근거 문헌(refs)은 남긴다.
 
@@ -47,19 +50,19 @@ EVENTS = [
          refs=["Wignall et al. 2009, Science 324:1179–1182", "Bond et al. 2010, Palaeogeogr. Palaeoclimatol. Palaeoecol. 292:282–294"]),
     dict(id="epme", tier=1, kind="pulse", en="End-Permian mass extinction", boundary=("Induan",),
          refs=["Burgess et al. 2014, PNAS 111:3316–3321", "Stanley 2016, PNAS 113:E6325–E6334"]),
-    dict(id="cpe", tier=2, kind="pulse", en="Carnian Pluvial Episode", age=233.0, unc=1.0,
+    dict(id="cpe", tier=2, kind="pulse", type="climate", en="Carnian Pluvial Episode", age=233.0, unc=1.0,
          refs=["Dal Corso et al. 2020, Sci. Adv. 6:eaba0099"]),
     dict(id="ete", tier=1, kind="pulse", en="End-Triassic mass extinction", boundary=("Hettangian",),
          refs=["Blackburn et al. 2013, Science 340:941–945"]),
-    dict(id="toae", tier=2, kind="pulse", en="Toarcian Oceanic Anoxic Event", age=183.0, unc=0.5,
+    dict(id="toae", tier=2, kind="pulse", type="climate", en="Toarcian Oceanic Anoxic Event", age=183.0, unc=0.5,
          refs=["Jenkyns 1988, Am. J. Sci. 288:101–151", "Jenkyns 2010, Geochem. Geophys. Geosyst. 11:Q03004"]),
-    dict(id="oae2", tier=2, kind="pulse", en="Oceanic Anoxic Event 2 (Cenomanian–Turonian)", boundary=("Turonian",),
+    dict(id="oae2", tier=2, kind="pulse", type="climate", en="Oceanic Anoxic Event 2 (Cenomanian–Turonian)", boundary=("Turonian",),
          refs=["Jenkyns 2010, Geochem. Geophys. Geosyst. 11:Q03004"]),
     dict(id="kpg", tier=1, kind="pulse", en="End-Cretaceous (K–Pg) mass extinction", boundary=("Danian",),
          refs=["Schulte et al. 2010, Science 327:1214–1218"]),
-    dict(id="petm", tier=2, kind="pulse", en="Paleocene–Eocene Thermal Maximum (PETM)", boundary=("Ypresian",),
+    dict(id="petm", tier=2, kind="pulse", type="climate", en="Paleocene–Eocene Thermal Maximum (PETM)", boundary=("Ypresian",),
          refs=["McInerney & Wing 2011, Annu. Rev. Earth Planet. Sci. 39:489–516"]),
-    dict(id="eot", tier=2, kind="pulse", en="Eocene–Oligocene Transition", boundary=("Rupelian",),
+    dict(id="eot", tier=2, kind="pulse", type="climate", en="Eocene–Oligocene Transition", boundary=("Rupelian",),
          refs=["Coxall et al. 2005, Nature 433:53–57", "Hutchinson et al. 2021, Clim. Past 17:269–315"]),
 ]
 
@@ -67,6 +70,7 @@ EVENTS = [
 def _resolve(ev, base_of):
     """나이를 숫자로 — boundary 는 그 절의 하한(ICS 2024). 둘이면 (오래된 경계, 젊은 경계) 의 범위."""
     out = {k: v for k, v in ev.items() if k not in ("boundary", "pulses")}
+    out.setdefault("type", "extinction")
     if "boundary" in ev:
         ages = [base_of[name] for name in ev["boundary"]]
         out["old"], out["young"] = max(ages), min(ages)
