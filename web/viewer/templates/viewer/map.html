@@ -202,6 +202,15 @@
       </section>
 
       <!-- 찾은 분류군의 결과만 — 찾기 칸은 지도 위 찾기 카드에 있다. 찾기 전에는 숨긴다(wetherilli 011) -->
+      <!-- 지층 — 지층을 걸면 그 지층의 정보와 모든 산지의 화석 기록을 계통 나무로(tupandactyl 030) -->
+      <section data-sec="formation" id="formation-sec" hidden>
+        <h2><span data-i18n="formation.sec">지층</span> <small id="formation-title"></small></h2>
+        <dl class="fm-info" id="formation-info"></dl>
+        <h3 class="fm-head"><span data-i18n="formation.fauna">화석 기록</span> <small id="formation-count"></small></h3>
+        <div class="fm-tree" id="formation-tree"></div>
+        <p class="note" id="formation-note"></p>
+      </section>
+
       <section data-sec="taxon" id="taxon-sec" hidden>
         <h2 data-i18n="taxon">분류군 찾기</h2>
         <p class="note" id="taxon-status" aria-live="polite"></p>

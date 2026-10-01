@@ -108,3 +108,4 @@
 | tupandactyl 026 | 2026-10-01 | [같은 이름의 분류군(동명)을 따로 찾는다](20261001_tupandactyl_026_homonyms.md) |
 | tupandactyl 027 | 2026-10-01 | [한글로 안 바뀌던 학명, 최근 찾은 것](20261001_tupandactyl_027_ko_fallback_recent.md) |
 | tupandactyl 028 | 2026-10-01 | [지층으로 찾기](20261001_tupandactyl_028_formation_search.md) |
+| tupandactyl 030 | 2026-10-01 | [지층의 화석 기록을 계통 나무로](20261001_tupandactyl_030_formation_fauna.md) |

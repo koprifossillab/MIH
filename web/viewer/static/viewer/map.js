@@ -2435,6 +2435,7 @@
       state.formation = e.f || null;
       $("formation-chip").hidden = !e.f;
       $("formation-chip-name").textContent = e.f || "";
+      loadFormationFauna();
     }
     if (e.f && !e.t) {
       if ((e.cc || null) !== (state.country || null)) { state.country = e.cc || null; $("country-chip").hidden = !e.cc; $("country-chip-name").textContent = e.cc ? countryName(e.cc) : ""; noteCountry(); }
@@ -3191,6 +3192,7 @@
     state.formation = name || null;
     $("formation-chip").hidden = !name;
     $("formation-chip-name").textContent = name || "";
+    loadFormationFauna();
     if (fromFind && name) { startOverview(); if (state.taxon) searchTaxon(state.taxon); return; }
     if (state.overview) {
       if (!name && !state.taxon && !state.country) { endOverview(); redraw(); return; }
@@ -3199,6 +3201,149 @@
       return;
     }
     if (state.taxon) searchTaxon(state.taxon); else redraw();
+  }
+
+  // ── 지층의 화석 기록(tupandactyl 030) ─────────────────────────────────
+  // 지층을 걸면 패널에 그 지층의 정보(시대·암상·나라·산지·산출 수·층군·부층, PBDB strata/list)와 **모든 산지의 산출을 한데 모은 계통 나무**.
+  // 나무: 문 › 강 › 목 › 과 › 속 › 종(PBDB 산출의 계통 칸, 비어 있으면 건너뛴다). 마디마다 먼저 "미동정 n"(과 이상에서 멈춘 동정 — 계통이
+  // 닿는 가장 깊은 마디에 둔다), 그 밑에 아래 마디를 이름 차례로. 속까지만 정해진 것은 그 속의 "종 미정". 어느 산지에서 나왔는지는 접어 둔다.
+  // 지도의 거르기(시점·퇴적기원·연대 범위)와 상관없이 지층 전체다.
+  var FM_LIMIT = 20000, fmSeq = 0, fmCache = {};
+  var FM_LEVELS = ["phylum", "class", "order", "family"];
+  function clean(v) { return v && !/^NO_/.test(v) ? v : ""; }
+  function loadFormationFauna() {
+    var sec = $("formation-sec"), name = state.formation;
+    sec.hidden = !name;
+    if (!name) return;
+    var seq = ++fmSeq;
+    $("formation-title").textContent = name + " Fm.";
+    $("formation-info").innerHTML = "";
+    $("formation-tree").innerHTML = '<p class="note">' + esc(tr("formation.loading")) + "</p>";
+    $("formation-count").textContent = "";
+    $("formation-note").textContent = "";
+    var q = encodeURIComponent(name);
+    var got = fmCache[name] || (fmCache[name] = Promise.all([
+      getJSON(PBDB + "strata/list.json?name=" + q + "&vocab=pbdb").catch(function () { return {}; }),
+      getJSON(PBDB + "occs/list.json?formation=" + q + "&show=class,coll&vocab=pbdb&limit=" + FM_LIMIT),
+    ]));
+    got.then(function (both) {
+      if (seq !== fmSeq) return;
+      renderFormationInfo(name, both[0].records || []);
+      renderFauna(both[1].records || []);
+    }).catch(function () { if (seq === fmSeq) $("formation-tree").innerHTML = '<p class="note">' + esc(tr("formation.fail")) + "</p>"; });
+  }
+  function renderFormationInfo(name, recs) {
+    var key = formKey(name), mine = recs.filter(function (r) { return formKey(r.formation) === key; });
+    if (!mine.length) return;
+    var main = mine.filter(function (r) { return !r.member; })[0] || mine[0];
+    var old = Math.max.apply(null, mine.map(function (r) { return +r.max_ma || 0; }));
+    var young = Math.min.apply(null, mine.map(function (r) { return +r.min_ma || Infinity; }));
+    var stageName = function (age, older) {
+      var best = null;
+      Object.keys(state.units).forEach(function (id) {
+        var u = state.units[id];
+        if (u.rank === "age" && (older ? age <= u.base && age > u.top : age < u.base && age >= u.top)) best = u;
+      });
+      return best ? best.full : "";
+    };
+    var lithTerms = {};
+    mine.forEach(function (r) {
+      String(r.lithology || "").replace(/"/g, "").split(/[,/]/).forEach(function (t) { t = t.trim(); if (t && t !== "not reported") lithTerms[t] = 1; });
+    });
+    var lith = Object.keys(lithTerms).map(function (t) { return KO && state.lith && state.lith.terms[t] || t; });
+    var groups = mine.map(function (r) { return r.group; }).filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var members = mine.map(function (r) { return r.member; }).filter(Boolean).filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var cc = String(main.cc_list || "").split(",").filter(Boolean).map(function (c) { return countryName(c.trim()); });
+    var colls = mine.reduce(function (a, r) { return a + (+r.n_colls || 0); }, 0), occs = mine.reduce(function (a, r) { return a + (+r.n_occs || 0); }, 0);
+    var row = function (k, v) { return v ? "<dt>" + esc(tr(k)) + "</dt><dd>" + v + "</dd>" : ""; };
+    var a = stageName(old, true), b = stageName(young, false);
+    $("formation-info").innerHTML =
+      row("formation.age", esc(old + "–" + young + " Ma") + (a ? " <small>(" + esc(a) + (b && b !== a ? " – " + esc(b) : "") + ")</small>" : "")) +
+      row("formation.lith", esc(lith.join(", "))) +
+      row("formation.group", esc(groups.join(", "))) +
+      row("formation.members", members.length ? esc(members.slice(0, 12).join(", ")) + (members.length > 12 ? " …" : "") : "") +
+      row("pop.country", esc(cc.join(", "))) +
+      row("formation.size", esc(tr("formation.sizeVal", { colls: fmtNum(colls), occs: fmtNum(occs) })));
+  }
+  function renderFauna(recs) {
+    var root = { name: "", children: {}, indet: {}, nIndet: 0, n: 0, colls: {} };
+    var node = function (parent, name, level) {
+      if (!parent.children[name]) parent.children[name] = { name: name, level: level, children: {}, indet: {}, nIndet: 0, n: 0, colls: {}, sp: 0 };
+      return parent.children[name];
+    };
+    recs.forEach(function (r) {
+      var acc = r.accepted_name || r.identified_name || "?", rank = rankOf(r);
+      var path = [root];
+      FM_LEVELS.forEach(function (lv) {
+        var v = clean(r[lv]);
+        if (v && v !== acc) path.push(node(path[path.length - 1], v, lv));
+      });
+      // PBDB 분류 기준표에 없는 이름(계통 칸이 비었다) — 한 마디에 모은다. 맨 위에 흩어 두면 문과 섞인다
+      if (path.length === 1 && !clean(r.phylum)) path.push(node(root, tr("formation.unplaced"), "unplaced"));
+      var genus = clean(r.genus) || (rank === "genus" || rank === "subgenus" ? acc.split(" ")[0] : rank === "species" ? acc.split(" ")[0] : "");
+      var here;
+      if (genus && (rank === "species" || rank === "subspecies" || rank === "genus" || rank === "subgenus")) {
+        var g = node(path[path.length - 1], genus, "genus");
+        path.push(g);
+        if (rank === "species" || rank === "subspecies") { here = node(g, acc, "species"); path.push(here); }
+        else { g.sp += 1; here = g; }                                   // 종 미정
+      } else {
+        here = path[path.length - 1];                                 // 과 이상 — 닿는 가장 깊은 마디의 미동정
+        here.indet[acc] = (here.indet[acc] || 0) + 1;
+        here.nIndet += 1;
+      }
+      path.forEach(function (p) { p.n += 1; p.colls[r.collection_no] = r.collection_name; });
+      if (here !== path[path.length - 1]) { here.n += 1; here.colls[r.collection_no] = r.collection_name; }
+    });
+    var genera = 0, species = 0;
+    var walk = function (n) { Object.keys(n.children).forEach(function (k) { var c = n.children[k]; if (c.level === "genus") genera += 1; if (c.level === "species") species += 1; walk(c); }); };
+    walk(root);
+    $("formation-count").textContent = tr("formation.count", { occs: fmtNum(recs.length), genera: fmtNum(genera), species: fmtNum(species) });
+    $("formation-note").textContent = (recs.length >= FM_LIMIT ? tr("formation.truncated", { n: fmtNum(FM_LIMIT) }) + " " : "") + tr("formation.about");
+    var box = $("formation-tree");
+    box.innerHTML = "";
+    if (root.nIndet) box.appendChild(indetEl(root));
+    Object.keys(root.children).sort(function (a, b) {                  // 계통 미상은 맨 뒤
+      return (root.children[a].level === "unplaced") - (root.children[b].level === "unplaced") || (a < b ? -1 : 1);
+    }).forEach(function (k) { box.appendChild(faunaEl(root.children[k], true)); });
+    if (!box.dataset.bound) { box.dataset.bound = "1"; bindTaxonLinks(box); }
+  }
+  function collsEl(colls) {
+    var ids = Object.keys(colls);
+    var d = document.createElement("details");
+    d.className = "fm-colls";
+    d.innerHTML = "<summary>" + esc(tr("formation.colls", { n: fmtNum(ids.length) })) + "</summary><ul>" + ids.slice(0, 200).map(function (id) {
+      return '<li><a href="' + PBDB_COLL_PAGE + id + '" target="_blank" rel="noopener">' + esc(colls[id] || id) + "</a></li>";
+    }).join("") + (ids.length > 200 ? "<li>…</li>" : "") + "</ul>";
+    return d;
+  }
+  function indetEl(n) {
+    var d = document.createElement("details");
+    d.className = "fm-indet";
+    d.innerHTML = "<summary>" + esc(tr("formation.indet", { n: fmtNum(n.nIndet) })) + "</summary><ul>" +
+      Object.keys(n.indet).sort().map(function (k) { return "<li>" + esc(k) + " <small>" + fmtNum(n.indet[k]) + "</small></li>"; }).join("") + "</ul>";
+    return d;
+  }
+  function faunaEl(n, open) {
+    var d = document.createElement("details");
+    d.className = "fm-node lv-" + n.level;
+    if (open) d.open = true;
+    var label = n.level === "genus" || n.level === "species" ? taxonLink(n.name, taxonHtml(n.name, n.level)) : '<span class="fm-name">' + esc(n.name) + "</span>";
+    var rankLabel = n.level === "unplaced" ? "" : EN || SCI ? n.level : RANK_KO[n.level] || n.level;
+    d.innerHTML = "<summary>" + label + (rankLabel ? ' <small class="fm-rank">' + esc(rankLabel) + "</small>" : "") + " <small>" + fmtNum(n.n) + "</small></summary>";
+    var body = document.createElement("div");
+    body.className = "fm-body";
+    if (n.nIndet) body.appendChild(indetEl(n));
+    if (n.sp) {
+      var sp = document.createElement("p");
+      sp.className = "fm-sp";
+      sp.textContent = tr("formation.spIndet", { n: fmtNum(n.sp) });
+      body.appendChild(sp);
+    }
+    Object.keys(n.children).sort().forEach(function (k) { body.appendChild(faunaEl(n.children[k], false)); });
+    if (n.level === "genus" || n.level === "species") body.appendChild(collsEl(n.colls));
+    d.appendChild(body);
+    return d;
   }
 
   function noteCountry() {
