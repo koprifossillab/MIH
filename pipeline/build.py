@@ -11,10 +11,11 @@ import json
 from datetime import datetime, timezone
 
 from . import climate, coastlines, countries, fossils, relief, terrain
-from .common import DERIVED, WINDOW_MA, manifest, period
+from .common import DERIVED, EDIACARAN_AGE, PLATE_ONLY_FROM_MA, WINDOW_MA, manifest, period
 from .environments import classify, tree_for_index
 from .intervals import VAGUE_TYPES, load_types, vague_names
 from .timescale import containing, units
+from .events import events_for_index
 
 COASTLINE_REACH_MA = 10.0
 SCHEMA = 2
@@ -55,10 +56,35 @@ def previous_terrains():
             if f.get("terrain") and (DERIVED / f["terrain"]["file"]).is_file()}
 
 
+def frame_entry(entry, terrain, coast, border, temp, found):
+    """index.json 의 시점 하나. 에디아카라기 시점(ediacaran.attach)도 이것으로 만든다."""
+    age = entry["age"]
+    return {
+        "age": age,
+        "label": entry["label"],
+        "period": period(age),
+        "units": [u["id"] for u in containing(age, units())],
+        "relief": entry["file"],
+        "relief_files": entry["files"],
+        "grid": entry["grid"],
+        "land_fraction": entry["land_fraction"],
+        "terrain": terrain,
+        "coastline": {"age": coast["age"], "file": coast["file"]} if coast else None,
+        "borders": border,
+        "climate": temp,
+        "fossils": {"file": found.get("file"), "count": found.get("count", 0),
+                    "vague": found.get("vague", 0), "pbdb_fallback": found.get("pbdb_fallback", 0),
+                    "by_env": found.get("by_env", {})},
+    }
+
+
 def build(skip_relief=False):
     DERIVED.mkdir(parents=True, exist_ok=True)
     print("배경(PaleoDEM)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
     reliefs = previous_reliefs() if skip_relief else relief.build()
+    if not any(e["age"] == EDIACARAN_AGE for e in reliefs):
+        from . import ediacaran                   # 에디아카라기 — 판 복원만으로 그린 배경(019)
+        reliefs = [ediacaran.relief_entry()] + reliefs
     # 지형(지구본의 높이, wetherilli 016)은 배경과 같은 격자에서 굽는다(5 분 남짓). --no-relief 면 지난 것을 둔다
     print("지형(PaleoDEM → 지구본 높이)" + (" — 지난 것을 그대로 쓴다" if skip_relief else ""))
     terrains = previous_terrains() if skip_relief else terrain.build()
@@ -82,30 +108,16 @@ def build(skip_relief=False):
         from . import paleoclim         # numpy·tifffile — 규칙 시험(CI)이 build 를 부르지 않아도 여기서만 부른다
         paleoclim.build()
 
-    scale = units()
     frames = []
     for entry in reliefs:
         age = entry["age"]
-        coast = nearest(coasts, age, COASTLINE_REACH_MA)
-        found = by_age.get(age, {})
-        frames.append({
-            "age": age,
-            "label": entry["label"],
-            "period": period(age),
-            "units": [u["id"] for u in containing(age, scale)],
-            "relief": entry["file"],
-            "relief_files": entry["files"],
-            "grid": entry["grid"],
-            "land_fraction": entry["land_fraction"],
-            "terrain": terrains.get(age),
-            "coastline": {"age": coast["age"], "file": coast["file"]} if coast else None,
-            "borders": borders.get(age),
-            "climate": temps.get(age),
-            "fossils": {"file": found.get("file"), "count": found.get("count", 0),
-                        "vague": found.get("vague", 0), "pbdb_fallback": found.get("pbdb_fallback", 0),
-                        "by_env": found.get("by_env", {})},
-        })
+        plate_only = age >= PLATE_ONLY_FROM_MA          # 에디아카라기(019) — 해안선·기온·지형이 없다. 가까운 것을 끌어오지 않는다
+        coast = None if plate_only else nearest(coasts, age, COASTLINE_REACH_MA)
+        frames.append(frame_entry(entry, terrain=None if plate_only else terrains.get(age), coast=coast,
+                                  border=borders.get(age), temp=None if plate_only else temps.get(age),
+                                  found=by_age.get(age, {})))
 
+    scale = units()
     env_counts = fossil_meta["stats"].pop("environments")
     unlisted = sorted(t for t in env_counts if classify(t)[1] == "o-unlisted")
     if unlisted:
@@ -121,6 +133,7 @@ def build(skip_relief=False):
         "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
                       "units": scale},
         "environments": tree_for_index(env_counts),
+        "events": events_for_index(),           # 대멸종·전 지구 사건(tupandactyl 016) — events.py 한 곳
         "countries": countries.country_list(country_names),
         "pbdb": fossil_meta,
         "sources": [cite("paleodem"), cite("paleocoastlines"), cite("paleotemp"), cite("pbdb"), cite("countries")],

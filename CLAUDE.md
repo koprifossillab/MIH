@@ -50,7 +50,10 @@
   "Early Pleistocene" 은 지도 시점의 창과 길이가 비슷하다(연구자, tupandactyl 008). 신생대의 다른 세는 그대로 모호하다
 - **좌표는 시점마다 계산한다**: 산지의 지금 좌표를 지도 나이로 PALEOMAP v19o(해안선·국경과 같은 모델)로
   돌린다(`pipeline/reconstruct.py`, devlog 017). 그 나이에 판이 없을 때만 PBDB 고좌표(연대 중간값)이고
-  `rotated = 0`. 분류군 찾기 결과는 같은 산지이면 산지 파일의 좌표로 옮긴다. PBDB 가 고좌표를 못 준 산지는 뺀다
+  `rotated = 0`. 분류군 찾기 결과는 같은 산지이면 산지 파일의 좌표로 옮긴다. PBDB 가 고좌표를 못 준 산지는 뺀다 —
+  **에디아카라기 시점(550 Ma)만 예외**로, 판으로 돌릴 수 있으면 올린다(에디아카라기는 PBDB PALEOMAP 고좌표가 거의 없다, tupandactyl 019)
+- **에디아카라기 시점은 판 복원만**이다(`common.EDIACARAN_AGE`, `pipeline/ediacaran.py`) — 배경은 오늘날 육지를 그때 자리로 돌린 것,
+  해안선·기온·지형은 없고 가까운 시점의 것을 끌어오지 않는다
 - **중간값 규칙으로 돌아가지 않는다** — 층서 단계로 매긴 연대의 중간값이 몰려 빈 시점이 생긴다(devlog 001)
 - 퇴적기원(해양·육상·미상)은 `pipeline/environments.py` 가 정한다. 해안·석호는 해양기원, 하구·만은
   육상기원이다(연구자의 판단, devlog 003) — 첫 판의 "어느 쪽으로도 밀지 않는다" 는 버렸다
@@ -66,7 +69,9 @@
 - 층서표는 `pipeline/timescale.py`. **이름은 한글판 v2023/04, 경계 나이는 ICS v2024/12**
   (연구자가 정한 것 — devlog 002). 판을 올릴 때 경계는 2024 이후 판과, 이름은 한글판과 대조한다
 - 퇴적 환경 나무는 `pipeline/environments.py`. 원 용어의 한글은 이 저장소의 풀이다
-- 둘 다 index.json 으로 뷰어에 간다. **map.js 에 층서 이름·경계·환경 목록을 다시 적지 않는다**
+- 지구사 사건(대멸종·전 지구 사건)은 `pipeline/events.py`(tupandactyl P01·016). 경계와 겹치는 나이는 timescale.py 에서 받는다.
+  이름은 모두 영어로만, 풀이 없이 이름·나이·근거만 — 중규모 사건은 공식 번역이 없고 음차도 곤란하다(연구자, tupandactyl 017)
+- 셋 다 index.json 으로 뷰어에 간다. **map.js 에 층서 이름·경계·환경 목록·사건을 다시 적지 않는다**
 - 환경 이름을 화면에서 고치는 기능은 0.18.0 에서 껐다(tupandactyl 002) — 뷰어는 `<STATE_DIR>/labels.json`
   (`viewer/labels.py`)이 있으면 읽어서 입히기만 한다. 그것은 덮어쓰기이고 environments.py 의 기본 이름은 그대로다. **덮어쓰기를 기본 이름으로 옮길 때는
   labels.json 을 보고 environments.py 를 고친 뒤 그 칸을 labels.json 에서 지운다** — 둘 다 두면
