@@ -90,3 +90,4 @@
 | koprifossillab 033 | 2026-09-30 | [PaleoClim 을 받기·가공·주간 점검의 흐름에 넣는다](20260930_koprifossillab_033_paleoclim_in_pipeline.md) |
 | koprifossillab 034 | 2026-09-30 | [/healthz 가 주간 갱신·백업과 지형·PaleoClim 을 본다](20260930_koprifossillab_034_healthz_refresh.md) |
 | tupandactyl 011 | 2026-10-01 | [화면 모드: Scientific(기본)과 Casual](20261001_tupandactyl_011_scientific_mode.md) |
+| tupandactyl 012 | 2026-10-01 | [찾기의 종합 보기, 지도 옮기는 폭, 팝업 자리, 암상](20261001_tupandactyl_012_search_overview.md) |

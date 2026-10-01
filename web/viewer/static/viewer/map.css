@@ -661,3 +661,11 @@ button, input, select { font-family: inherit; }
 .mode-sci .now .age, .mode-sci .thermo-read b { letter-spacing: -.01em; }
 .mode-sci .chrono-row .rank { width: 48px; }
 .mode-sci .env .orig { display: none; }
+
+/* 찾기의 종합 보기(tupandactyl 012) */
+.overview-note:empty { display: none; }
+#app:not(.overview) .overview-note { display: none; }
+.panel .overview-btn { margin: 2px 0 8px; }
+
+/* 아래로 편 팝업 — 꼬리를 위로(tupandactyl 012) */
+.leaflet-popup.below .leaflet-popup-tip-container { top: -20px; transform: rotate(180deg); }

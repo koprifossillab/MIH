@@ -86,9 +86,9 @@ sources/*.json ──fetch──▶ data/sources/ ──build──▶ data/deri
 
 ## PBDB 에 바로 묻는 것
 
-브라우저가 PBDB API 를 곧장 부른다(CORS `*`). 넷이다 — 채집지 산출 목록(`occs/list?coll_id`),
-분류군 찾기(`occs/list?base_name`, 언제나 `pgm=scotese`), 이름 후보(`taxa/auto`·`taxa/list?match_name`),
-찾은 이름의 계급(`taxa/single`). 서버는 PBDB 를 부르지 않는다. 사내망에서 PBDB 가 막히는 일이
+브라우저가 PBDB API 를 곧장 부른다(CORS `*`). 여섯이다 — 채집지 산출 목록(`occs/list?coll_id`), 채집지 암상(`colls/single?show=lith`),
+분류군 찾기(`occs/list?base_name`, 언제나 `pgm=scotese`), 찾기의 종합 보기(`colls/list?base_name|cc` — 오늘날 좌표라 판 모델과 상관없다),
+이름 후보(`taxa/auto`·`taxa/list?match_name`), 찾은 이름의 계급(`taxa/single`). 서버는 PBDB 를 부르지 않는다. 사내망에서 PBDB 가 막히는 일이
 생기면 그때 GSM 처럼 서버에 문(`viewer/pbdb.py`) 하나를 두고 중계한다.
 
 ## 커밋과 PR
