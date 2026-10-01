@@ -50,6 +50,7 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var state = {
+    events: [],          // 지구사 사건(index.json 의 events, tupandactyl 016)
     frames: [], i: 0, taxon: "", playing: null,
     proj: "eq",                             // 투영: eq(정거원통) · moll(몰바이데, 024) · globe(지구본, wetherilli P01)
     units: {}, kids: {}, focus: null,       // 층서표: 고른 단위(없으면 지금 지도의 절)
@@ -901,6 +902,7 @@
     markRecent(f);
     renderHeader(f);
     renderChrono();
+    renderEvents(f);
     writeHash(f);
 
     relief.setUrl(reliefUrl(f));
@@ -1672,6 +1674,17 @@
       bar.addEventListener("click", function () { show(+j); });
       strip.appendChild(bar);
     });
+    // 대멸종 다섯의 세로선 — 찾은 분류군이 대멸종을 넘었는지 한눈에(tupandactyl 016)
+    state.events.forEach(function (e) {
+      [e].concat(e.pulses || []).forEach(function (p) {
+        if (p.tier !== 1 || p.kind !== "pulse" || p.outside) return;
+        var line = document.createElement("i");
+        line.className = "ev-line";
+        line.style.left = ((OLDEST - p.age) / OLDEST * 100) + "%";
+        line.title = evName(p);
+        strip.appendChild(line);
+      });
+    });
   }
 
   function taxonUrl(name, f) {
@@ -2098,6 +2111,103 @@
       if (li) pickSuggest(+li.dataset.k);
     });
     input.addEventListener("blur", function () { setTimeout(closeSuggest, 150); });
+  }
+
+  // ── 지구사 사건(tupandactyl 016) ──────────────────────────────────────
+  // 목록은 index.json 의 events(pipeline/events.py 한 곳). 대멸종 다섯(1 등급)과 Sinsk·토아르시움 규모의 전 지구 사건(2 등급).
+  // 시점 막대 위에 박동은 표식, 기간(데본기 후기 위기)은 띠로. 지금 시점의 창에 걸린 사건은 패널의 카드로 — 직전·직후 시점으로 옮겨
+  // 사건 전후의 산지를 맞대어 본다. 직전은 창이 사건보다 완전히 오래된 마지막 시점, 직후는 완전히 젊은 첫 시점이다(걸친 시점에는
+  // 전후의 화석이 섞인다). 2 등급은 영어 이름뿐이다(연구자). 지도 앞의 사건(Kotlin crisis, ~550 Ma)은 막대 왼쪽 끝 밖에 표식만.
+  function evName(e) { return EN || SCI ? e.en : e.ko; }
+  function evAge(e) {
+    if (e.old === e.young) return e.age + " Ma";
+    if (e.unc) return "~" + e.age + " Ma (±" + e.unc + ")";
+    return e.old + "–" + e.young + " Ma";
+  }
+  function evFrames(e) {
+    var before = null, after = null;
+    state.frames.forEach(function (f, j) {
+      var w = win(f);
+      if (w[0] > e.old && (before === null || f.age < state.frames[before].age)) before = j;
+      if (w[1] < e.young && (after === null || f.age > state.frames[after].age)) after = j;
+    });
+    return { before: before, after: after };
+  }
+  function evNearest(e) {
+    var best = 0;
+    state.frames.forEach(function (f, j) { if (Math.abs(f.age - e.age) < Math.abs(state.frames[best].age - e.age)) best = j; });
+    return best;
+  }
+  function initEvents(list) {
+    state.events = list;
+    var row = $("strip-events");
+    row.hidden = !list.length;
+    list.forEach(function (e) {
+      if (e.kind === "interval") {
+        var band = document.createElement("span");
+        band.className = "ev-band t" + e.tier;
+        band.style.left = ((OLDEST - e.old) / OLDEST * 100) + "%";
+        band.style.width = ((e.old - e.young) / OLDEST * 100) + "%";
+        band.title = evName(e) + " · " + evAge(e);
+        band.addEventListener("click", function () { stopTour(); show(evNearest(e)); });
+        row.appendChild(band);
+      }
+      [e.kind === "pulse" ? e : null].concat(e.pulses || []).forEach(function (p) {
+        if (!p) return;
+        var mark = document.createElement("span");
+        mark.className = "ev-mark t" + p.tier + (p.outside ? " outside" : "");
+        mark.style.left = p.outside ? "0" : ((OLDEST - p.age) / OLDEST * 100) + "%";
+        mark.textContent = p.outside ? "◂" : "▼";
+        mark.title = evName(p) + " · " + evAge(p) + (p.outside ? " · " + tr("ev.outside") : "");
+        mark.addEventListener("click", function () { stopTour(); show(p.outside ? evNearest({ age: OLDEST }) : evNearest(p)); });
+        row.appendChild(mark);
+      });
+    });
+  }
+  function renderEvents(f) {
+    var box = $("events-box"), sec = $("events-sec");
+    if (!box) return;
+    var cards = [];
+    state.events.forEach(function (e) {
+      var pulses = e.pulses || [];
+      var outside = e.outside && f.age >= OLDEST;           // 가장 오래된 지도에서 그 앞의 사건을 알린다
+      if (!outside && !inWin(f, e.old, e.young)) return;
+      cards.push(evCard(e, f, outside));
+      pulses.forEach(function (p) { if (inWin(f, p.old, p.young)) cards.push(evCard(p, f, false, e)); });
+    });
+    sec.hidden = !cards.length;
+    box.innerHTML = "";
+    cards.forEach(function (c) { box.appendChild(c); });
+  }
+  function evCard(e, f, outside, parent) {
+    var el = document.createElement("div");
+    el.className = "ev-card t" + e.tier + (e.kind === "interval" ? " interval" : "");
+    var badge = e.big_five || (e.tier === 1 && e.kind === "pulse") ? tr("ev.bigfive") : e.kind === "interval" ? tr("ev.interval") : tr("ev.global");
+    var other = EN || SCI ? (e.ko !== e.en ? e.ko : "") : (e.ko !== e.en ? e.en : "");
+    var html = '<h3><span class="ev-name">' + esc(evName(e)) + '</span> <span class="ev-badge">' + badge + "</span></h3>" +
+      (other ? '<p class="ev-other">' + esc(other) + "</p>" : "") +
+      '<p class="ev-age">' + evAge(e) + (outside ? " · " + tr("ev.outside") : "") +
+      (parent ? " · " + tr("ev.within", { name: esc(evName(parent)) }) : "") + "</p>" +
+      '<p class="ev-cause">' + esc(e.cause[EN ? "en" : "ko"]) + "</p>";
+    var nav = [];
+    if (!outside) {
+      var fr = evFrames(e), here = state.i;
+      if (fr.before !== null) nav.push('<button type="button" class="tool" data-go="' + fr.before + '"' + (fr.before === here ? " disabled" : "") + ">" +
+        tr(e.kind === "interval" ? "ev.start" : "ev.before", { age: fmtAge(state.frames[fr.before].age) }) + "</button>");
+      if (fr.after !== null) nav.push('<button type="button" class="tool" data-go="' + fr.after + '"' + (fr.after === here ? " disabled" : "") + ">" +
+        tr(e.kind === "interval" ? "ev.end" : "ev.after", { age: fmtAge(state.frames[fr.after].age) }) + "</button>");
+      (e.pulses || []).forEach(function (p) {
+        var j = evNearest(p);
+        nav.push('<button type="button" class="tool ev-pulse" data-go="' + j + '"' + (j === here ? " disabled" : "") + ">" + esc(evName(p)) + " · " + evAge(p) + "</button>");
+      });
+    }
+    if (nav.length) html += '<div class="ev-nav">' + nav.join("") + "</div>";
+    html += '<p class="ev-refs">' + e.refs.map(esc).join("; ") + "</p>";
+    el.innerHTML = html;
+    el.querySelectorAll("[data-go]").forEach(function (b) {
+      b.addEventListener("click", function () { stopTour(); show(+b.dataset.go); });
+    });
+    return el;
   }
 
   // ── 국가 ────────────────────────────────────────────────────────────
@@ -2873,6 +2983,7 @@
       }).join(",") + ")";
       initEnvironments(index.environments || []);
       initCountries(index.countries || []);
+      initEvents(index.events || []);
       if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다
       bind();
       $("proj-seg").hidden = !hasMollweide() && !globe;

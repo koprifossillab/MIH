@@ -3,6 +3,13 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 0.30.0 — 2026-10-01 · `feature/geo-events`
+
+- **지구사 사건** — 대멸종 다섯과 Sinsk·토아르시움 규모의 전 지구 사건 14 건(Kotlin crisis 부터 Eocene–Oligocene Transition 까지).
+  시점 막대 위에 박동은 ▼, 긴 위기(데본기 후기)는 띠. 패널의 "지구사 사건" 카드에 나이·풀이·근거와 직전·직후 시점 단추. 분류군을 찾으면
+  산출 막대에 대멸종 다섯의 세로선. 2 등급 사건은 영어 이름으로만 (tupandactyl P01·016)
+- 목록은 `pipeline/events.py` 한 곳 → index.json 의 `events`. **`python -m pipeline events` 로 지금 목록에 붙인다**(build 도 싣는다)
+
 ## 0.28.1 — 2026-10-01 · `feature/splash-speed`
 
 - **대기 화면을 1.85 배 빠르게** — 끝 모습까지 7.4 초 → 4.2 초. 메달·부제가 떠오르는 전환도 함께 줄였다 (tupandactyl 013)

@@ -66,7 +66,9 @@
 - 층서표는 `pipeline/timescale.py`. **이름은 한글판 v2023/04, 경계 나이는 ICS v2024/12**
   (연구자가 정한 것 — devlog 002). 판을 올릴 때 경계는 2024 이후 판과, 이름은 한글판과 대조한다
 - 퇴적 환경 나무는 `pipeline/environments.py`. 원 용어의 한글은 이 저장소의 풀이다
-- 둘 다 index.json 으로 뷰어에 간다. **map.js 에 층서 이름·경계·환경 목록을 다시 적지 않는다**
+- 지구사 사건(대멸종·전 지구 사건)은 `pipeline/events.py`(tupandactyl P01·016). 경계와 겹치는 나이는 timescale.py 에서 받는다.
+  2 등급(중규모) 사건은 영어 이름으로만 적는다 — 공식 번역이 없고 음차도 곤란하다(연구자)
+- 셋 다 index.json 으로 뷰어에 간다. **map.js 에 층서 이름·경계·환경 목록·사건을 다시 적지 않는다**
 - 환경 이름을 화면에서 고치는 기능은 0.18.0 에서 껐다(tupandactyl 002) — 뷰어는 `<STATE_DIR>/labels.json`
   (`viewer/labels.py`)이 있으면 읽어서 입히기만 한다. 그것은 덮어쓰기이고 environments.py 의 기본 이름은 그대로다. **덮어쓰기를 기본 이름으로 옮길 때는
   labels.json 을 보고 environments.py 를 고친 뒤 그 칸을 labels.json 에서 지운다** — 둘 다 두면

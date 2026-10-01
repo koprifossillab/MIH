@@ -104,6 +104,7 @@
       <div class="strip" id="strip" aria-hidden="true">
         <div class="strip-row named" id="strip-period"></div>
         <div class="strip-row named" id="strip-epoch"></div>
+        <div class="strip-row ev-row" id="strip-events" hidden></div>
       </div>
       <input type="range" id="slider" min="0" max="0" value="0" aria-label="시점" data-i18n-attr="aria-label:slider">
       <div class="strip"><div class="strip-row taxon-row" id="strip-taxon" hidden></div></div>
@@ -156,6 +157,12 @@
           <div class="chrono-row"><span class="rank" data-i18n="rank.age">절</span><div class="chips" data-rank="age"></div></div>
         </div>
         <p class="note" id="chrono-note"></p>
+      </section>
+
+      <!-- 지구사 사건(tupandactyl 016) — 지금 시점의 창에 걸린 대멸종·전 지구 사건. 목록은 index.json 의 events -->
+      <section data-sec="events" id="events-sec" hidden>
+        <h2 data-i18n="events">지구사 사건</h2>
+        <div id="events-box"></div>
       </section>
 
       <section data-sec="fossils">

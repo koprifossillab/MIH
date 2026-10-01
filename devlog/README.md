@@ -92,3 +92,5 @@
 | tupandactyl 011 | 2026-10-01 | [화면 모드: Scientific(기본)과 Casual](20261001_tupandactyl_011_scientific_mode.md) |
 | tupandactyl 012 | 2026-10-01 | [찾기의 종합 보기, 지도 옮기는 폭, 팝업 자리, 암상](20261001_tupandactyl_012_search_overview.md) |
 | tupandactyl 013 | 2026-10-01 | [대기 화면을 빠르게, "느리게 보기"](20261001_tupandactyl_013_splash_speed.md) |
+| tupandactyl P01 | 2026-10-01 | [지구사 사건(대멸종·전 지구 사건)을 시점에 넣는다 — 계획](20261001_tupandactyl_P01_earth_events.md) |
+| tupandactyl 016 | 2026-10-01 | [지구사 사건을 시점 막대·패널·산출 막대에](20261001_tupandactyl_016_earth_events.md) |

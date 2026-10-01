@@ -687,3 +687,30 @@ button, input, select { font-family: inherit; }
 .ovpop details[open] summary { margin-bottom: 2px; }
 .ovpop .taxa { max-height: 150px; }
 .ovpop .ovzoom { margin-top: 4px; }
+
+/* 지구사 사건(tupandactyl 016) — 시점 막대 위 표식·띠, 패널 카드, 산출 막대의 세로선 */
+.strip-row.ev-row { height: 12px; margin-top: 1px; }
+.strip-row.ev-row span:hover { outline: none; }
+.ev-row .ev-band { top: 5px; bottom: 3px; background: rgba(139, 30, 30, .28); border-radius: 2px; }
+.ev-row .ev-mark { top: -1px; bottom: auto; transform: translateX(-50%); font-size: 10px; line-height: 12px; color: rgba(110, 90, 70, .85); z-index: 1; }
+.ev-row .ev-mark.t1 { color: #8b1e1e; font-size: 12px; }
+.ev-row .ev-mark.outside { transform: translateX(-100%); }
+.ev-row .ev-mark:hover { color: var(--accent); }
+.strip-row.taxon-row .ev-line { position: absolute; top: -2px; bottom: 0; width: 0; border-left: 1px dashed #8b1e1e; pointer-events: none; }
+.ev-card { border-left: 3px solid rgba(110, 90, 70, .6); padding: 2px 0 4px 9px; margin: 0 0 10px; }
+.ev-card.t1 { border-left-color: #8b1e1e; }
+.ev-card h3 { margin: 0; font-size: 14px; line-height: 1.35; }
+.ev-card .ev-badge { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.ev-card.t1 .ev-badge { color: #8b1e1e; }
+.ev-card p { margin: 2px 0; }
+.ev-card .ev-other, .ev-card .ev-age, .ev-card .ev-refs { color: var(--muted); font-size: 12px; }
+.ev-card .ev-refs { font-size: 11px; }
+.ev-card .ev-nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0 3px; }
+.ev-card .ev-nav .tool { margin: 0; font-size: 12px; }
+.ev-card .ev-nav .tool:disabled { opacity: .45; cursor: default; }
+:root[data-theme="dark"] .ev-card.t1 { border-left-color: #d06a5a; }
+:root[data-theme="dark"] .ev-card.t1 .ev-badge, :root[data-theme="dark"] .ev-row .ev-mark.t1 { color: #e08a78; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .ev-card.t1 { border-left-color: #d06a5a; }
+  :root:not([data-theme="light"]) .ev-card.t1 .ev-badge, :root:not([data-theme="light"]) .ev-row .ev-mark.t1 { color: #e08a78; }
+}

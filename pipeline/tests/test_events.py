@@ -1,0 +1,46 @@
+"""사건 목록 시험 — 경계 나이를 층서표에서 받는지, 이름·풀이가 빠지지 않았는지, 꼴이 맞는지(tupandactyl 016)."""
+import unittest
+
+from pipeline.events import events_for_index
+from pipeline.timescale import units
+
+
+class EventsTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.events = events_for_index()
+        cls.flat = [e for ev in cls.events for e in [ev] + ev.get("pulses", [])]
+
+    def test_big_five(self):
+        # 대멸종 다섯 — 1 등급 박동. 데본기 후기는 띠(1 등급) 안의 켈바서가 본체다
+        big = [e["id"] for e in self.flat if e["tier"] == 1 and e["kind"] == "pulse"]
+        self.assertEqual(big, ["lome", "kellwasser", "epme", "ete", "kpg"])
+
+    def test_boundary_ages_come_from_timescale(self):
+        base = {u["en"]: u["base"] for u in units() if u["rank"] == "age"}
+        by = {e["id"]: e for e in self.flat}
+        self.assertEqual(by["epme"]["age"], base["Induan"])
+        self.assertEqual(by["kpg"]["age"], base["Danian"])
+        self.assertEqual((by["lome"]["old"], by["lome"]["young"]), (base["Hirnantian"], base["Rhuddanian"]))
+
+    def test_names_and_causes(self):
+        for e in self.flat:
+            self.assertTrue(e["en"] and e["cause"]["ko"] and e["cause"]["en"] and e["refs"], e["id"])
+            if e["tier"] == 2:
+                self.assertEqual(e["ko"], e["en"], e["id"])     # 2 등급은 영어 이름뿐(연구자)
+            self.assertGreaterEqual(e["old"], e["age"])
+            self.assertGreaterEqual(e["age"], e["young"])
+
+    def test_interval_spans_its_pulses(self):
+        dev = next(e for e in self.events if e["kind"] == "interval")
+        self.assertEqual(dev["old"], max(p["old"] for p in dev["pulses"]))
+        self.assertEqual(dev["young"], min(p["young"] for p in dev["pulses"]))
+
+    def test_only_kotlin_is_outside_the_maps(self):
+        self.assertEqual([e["id"] for e in self.flat if e.get("outside")], ["kotlin"])
+        for e in self.flat:
+            self.assertEqual(e["old"] > 542.5, bool(e.get("outside")), e["id"])
+
+
+if __name__ == "__main__":
+    unittest.main()
