@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.31.1` (10-01, PR #1~#35) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `1.0.0` (10-01, PR #1~#42) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
 (CLAUDE.md "커밋과 PR"). **병합 직전에 `deploy/host/premerge.sh <PR>`**(충돌·뒤처짐·판·CI, wetherilli 010).
@@ -17,7 +17,11 @@
 몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
 `build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
 
-**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.31.1`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v1.0.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**연구소 밖**: **https://koprifossillab.github.io/WegenersDream/** — 같은 뷰어의 고정 사본(GitHub Pages, tupandactyl 029). `deploy/static_site.py` 로
+굽고 `.github/workflows/pages.yml` 이 올린다. 자료는 릴리스 `site-data` 의 `wegener-data.tar.gz`(주간 갱신이 덮어쓴다). **저장소 관리자가
+Settings → Pages → Source 를 "GitHub Actions" 로 한 번 켜야 한다** — 10-01 기준 꺼져 있어 v1.0.0 의 배포 단계가 실패했다(굽기까지는 성공).
+켠 뒤 Actions 의 "바깥에서 보는 사이트" 를 한 번 돌린다.
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
 운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
@@ -98,11 +102,11 @@ PALEOMAP 고지리(PaleoDEM 배경·PaleoCoastlines 해안선) 위에 PBDB 채�
 | 에디아카라기 | 오늘날 육지를 PALEOMAP v19o 로 550 Ma 자리까지(판 복원만) | `relief/*/5500.webp` 등 — `pipeline ediacaran` (tupandactyl 019) |
 | 한글 찾기 | PBDB 속·종 이름표(`taxa.csv`)를 node 로 translit.js 에 태워 | `taxa_ko/<첫 글자>.json`(558 파일, 18 MB) — `pipeline taxa_ko` (021) |
 
-**주간 갱신과 0.30·0.31 의 자료** — 사건·에디아카라기 시점·암상 한글·한글 찾기 표는 10-01 에 운영 자료에 명령으로 붙였고
-(`pipeline ediacaran|events|lithology|taxa_ko`), paleoadmin 클론도 같은 날 `f776c9e` 로 pull 했다. 그래서 주간 갱신의 build 가 모두 다시
-만든다 — 이름표(`taxa.csv`)는 `fetch --refresh-pbdb` 가 처음 받고, 한글 찾기 표는 node(paleoserver v18)로 굽는다. **새 파이프라인 코드가
-병합되면** 주간 갱신이 가공 전에 그 클론의 main 을 앞으로만 당긴다(tupandactyl 025) — 당기지 못하면 지금 코드로 가공하고 `/healthz` 의
-refresh 에 적는다. 파이썬 의존성이 바뀐 병합은 사람이 venv 를 맞춘다.
+**주간 갱신** — 가공 전에 paleoadmin 클론의 main 을 앞으로만 당긴다(tupandactyl 025). **다만 그 당기기 코드 자체가 클론에 아직 없다** —
+10-01 기준 클론은 `f776c9e`(0.31.0)라 옛 스크립트가 돈다: 당기지 않고, 점검이 시점 `== 109` 를 요구해 에디아카라기(110) 때문에 **멈춘다**
+(운영은 지난 자료로 돌지만 PBDB 가 갱신되지 않는다). **다음 월요일 전에 paleoadmin 으로 한 번 `git pull`** — 그 뒤로는 스스로 당긴다.
+사건·에디아카라기·암상 한글·한글 찾기 표는 build 가 모두 다시 만든다(한글 찾기 표는 node, 이름표 `taxa.csv` 는 `fetch --refresh-pbdb`).
+갱신은 운영에 옮긴 뒤 바깥 사이트의 자료도 올린다 — paleoadmin 의 gh 가 로그인돼 있을 때만.
 
 `build --no-relief` 는 배경을 다시 그리지 않는다(30 초 남짓). 원본은 `data/sources/`, 매니페스트는 `sources/*.json`.
 Zenodo 것은 SHA-256 으로 고정, PBDB·Natural Earth 는 받은 날의 값을 `receipt.json` 에 남긴다.
@@ -196,3 +200,10 @@ playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPR
 | 0.30.0 | 지구사 사건 14 건(층서표 책갈피·폭발/마름모 표식), 에디아카라기 시점 550 Ma(판 복원만) | tupandactyl P01·016~019 |
 | 0.31.0 | Casual 모드의 한글 — 속·종 학명 음차(translit.js), 연대·암상 한글, 한글로 찾기(미리 음차한 표) | tupandactyl 020·021 |
 | 0.31.1 | 산지 팝업 세로 길이 손잡이(위·아래), 읽는 법에 학명 표기 근거, 다크 모드 Casual 의 한글 본명조 600 | tupandactyl 022·023 |
+| 0.31.2 | 주간 갱신이 main 을 스스로 당기고, 점검이 에디아카라기 시점(110)을 받아들인다 | tupandactyl 025 |
+| 0.32.0 | 분포 분석 — 다양성·고위도 곡선, 비교 분류군 B, 지금 시점 수치, CSV·GeoJSON 내려받기, 잘림 알림 | tupandactyl 024 |
+| 0.32.1 | 같은 이름의 분류군(동명)을 따로 — PBDB 번호로 묻는다 | tupandactyl 026 |
+| 0.32.2 | Casual 학명 한글 보충(동정 계급), 최근 찾은 것 5 개 | tupandactyl 027 |
+| 0.33.0 | 지층으로 찾기 | tupandactyl 028 |
+| 0.34.0 | 지층의 화석 기록 계통 나무 | tupandactyl 030 |
+| 1.0.0 | 첫 정식판 — 연구소 밖에서 보는 사이트(GitHub Pages) | tupandactyl 029 |
