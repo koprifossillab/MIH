@@ -10,7 +10,7 @@
 import json
 from datetime import datetime, timezone
 
-from . import climate, coastlines, countries, fossils, relief, terrain
+from . import climate, coastlines, countries, fossils, lithology, relief, terrain
 from .common import DERIVED, WINDOW_MA, manifest, period
 from .environments import classify, tree_for_index
 from .intervals import VAGUE_TYPES, load_types, vague_names
@@ -121,6 +121,7 @@ def build(skip_relief=False):
         "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
                       "units": scale},
         "environments": tree_for_index(env_counts),
+        "lithology": lithology.for_index(),     # 암상 용어의 한글(tupandactyl 020) — lithology.py 한 곳
         "countries": countries.country_list(country_names),
         "pbdb": fossil_meta,
         "sources": [cite("paleodem"), cite("paleocoastlines"), cite("paleotemp"), cite("pbdb"), cite("countries")],

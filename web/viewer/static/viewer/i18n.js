@@ -53,6 +53,7 @@
     "ovtip.more": ["누르면 산지 목록", "Click for the list"],
     "ovtip.occs": ["산출 {n}건 — 누르면 목록", "{n} occurrences — click for the list"],
     "ovtip.loading": ["산출을 PBDB 에서 읽는 중…", "Reading occurrences from PBDB…"],
+    "suggest.alias": ["관용 표기 ‘{name}’", "common name ‘{name}’"],
     "ovpop.title": ["산지 {n}곳", "{n} localities"],
     "ovpop.where": ["{old}–{young} Ma · 오늘날 자리(0.25° 칸)", "{old}–{young} Ma · present-day position (0.25° cell)"],
     "ovpop.now": ["지금 좌표", "Present coords"],

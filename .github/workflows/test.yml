@@ -35,6 +35,10 @@ jobs:
       - name: 파이프라인 규칙 시험
         run: python -m unittest discover -s pipeline/tests -t . -v
 
+      # 학명 음차(translit.js) — 연구자가 준 예시가 그대로 나오는지(tupandactyl 020). 러너에 node 가 있다
+      - name: 학명 음차 시험
+        run: node web/viewer/jstest/translit.test.js
+
       - name: collectstatic
         run: python web/manage.py collectstatic --noinput
         env:
