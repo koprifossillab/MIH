@@ -10,6 +10,8 @@
   var app = document.getElementById("app");
   // 화면 문구(027) — i18n.js. `t` 는 이 파일에서 지역 이름으로 흔히 써서 `tr` 로 받는다.
   var I18N = window.WegenerI18n, tr = I18N.t, EN = I18N.lang === "en";
+  // Scientific 모드(tupandactyl 011) — 층서·퇴적 환경·분류 계급을 영문으로. 한국어판에서만 뜻이 있다(영어판은 이미 영문)
+  var SCI = I18N.mode === "sci" && !EN;
   I18N.apply();
   var DATA = app.dataset.dataBase.replace(/x$/, "");
   var LABELS_URL = app.dataset.labelsUrl;
@@ -523,7 +525,7 @@
       proj = "&proj=globe" + (v ? "&lon=" + v.lon.toFixed(1) + "&lat=" + v.lat.toFixed(1) + "&alt=" + Math.round(v.alt / 1000) : "");
     }
     try {
-      history.replaceState(null, "", "#age=" + f.age + proj + (EN ? "&lang=en" : ""));
+      history.replaceState(null, "", "#age=" + f.age + proj + (EN ? "&lang=en" : "") + (I18N.mode === "casual" ? "&mode=casual" : ""));
     } catch (e) { /* 미리보기 등 */ }
   }
   // 이음매에 따라 끊는 선들을 다시 긋는다 — 해안선·국경·경위선
@@ -722,7 +724,7 @@
         b.classList.toggle("light-ink", ink(u.color) === "#ffffff");   // 흰 글자 — 짙은 그림자를 준다(CSS)
         b.textContent = chipName(u);
         if (n) b.insertAdjacentHTML("beforeend", '<span class="cnt">' + fmtNum(n) + "</span>");
-        b.title = u.full + (EN ? "" : " · " + u.en) + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? tr("chip.now") : "") +
+        b.title = u.full + (EN ? "" : " · " + (SCI ? u.kn : u.en)) + " · " + u.base + "–" + u.top + " Ma" + (here[u.id] ? tr("chip.now") : "") +
           (n !== null ? tr("chip.taxon", { taxon: state.taxon, n: fmtNum(n) }) : "");
         b.addEventListener("click", function () { focusUnit(u); });
         box.appendChild(b);
@@ -871,7 +873,7 @@
       b.type = "button"; b.className = "rchip"; b.dataset.age = f.age;
       b.style.backgroundColor = u.color; b.style.color = ink(u.color);
       b.textContent = /^(전기|중기|후기)$/.test(u.ko) ? u.full : chipName(u);   // "후기" 만으로는 무엇의 후기인지 모른다
-      b.title = u.full + (EN ? "" : " · " + u.en) + " · " + u.base + "–" + u.top + " Ma";
+      b.title = u.full + (EN ? "" : " · " + (SCI ? u.kn : u.en)) + " · " + u.base + "–" + u.top + " Ma";
       b.addEventListener("click", function () { stopTour(); show(state.frames.indexOf(f)); });
       box.appendChild(b);
     });
@@ -941,7 +943,7 @@
     box.innerHTML = "";
     tree.forEach(function (top) {
       state.topColor[top.id] = top.color || UNKNOWN_COLOR;
-      var topEl = node("top", top.id, top.id, top.ko, top.en, swatch(top.color));
+      var topEl = node("top", top.id, top.id, top.ko, top.en, swatch(top.color), top.kn);
       // 처음에는 해양·육상·미상기원만 보이게 모두 접어 둔다(tupandactyl 002) — 전에는 환경군까지 펼쳐 두어
       // 패널이 길었다. ▸ 로 펼친다. 원 용어(셋째 단계)도 접어 둔다.
       var groupsEl = document.createElement("div");
@@ -951,12 +953,12 @@
         var terms = g.id === "o-unlisted" ? [UNLISTED] : g.terms.map(function (t) { return t.term; });
         terms.forEach(function (t) { state.termTop[t] = top.id; state.termGroup[t] = g.id; state.enabled[t] = true; });
         state.groupColor[g.id] = g.color || UNKNOWN_COLOR;
-        var gEl = node("group", g.id, g.id, g.ko, g.en, swatch(g.color));
+        var gEl = node("group", g.id, g.id, g.ko, g.en, swatch(g.color), g.kn);
         var termsEl = document.createElement("div");
         termsEl.className = "kids";
         termsEl.hidden = true;
         g.terms.forEach(function (t) {
-          termsEl.appendChild(node("term", t.term, "term:" + t.term, t.ko, t.term, ""));
+          termsEl.appendChild(node("term", t.term, "term:" + t.term, t.ko, t.term, "", t.kn));
         });
         if (termsEl.children.length > 1) wireToggle(gEl, termsEl);
         gEl.appendChild(termsEl);
@@ -986,13 +988,14 @@
   }
 
   // 한 칸: [펼침] [체크 · 한글 이름 · 원 용어(반투명)] [수]. 이름은 덮어쓰기 표를 거쳐 적는다.
-  function node(level, id, labelId, ko, original, prefix) {
+  // tip: Scientific 모드에서 영문 이름에 마우스를 올리면 보이는 한글 이름
+  function node(level, id, labelId, ko, original, prefix, tip) {
     var el = document.createElement("div");
     el.className = "env " + level;
     el.dataset.id = id;
     el.innerHTML = '<div class="row"><button type="button" class="tog" aria-label="' + tr("tog.open") + '" hidden>▸</button>' +
       '<label><input type="checkbox" data-level="' + level + '" data-id="' + esc(id) + '"> ' + prefix +
-      ' <span class="name" data-label="' + esc(labelId) + '" data-default="' + esc(ko) + '">' + esc(ko) + "</span>" +
+      ' <span class="name" data-label="' + esc(labelId) + '" data-default="' + esc(ko) + '"' + (SCI && tip && tip !== ko ? ' title="' + esc(tip) + '"' : "") + ">" + esc(ko) + "</span>" +
       (original && original !== ko ? ' <span class="orig">' + esc(original) + "</span>" : "") + "</label>" +
       '<small class="n" data-count="' + level + ":" + esc(id) + '"></small></div>';
     return el;
@@ -1011,7 +1014,7 @@
       var custom = state.labels.env[span.dataset.label];
       span.textContent = custom || span.dataset.default;
       span.classList.toggle("custom", !!custom);
-      span.title = custom ? "고친 이름 · 기본: " + span.dataset.default : "";
+      if (custom) span.title = "고친 이름 · 기본: " + span.dataset.default;   // 아니면 두어 Scientific 의 한글 이름(tip)을 지우지 않는다
     });
   }
 
@@ -1708,7 +1711,7 @@
     "unranked clade": "분기군", informal: "비공식",
   };
   // 영어판은 PBDB 계급 이름 그대로 — 숫자 계급(taxa/auto)만 이름으로 바꾼다
-  if (EN) {
+  if (EN || SCI) {
     var RANK_NO = { 2: "subspecies", 3: "species", 4: "subgenus", 5: "genus", 6: "subtribe", 7: "tribe", 8: "subfamily",
       9: "family", 10: "superfamily", 11: "infraorder", 12: "suborder", 13: "order", 14: "superorder", 15: "infraclass",
       16: "subclass", 17: "class", 18: "superclass", 19: "subphylum", 20: "phylum", 21: "superphylum", 22: "subkingdom",
@@ -2404,7 +2407,7 @@
 
   // 밑 띠 — 밝은 바탕에 짙은 글씨로 고정한다(어두운 모드에서 받아도 인쇄·슬라이드에 그대로 쓰게)
   function drawExportStrip(ctx, f, W, H, STRIP) {
-    var FONT = '"Spectral", "Noto Serif KR", Georgia, serif';   // 화면과 같은 본문 글씨체(tupandactyl 006)
+    var FONT = getComputedStyle(document.body).fontFamily;   // 화면과 같은 본문 글씨체 — 모드에 따라 다르다(tupandactyl 006·011)
     ctx.fillStyle = "#fffdf8";
     ctx.fillRect(0, H, W, STRIP);
     ctx.fillStyle = "#d8d2c4";
@@ -2568,6 +2571,24 @@
   // 영어판: 자료의 이름 칸(ko)을 영어로 바꿔 끼운다 — 이름을 쓰는 곳(칩·머리말·환경 나무·팝업·범례·국가)을
   // 고치지 않아도 되게. 환경 용어는 PBDB 원 용어가 영어 이름이다. 국가의 한글 이름은 찾기에 남긴다.
   function localizeIndex(index) {
+    // 한글 이름은 kn 칸에 남긴다 — Scientific 모드에서 마우스를 올리면 보인다
+    ((index.timescale || {}).units || []).forEach(function (u) { u.kn = u.full; });
+    (index.environments || []).forEach(function (top) {
+      top.kn = top.ko;
+      top.groups.forEach(function (g) { g.kn = g.ko; g.terms.forEach(function (term) { term.kn = term.ko; }); });
+    });
+    if (SCI) {
+      // 전문용어만 영문으로 — 층서 단위와 퇴적 환경. 나라 이름과 화면 문구는 한국어 그대로
+      ((index.timescale || {}).units || []).forEach(function (u) { if (u.en) { u.ko = u.en; u.full = u.en; } });
+      (index.environments || []).forEach(function (top) {
+        if (top.en) top.ko = top.en;
+        top.groups.forEach(function (g) {
+          if (g.en) g.ko = g.en;
+          g.terms.forEach(function (term) { if (term.term) term.ko = term.term; });
+        });
+      });
+      return;
+    }
     if (!EN) return;
     ((index.timescale || {}).units || []).forEach(function (u) { if (u.en) { u.ko = u.en; u.full = u.en; } });
     (index.environments || []).forEach(function (top) {
@@ -2654,6 +2675,8 @@
     var hash = location.hash;
     var langWanted = (hash.match(/lang=(ko|en)/) || [])[1];
     if (!initial && langWanted && langWanted !== I18N.lang) { location.reload(); return; }   // 언어는 다시 불러와야 바뀐다
+    var modeWanted = /mode=casual/.test(hash) ? "casual" : "sci";
+    if (!initial && /mode=/.test(hash) && modeWanted !== I18N.mode) { location.reload(); return; }   // 모드도
     var wanted = parseFloat((hash.match(/age=([\d.]+)/) || [])[1]);
     var lonWanted = parseFloat((hash.match(/lon=(-?[\d.]+)/) || [])[1]);
     var latWanted = parseFloat((hash.match(/lat=(-?[\d.]+)/) || [])[1]);
@@ -2680,6 +2703,20 @@
     b.addEventListener("click", function () { I18N.setLang(b.dataset.lang); });
   });
   document.documentElement.classList.remove("i18n-pending");
+
+  // ── 화면 모드(tupandactyl 011) ───────────────────────────────────────
+  document.querySelectorAll(".mode [data-mode-pick]").forEach(function (b) {
+    b.setAttribute("aria-pressed", String(b.dataset.modePick === I18N.mode));
+    b.addEventListener("click", function () { I18N.setMode(b.dataset.modePick); });
+  });
+  // 층서표 줄머리(대·기·세·절)도 전문용어 — Scientific 에서는 영문
+  if (SCI) {
+    var RANK_EN = { era: "Era", period: "Period", epoch: "Epoch", age: "Age" };
+    document.querySelectorAll(".chrono-row").forEach(function (row) {
+      var r = row.querySelector(".chips").dataset.rank, cell = row.querySelector(".rank");
+      if (RANK_EN[r]) { cell.title = cell.textContent; cell.textContent = RANK_EN[r]; }
+    });
+  }
 
   // ── 머리말 엠블럼(tupandactyl 007) ─────────────────────────────────
   // 대기 화면의 끝 모습 — 베게너 초상 메달을 메소사우루스가 두르고 그 몸에 뼈대가 드러난 것. 가죽 머리말 위라 몸은 금박,

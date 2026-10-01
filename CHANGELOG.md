@@ -3,6 +3,15 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
+## 0.27.0 — 2026-10-01 · `feature/scientific-mode`
+
+- **화면 모드 두 가지 — Scientific(기본)·Casual** — ⚙ 설정 · 자료의 "화면 모드" 에서 고르고 브라우저에 기억한다. Casual 은 주소에
+  `&mode=casual` 이 붙는다. 화면 결(가죽·양피지·원목)과 대기 화면은 두 모드가 같다 (tupandactyl 011)
+- **Scientific**: 글씨체 **Pretendard**(한글·라틴 한 가족, OFL — 저장소에 담았다), **층서 단위·퇴적 환경·분류 계급·층서표 줄머리를
+  영문으로**(한글 이름은 마우스를 올리면). 나라 이름과 화면 문구는 한국어 그대로 (tupandactyl 011)
+- **Casual**: 0.26 까지의 화면 — 본명조 + Spectral, 한글 용어
+- 가공물은 다시 만들 필요 없다
+
 ## 0.26.1 — 2026-09-30 · `feature/healthz-refresh`
 
 - **`/healthz` 가 주간 갱신·백업을 본다** — `refresh`(마지막 결과), 그리고 지형·PaleoClim 파일(`missing_terrain`·`paleoclim`).
