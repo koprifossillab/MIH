@@ -1,6 +1,7 @@
 /* 대기 화면(tupandactyl 005) — 빈티지 종이 위의 베게너 초상 메달, 파이프 연기, 헤엄쳐 와 메달을 두르는 메소사우루스,
  * 펜으로 쓰듯 나타나는 제목. 지도(map.js)는 첫 배경이 그려지면 WegenerSplash.ready() 를 부른다 — 움직임이 끝났으면
- * 곧 걷고, 아직이면 끝난 뒤에 걷는다. 누르거나 Esc·Enter·Space 로 건너뛴다. 화면 움직임 줄이기를 켠 사람에게는
+ * 곧 걷고, 아직이면 끝난 뒤에 걷는다. 누르거나 Esc·Enter·Space 로 건너뛴다. 오른쪽 위 "느리게 보기" 는 0.27 까지의
+ * 빠르기로 되돌리고 브라우저에 기억한다(tupandactyl 013). 화면 움직임 줄이기를 켠 사람에게는
  * 끝 모습(두른 메소사우루스·제목)만 보인다.
  *
  * 메달을 두른 뒤에는 검은 몸 속에 흰 뼈대가 머리부터 꼬리 쪽으로 떠오른다(화석이 되듯).
@@ -23,7 +24,11 @@
   var W = 0, H = 0, dpr = 1, C = [0, 0], Rm = 0, ring = null, path = null;
 
   // 시간표(초) — 연기를 뱉는 순간 메소사우루스가 들어온다
-  var SPEED = 1.3;                                // 모든 움직임을 이만큼 빨리(연구자 — 시간표는 그대로 두고 시계만 빠르게)
+  // 모든 움직임을 이만큼 빨리(연구자 — 시간표는 그대로 두고 시계만 빠르게). 0.27 까지 1.3, 이제 그 1.85 배(연구자: 1.7–2 배).
+  // "느리게 보기" 를 켜면 옛 빠르기
+  var FAST = 2.4, SLOW = 1.3, SLOW_KEY = "wegener.splashSlow", slow = false;
+  try { slow = localStorage.getItem(SLOW_KEY) === "1"; } catch (e) {}
+  var SPEED = slow ? SLOW : FAST;
   var T_ENTER = .15, T_SWIM = 6.6, T_WRITE = 2.4, T_BONES = 2.0;   // 들어오자마자 헤엄치기 시작한다(연구자)
   // 메달을 두르고 T_AFTER 뒤에 뼈대가 떠오르기 시작하고, 같은 순간 펜이 제목을 쓰기 시작한다(연구자: 둘의 시작을 맞춘다)
   var T_AFTER = .3, T_SEATED = T_ENTER + T_SWIM, T_DONE = T_SEATED + T_AFTER + Math.max(T_WRITE, T_BONES);
@@ -275,6 +280,20 @@
     if (mapReady) maybeClose();
   }
 
+  // 빠르기를 바꿔도 움직임이 튀지 않게 — 지금까지 흐른 시계(last)를 새 빠르기로 다시 맞춘다
+  var slowBtn = box.querySelector(".splash-slow");
+  function setSlow(on) {
+    slow = on;
+    var next = on ? SLOW : FAST;
+    if (t0) t0 = performance.now() - last / next * 1000;
+    SPEED = next;
+    box.classList.toggle("slow", on);
+    if (slowBtn) slowBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    try { if (on) localStorage.setItem(SLOW_KEY, "1"); else localStorage.removeItem(SLOW_KEY); } catch (e) {}
+  }
+  setSlow(slow);
+  if (slowBtn) slowBtn.addEventListener("click", function () { setSlow(!slow); });
+
   function start() {
     layout();
     t0 = performance.now(); last = 0;
@@ -282,6 +301,7 @@
   }
   box.addEventListener("click", function (e) { if (!e.target.closest("button")) skip(); });
   document.addEventListener("keydown", function (e) {
+    if (e.target === slowBtn) return;                                        // 단추 위의 Space·Enter 는 단추를 누른 것
     if (!closed && (e.key === "Escape" || e.key === "Enter" || e.key === " ")) skip();
   });
   window.addEventListener("resize", function () { if (!closed) layout(); });

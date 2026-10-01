@@ -404,7 +404,17 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0; cur
 #splash-retry { margin-top: 12px; border: 1px solid var(--sink); background: var(--sink); color: var(--paper); border-radius: 3px; padding: 5px 16px; cursor: pointer;
   font: 14px "Spectral", "Noto Serif KR", Georgia, serif; letter-spacing: .06em; }
 @media (max-width: 560px) { .splash-head { left: 9%; right: 5%; letter-spacing: .16em; } .splash-foot { left: 9%; right: 5%; } }
-@media (prefers-reduced-motion: reduce) { .splash-medal, .splash-sub { transition: none; } }
+/* 빠르기(tupandactyl 013) — 기본은 빠르게, CSS 의 전환도 줄인다. "느리게 보기"(.slow)는 0.27 까지의 전환 */
+.splash:not(.slow) .splash-medal { transition: opacity .55s ease, transform .8s ease; }
+.splash:not(.slow) .splash-sub { transition: opacity .7s ease .5s; }
+.splash-slow { position: absolute; bottom: 14px; right: 16px; z-index: 2; padding: 2px 10px; border: 1px solid rgba(59, 42, 26, .35); border-radius: 999px;
+  background: rgba(239, 228, 204, .7); color: rgba(59, 42, 26, .78); font: italic 12px/1.6 "Spectral", "Noto Serif KR", Georgia, serif;
+  letter-spacing: .04em; cursor: pointer; }
+.splash-slow:hover { border-color: rgba(59, 42, 26, .6); color: var(--sink); }
+.splash-slow[aria-pressed="true"] { background: rgba(59, 42, 26, .82); border-color: transparent; color: var(--paper); font-style: normal; }
+.splash-slow[aria-pressed="true"]::before { content: "✓ "; }
+@media (max-width: 640px) { .splash-foot { bottom: 46px; } }       /* 좁은 화면에서는 도판 설명을 단추 위로 */
+@media (prefers-reduced-motion: reduce) { .splash-medal, .splash-sub, .splash:not(.slow) .splash-medal, .splash:not(.slow) .splash-sub { transition: none; } .splash-slow { display: none; } }
 
 .empty {
   position: fixed; inset: 0; display: grid; place-content: center; text-align: center;
