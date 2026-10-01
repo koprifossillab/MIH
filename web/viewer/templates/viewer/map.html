@@ -146,7 +146,7 @@
              고른 것은 옆의 딱지로 남고, 둘은 함께 걸 수 있다 -->
         <form id="find-form" class="find" role="search" autocomplete="off">
           <div class="combo">
-            <input type="search" id="find" placeholder="분류군·국가, 또는 둘 다 — 예: Trilobita, saur, 한국, Mesosauridae 브라질" autocomplete="off"
+            <input type="search" id="find" placeholder="분류군·국가·지층 — 예: Trilobita, 한국, Hell Creek, Mesosauridae 브라질" autocomplete="off"
                    title="두 글자 이상 치면 PBDB 에서 분류군 후보를 찾는다(앞부분·중간 모두). 국가는 한글·영문 이름이나 코드로. 둘을 한 줄에 적으면('Mesosauridae 브라질') 함께 건다. 분류군은 시점을 옮기면 다시 묻는다."
                    data-i18n-attr="placeholder:find.ph;aria-label:find.label;title:find.hint"
                    role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="find-list" aria-label="분류군 또는 국가 찾기">
@@ -160,6 +160,8 @@
           <span class="fchip" id="country-chip" hidden><small data-i18n="country">국가</small> <b id="country-chip-name"></b>
             <button type="button" id="country-focus" class="find-x" title="이 나라로 다시 가기" aria-label="이 나라로 다시 가기" data-i18n-attr="title:country.focus;aria-label:country.focus">⌖</button>
             <button type="button" id="country-clear" class="find-x" title="국가 지우기" aria-label="국가 지우기" data-i18n-attr="title:country.clear;aria-label:country.clear">✕</button></span>
+          <span class="fchip" id="formation-chip" hidden><small data-i18n="formation">지층</small> <b id="formation-chip-name"></b> <small>Fm.</small>
+            <button type="button" id="formation-clear" class="find-x" title="지층 지우기" aria-label="지층 지우기" data-i18n-attr="title:formation.clear;aria-label:formation.clear">✕</button></span>
         </div>
       </div>
     </div>
