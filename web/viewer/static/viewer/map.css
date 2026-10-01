@@ -759,3 +759,45 @@ button, input, select { font-family: inherit; }
 @media (prefers-color-scheme: dark) {
   :root.mode-casual:not([data-theme="light"]) { --font: "Spectral", "Noto Serif KR Dark", Georgia, "Batang", serif; }
 }
+
+/* 분포 분석(tupandactyl 024) — A 는 잉크 색, B 는 보라 */
+.anal { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.anal .cmp-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+.anal .cmp-row input { flex: 1; min-width: 120px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 3px 6px; font: inherit; font-size: 12.5px; }
+.anal .cmp-row .tool { margin: 0; }
+.cmp-chip { border-color: #8e44ad !important; }
+.cmp-chip small { color: #8e44ad; font-weight: 700; }
+.anal .chart h3 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; margin: 8px 0 3px; }
+.anal .chart h3 select { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 1px 4px; font: inherit; font-size: 11.5px; }
+.anal .anal-big { margin: 0 0 0 auto; font-size: 11.5px; padding: 1px 7px; }
+.chart-svg { display: block; width: 100%; height: auto; cursor: crosshair; overflow: visible; }
+.chart-svg .grid { stroke: var(--line); stroke-width: .6; }
+.chart-svg .grid.eq { stroke-dasharray: 2 2; }
+.chart-svg .tick { stroke: var(--muted); stroke-width: .6; }
+.chart-svg .lab { fill: var(--muted); font-size: 8.5px; font-family: var(--font); }
+.chart-svg .ln { fill: none; stroke-width: 1.5; }
+.chart-svg .ln.a, .chart-svg .pt.a { stroke: var(--accent); fill: none; }
+.chart-svg .pt.a { fill: var(--accent); }
+.chart-svg .ln.b { stroke: #8e44ad; }
+.chart-svg .pt.b { fill: #8e44ad; }
+.chart-svg .band.a { fill: var(--accent); opacity: .18; }
+.chart-svg .band.b { fill: #8e44ad; opacity: .16; }
+.chart-svg .rng { stroke-width: .7; opacity: .35; }
+.chart-svg .rng.a { stroke: var(--accent); }
+.chart-svg .rng.b { stroke: #8e44ad; }
+.chart-svg .bar.a { fill: var(--accent); opacity: .75; }
+.chart-svg .bar.b { fill: #8e44ad; opacity: .75; }
+.chart-svg .ev-l { stroke-width: .9; }
+.chart-svg .ev-l.t1 { stroke: #b0201c; stroke-dasharray: 3 2; }
+.chart-svg .ev-l.t2 { stroke: var(--muted); stroke-dasharray: 1 2; opacity: .7; }
+.chart-svg .ev-l.climate { stroke: #2f6f73; }
+.chart-svg .now { stroke: var(--ink); stroke-width: .8; opacity: .35; }
+.chart-svg .hover { stroke: var(--ink); stroke-width: .7; opacity: .6; }
+.chart-read { min-height: 1.3em; margin: 1px 0 0; font-size: 11.5px; color: var(--muted); }
+.chart-read b.a { color: var(--accent); } .chart-read b.b, .now-stats b.b { color: #8e44ad; } .now-stats b.a { color: var(--accent); }
+.cmp-tag { display: inline-block; padding: 0 4px; border-radius: 3px; background: #8e44ad; color: #fff; font-size: 10px; font-weight: 700; }
+.anal-dialog { width: min(1180px, 92vw); }
+.anal-dialog .chart { margin: 4px 0 12px; }
+.export-menu { display: flex; flex-direction: column; gap: 4px; }
+.export-menu button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 4px; padding: 3px 8px; font: inherit; font-size: 12px; cursor: pointer; text-align: left; }
+.export-menu button:hover { border-color: var(--accent); color: var(--accent); }

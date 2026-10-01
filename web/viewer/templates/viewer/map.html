@@ -104,6 +104,16 @@
     </section>
   </dialog>
 
+  <!-- 분석 그래프 크게(tupandactyl 024) -->
+  <dialog class="sheet anal-dialog" id="anal-dialog" aria-labelledby="anal-title">
+    <div class="sheet-head">
+      <h2 id="anal-title" data-i18n="anal.title">분포 분석</h2>
+      <form method="dialog"><button class="sheet-close" aria-label="닫기" data-i18n-attr="aria-label:close">✕</button></form>
+    </div>
+    <div class="chart"><h3 data-i18n="anal.div">다양성</h3><svg class="chart-svg" id="big-div"></svg><p class="chart-read"></p></div>
+    <div class="chart"><h3 data-i18n="anal.lat">고위도 — 중앙값·사분위</h3><svg class="chart-svg" id="big-lat"></svg><p class="chart-read"></p></div>
+  </dialog>
+
   <!-- 시점 막대 — 머리말 밑 한 줄을 꽉 채운다(tupandactyl 002). 기·세 띠에 영어 이름을 띠 폭에 맞춰(길면 약자) 적는다 -->
   <div class="timebar" id="timebar" role="group" aria-label="시점" data-i18n-attr="aria-label:time">
     <button type="button" id="older" title="더 옛날 (←)" aria-label="더 옛날" data-i18n-attr="title:older;aria-label:older">◀</button>
@@ -214,6 +224,39 @@
           </div>
           <p class="note" id="tour-status" aria-live="polite"></p>
           <p class="note" id="dist-note"></p>
+        </div>
+        <!-- 비교 분류군과 분포 분석(tupandactyl 024) — 그래프는 map.js 가 SVG 로 그린다 -->
+        <div class="anal" id="anal" hidden>
+          <form class="cmp-row" id="cmp-form" autocomplete="off">
+            <input type="search" id="cmp-find" placeholder="비교할 분류군 (B)" aria-label="비교할 분류군" data-i18n-attr="placeholder:cmp.ph;aria-label:cmp.ph">
+            <button type="submit" class="tool" data-i18n="cmp.go">비교</button>
+            <span class="fchip cmp-chip" id="cmp-chip" hidden><small>B</small> <b id="cmp-chip-name"></b>
+              <button type="button" id="cmp-clear" class="find-x" title="비교 지우기" aria-label="비교 지우기" data-i18n-attr="title:cmp.clear;aria-label:cmp.clear">✕</button></span>
+          </form>
+          <div class="chart">
+            <h3><span data-i18n="anal.div">다양성</span>
+              <select id="div-metric" aria-label="다양성 지표" data-i18n-attr="aria-label:anal.div">
+                <option value="rt" selected data-i18n="div.rt">속 수 (범위 통과)</option>
+                <option value="g" data-i18n="div.g">속 수 (절 안 산출)</option>
+                <option value="n" data-i18n="div.n">산출 수</option>
+                <option value="per" data-i18n="div.per">산출 100건당 속 수</option>
+              </select>
+              <button type="button" class="tool anal-big" id="anal-big" data-i18n="anal.big">크게</button></h3>
+            <svg class="chart-svg" id="chart-div" role="img" aria-label="다양성 그래프" data-i18n-attr="aria-label:anal.div"></svg>
+            <p class="chart-read"></p>
+          </div>
+          <div class="chart">
+            <h3 data-i18n="anal.lat">고위도 — 중앙값·사분위</h3>
+            <svg class="chart-svg" id="chart-lat" role="img" aria-label="고위도 그래프" data-i18n-attr="aria-label:anal.lat"></svg>
+            <p class="chart-read"></p>
+            <p class="note" id="lat-note"></p>
+          </div>
+          <div class="chart">
+            <h3 data-i18n="anal.now">지금 시점 — 10° 띠마다 산지 수</h3>
+            <svg class="chart-svg" id="chart-now" role="img" aria-label="지금 시점의 고위도 분포" data-i18n-attr="aria-label:anal.now"></svg>
+          </div>
+          <p class="note now-stats" id="now-stats"></p>
+          <p class="note" id="anal-note"></p>
         </div>
       </section>
 
