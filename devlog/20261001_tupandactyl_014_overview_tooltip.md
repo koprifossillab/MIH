@@ -16,3 +16,10 @@
   오면 열려 있는 툴팁을 바꾼다
 - 나라만 찾은 종합 보기는 분류군이 없으니 산지 이름·시대·산출 건수
 - 칸에 산지가 여럿이면 이름과 시대를 5 곳까지, "누르면 산지 목록"
+
+## 3. PBDB 산지 링크의 403
+
+연구자: "pbdb 링크가 존재는 하지만 실제로 들어갔을 때 403 forbidden". 팝업 링크 `classic/basicCollectionSearch?collection_no=` 를 PBDB 의
+nginx 가 403 으로 막는다(브라우저 UA 로 물어도 같다). 같은 산지를 `classic/displayCollectionDetails?collection_no=` 로 물으면 200 과 산지
+상세 쪽(지층·산출 목록)이 온다 — 그쪽으로 바꿨다. API(`data1.2`)는 그대로 열린다. 링크를 거는 곳은 `PBDB_COLL_PAGE` 하나다.
+

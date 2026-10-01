@@ -20,7 +20,8 @@
   var BUILT = "";
   function dataUrl(path) { return DATA + path + (BUILT ? "?b=" + encodeURIComponent(BUILT) : ""); }
   var PBDB = "https://paleobiodb.org/data1.2/";
-  var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/basicCollectionSearch?collection_no=";
+  // 산지 상세 쪽. basicCollectionSearch 는 2026-10 에 PBDB 가 403 을 내기 시작했다(연구자) — displayCollectionDetails 는 열린다(tupandactyl 014)
+  var PBDB_COLL_PAGE = "https://paleobiodb.org/classic/displayCollectionDetails?collection_no=";
   // 산지를 시점에 올리는 규칙 — index.json 의 rules 로 덮어쓴다(pipeline/common.py 한 곳이 정한다).
   var WINDOW_MA = 2.5;
   var VAGUE = {};                 // 모호한 등급(세·기·대 …)의 PBDB 시대 이름 — index.json 의 rules.vague_intervals(016)

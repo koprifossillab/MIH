@@ -7,6 +7,7 @@
 
 - **종합 보기의 점에 커서를 대면 시점을 옮겼을 때처럼** — 산지 이름과 그 산지의 찾은 분류군 산출 목록(5종부터는 "산출 n종"), 그리고
   시대 한 줄(시대 이름 · 나이 범위). 산출은 커서를 댄 산지만 PBDB 에 묻고 기억한다. 칸에 산지가 여럿이면 이름과 시대를 5 곳까지 (tupandactyl 014)
+- **팝업의 "PBDB 산지" 링크가 403 이던 것을 고쳤다** — PBDB 가 `classic/basicCollectionSearch` 를 막았다. `classic/displayCollectionDetails` 로 (tupandactyl 014)
 
 ## 0.28.1 — 2026-10-01 · `feature/splash-speed`
 
