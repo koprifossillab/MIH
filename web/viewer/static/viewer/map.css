@@ -654,3 +654,10 @@ button, input, select { font-family: inherit; }
 .rchip:hover { outline: 1px solid var(--accent); }
 .rchip.on { outline: 2px solid var(--accent); outline-offset: 1px; }
 .rchip:focus-visible { outline: 2px solid var(--accent); }
+
+/* Scientific 모드(tupandactyl 011) — 사무용 글씨체 Pretendard(한글·라틴 한 가족, OFL). 화면 결(가죽·양피지·원목)은 그대로 */
+:root.mode-sci { --font: "Pretendard Variable", Pretendard, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; }
+.mode-sci body { font-size: 14px; letter-spacing: -.005em; }
+.mode-sci .now .age, .mode-sci .thermo-read b { letter-spacing: -.01em; }
+.mode-sci .chrono-row .rank { width: 48px; }
+.mode-sci .env .orig { display: none; }

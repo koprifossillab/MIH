@@ -242,6 +242,8 @@
     "sources.about": "Background, coastlines, borders and fossil positions all use the PALEOMAP plate model. Each locality's present-day position is rotated <b>to the map's age</b> with the same plate model as the coastlines (v19o), so long-ranging localities sit where they were at every time. Only the rare locality with no plate at that age (under 0.1%) uses PBDB's paleo-coordinates (age midpoint) — the popup says so.",
     "data": "data",
     "lang": "Language",
+    "mode": "Display mode",
+    "mode.about": "Scientific: Pretendard type, chronostratigraphic, environment and rank names in English (hover for Korean). Casual: vintage book type.",
     "theme": "Brightness",
     "theme.auto": "Auto",
     "theme.light": "Light · parchment",
@@ -290,5 +292,20 @@
     location.reload();
   }
 
-  window.WegenerI18n = { lang: lang, t: t, apply: apply, setLang: setLang };
+  // 화면 모드(tupandactyl 011) — scientific(기본: Pretendard, 층서·환경·계급을 영문으로) · casual(빈티지 글씨, 한글 용어).
+  // 주소의 mode= → 브라우저에 기억한 것 → scientific. 바꾸면 다시 불러온다(이름을 자료 목록을 읽을 때 바꿔 끼우므로)
+  var MODE_KEY = "wegener.mode";
+  var modeFromHash = (location.hash.match(/mode=(sci|casual)/) || [])[1], storedMode = null;
+  try { storedMode = localStorage.getItem(MODE_KEY); } catch (e) { /* 막힌 저장소 */ }
+  var mode = modeFromHash || (storedMode === "casual" ? "casual" : "sci");
+  function setMode(next) {
+    if (next === mode) return;
+    try { localStorage.setItem(MODE_KEY, next); } catch (e) { /* 막힌 저장소 */ }
+    var hash = location.hash.replace(/&?mode=(sci|casual)/, "").replace(/^#&/, "#");
+    if (next === "casual") hash = (hash && hash !== "#" ? hash + "&" : "#") + "mode=casual";
+    location.hash = hash;
+    location.reload();
+  }
+
+  window.WegenerI18n = { lang: lang, t: t, apply: apply, setLang: setLang, mode: mode, setMode: setMode };
 })();
