@@ -3,8 +3,12 @@
 괄호 안의 번호는 `devlog/` 의 그 문서다. **지금 무엇이 도는지는 이 파일이 아니라
 [HANDOFF.md](HANDOFF.md) 다.**
 
-## 0.28.2 — 2026-10-01 · `feature/overview-tooltip`
+## 0.29.0 — 2026-10-01 · `feature/overview-tooltip`
 
+- **분류군과 국가를 한 줄로 함께 찾는다** — "Mesosauridae 브라질", "한국, Trilobita". 앞이나 뒤의 낱말이 나라 이름이면 둘을 건다(따로 하나씩
+  찾아도 겹쳐 걸린다). 종합 보기의 안내에 둘 다 적고, 나라를 바꾸면 산출 시대 분포도 그 나라로 다시 센다 (tupandactyl 015)
+- **팝업의 산출 이름을 누르면 그 분류군으로 찾는다** — 시점 팝업과 종합 보기 팝업 모두. 걸어 둔 나라는 그대로 (tupandactyl 015)
+- **종합 보기 팝업에 암상** — `colls/list` 에 `show=lith` 를 더해 따로 묻지 않는다 (tupandactyl 015)
 - **종합 보기의 점에 커서를 대면 시점을 옮겼을 때처럼** — 산지 이름과 그 산지의 찾은 분류군 산출 목록(5종부터는 "산출 n종"), 그리고
   시대 한 줄(시대 이름 · 나이 범위). 산출은 커서를 댄 산지만 PBDB 에 묻고 기억한다. 칸에 산지가 여럿이면 이름과 시대를 5 곳까지 (tupandactyl 014)
 - **팝업의 "PBDB 산지" 링크가 403 이던 것을 고쳤다** — PBDB 가 `classic/basicCollectionSearch` 를 막았다. `classic/displayCollectionDetails` 로 (tupandactyl 014)
