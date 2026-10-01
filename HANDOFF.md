@@ -8,7 +8,7 @@
 패키지 `wegenerweb` (020, CLAUDE.md "이름"). **로컬 실행·시험의 `MIH_*` 환경변수는 이제 안 먹는다.**
 
 **저장소** https://github.com/koprifossillab/WegenersDream (09-30 에 `MIH` 에서 바꿈 — 옛 주소는 GitHub 가 넘겨 준다).
-**브랜치** `main` = `0.31.0` (10-01, PR #1~#34) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
+**브랜치** `main` = `0.31.1` (10-01, PR #1~#35) · 병합을 기다리는 브랜치는 없다. 0.11.1 부터 GitHub PR 로 병합하고,
 판을 올리면 CHANGELOG 로 GitHub 릴리스를 만든다(v0.11.2 부터).
 다음 코드 작업은 각자 자기 계정에서 `feature/<기능 이름>` 브랜치를 `main` 에서 만들고, 끝나면 PR 을 만든다
 (CLAUDE.md "커밋과 PR"). **병합 직전에 `deploy/host/premerge.sh <PR>`**(충돌·뒤처짐·판·CI, wetherilli 010).
@@ -17,7 +17,7 @@
 몰바이데 `moll-*`(024)가 있어야 한다. `python -m pipeline fetch`(PBDB 시대 이름 목록 `intervals.json` 이 든다) 다음
 `build`(배경 포함, 7 분 남짓). 몰바이데 배경이 없으면 투영 고르기가 숨는다.
 
-**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.31.0`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
+**배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v0.31.1`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
 운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
@@ -194,3 +194,4 @@ playwright 의 헤드리스 크롬은 사내 TLS 검사 장비의 인증서(KOPR
 | 0.29.0 | 종합 보기 툴팁(산지·산출·시대), 팝업 산출 이름으로 찾기, 분류군 × 국가 한 줄, PBDB 산지 링크 403 고침 | tupandactyl 014·015 |
 | 0.30.0 | 지구사 사건 14 건(층서표 책갈피·폭발/마름모 표식), 에디아카라기 시점 550 Ma(판 복원만) | tupandactyl P01·016~019 |
 | 0.31.0 | Casual 모드의 한글 — 속·종 학명 음차(translit.js), 연대·암상 한글, 한글로 찾기(미리 음차한 표) | tupandactyl 020·021 |
+| 0.31.1 | 산지 팝업 세로 길이 손잡이(위·아래), 읽는 법에 학명 표기 근거, 다크 모드 Casual 의 한글 본명조 600 | tupandactyl 022·023 |
