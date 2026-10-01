@@ -827,3 +827,11 @@ button, input, select { font-family: inherit; }
 .fm-tree .fm-colls > summary { color: var(--muted); font-size: 11.5px; }
 .fm-tree .taxon-link { all: unset; cursor: pointer; border-bottom: 1px dotted currentColor; }
 .fm-tree .taxon-link:hover { color: var(--accent); }
+.fm-tree .fm-kingdom > summary .fm-name { font-size: 13.5px; }
+.fm-tree .fm-kingdom { margin-bottom: 4px; }
+/* 읽는 법 — 주제마다 접힌 항목(tupandactyl 031) */
+.guide .guide-item { margin: 2px 0; border-bottom: 1px dotted var(--line); }
+.guide .guide-item > summary { cursor: pointer; font-weight: 600; font-size: 12.5px; padding: 3px 0; }
+.guide .guide-item > summary:hover { color: var(--accent); }
+.guide .guide-item[open] > summary { color: var(--accent); }
+.guide .guide-item .note { margin: 2px 0 6px 12px; }
