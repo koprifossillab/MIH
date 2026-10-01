@@ -1521,7 +1521,7 @@
     var k = koTaxon(name, rank);
     return k === name ? "<i>" + esc(name) + "</i>" : '<span class="ko-taxon" title="' + esc(name) + '">' + esc(k) + "</span>";
   }
-  // 연대 이름 — Casual 이면 층서표의 한글 이름으로(절·세·기). "Early Cenomanian" 같은 아절은 "세노마눔절 전기". 지역 시대 이름은 그대로
+  // 연대 이름 — Casual 이면 층서표의 한글 이름으로(절·세·기). "Early Cenomanian" 같은 아절은 "전기 세노마눔절"(연구자). 지역 시대 이름은 그대로
   var QUAL_KO = { Early: "전기", Middle: "중기", Late: "후기" };
   function koInterval(name) {
     if (!KO || !name) return name || "";
@@ -1532,7 +1532,7 @@
     var u = state.unitByEn[name];
     if (u) return u.full;
     var m = /^(Early|Middle|Late) (.+)$/.exec(name);
-    if (m && state.unitByEn[m[2]]) return state.unitByEn[m[2]].full + " " + QUAL_KO[m[1]];
+    if (m && state.unitByEn[m[2]]) return QUAL_KO[m[1]] + " " + state.unitByEn[m[2]].full;
     return name;
   }
   function intervalText(early, late) { return koInterval(early) + (late ? " – " + koInterval(late) : ""); }
@@ -2067,8 +2067,33 @@
       return { name: latin, rank: tr("suggest.alias", { name: k }), rk: latin.indexOf(" ") > 0 ? "species" : "genus", occs: 0, group: "" };
     }).filter(Boolean).slice(0, 12);
   }
+  // 한글 찾기 표(tupandactyl 021) — PBDB 속·종 이름을 파이프라인이 미리 음차해 첫 글자마다 나눈 것(taxa_ko.py). 친 글자의 첫 글자
+  // 파일만 받는다. 한 줄은 [띄어쓰기를 뺀 한글, 학명, 계급(g·s), 산출 수], 산출이 많은 것부터
+  function koShard(text) {
+    var q = text.replace(/\s+/g, "");
+    if (!state.taxaKo || !q || !/[\uac00-\ud7a3]/.test(q[0])) return Promise.resolve({ q: q, rows: [] });
+    return getJSON(dataUrl(state.taxaKo.dir + "/" + q.charCodeAt(0).toString(16) + ".json"))
+      .then(function (d) { return { q: q, rows: d.rows || [] }; }).catch(function () { return { q: q, rows: [] }; });
+  }
+  function koSuggest(text) {
+    var seq = suggest.seq;
+    koShard(text).then(function (got) {
+      if (seq !== suggest.seq) return;
+      var found = got.rows.filter(function (r) { return r[0].indexOf(got.q) === 0; }).slice(0, 12).map(function (r) {
+        return { name: r[1], rank: RANK_KO[r[2] === "s" ? "species" : "genus"] || "", rk: r[2] === "s" ? "species" : "genus", occs: r[3], group: "" };
+      });
+      renderSuggest(merge(aliasMatches(text), found), true);
+    });
+  }
+  // Enter 로 친 한글 — 관용 표기, 아니면 한글 찾기 표에서 똑같은 이름(여럿이면 산출이 많은 것)
   function latinOf(text) {
-    return HANGUL.test(text) && window.WegenerKo ? window.WegenerKo.fromKorean(text) : text;
+    if (!HANGUL.test(text) || !window.WegenerKo) return Promise.resolve(text);
+    var alias = window.WegenerKo.fromKorean(text);
+    if (alias) return Promise.resolve(alias);
+    return koShard(text).then(function (got) {
+      var hit = got.rows.filter(function (r) { return r[0] === got.q; })[0];
+      return hit ? hit[1] : null;
+    });
   }
 
   function suggestFetch(text) {
@@ -2190,19 +2215,27 @@
     stopTour();
     // "Mesosauridae 브라질", "한국, Trilobita" — 앞이나 뒤의 낱말이 나라 이름이면 둘을 함께 건다(tupandactyl 015)
     var both = splitCountry(text);
-    if (both && latinOf(both.taxon)) {
-      both.taxon = latinOf(both.taxon);
-      state.country = both.cc;
-      $("country-chip").hidden = false;
-      $("country-chip-name").textContent = countryName(both.cc);
-      noteCountry();
-      drawBorders(frame(), true);
-      searchTaxon(both.taxon, true);
+    if (both && HANGUL.test(both.taxon)) {                       // 한글 분류군 + 나라 — 학명을 찾은 뒤에 건다
+      latinOf(both.taxon).then(function (latin) {
+        if (!latin) { $("find").value = text; renderSuggest([], true); return; }
+        both.taxon = latin;
+        applyBoth(both);
+      });
       return;
     }
-    var latin = latinOf(text);
-    if (!latin) { $("find").value = text; renderSuggest([], true); return; }   // 받지 않는 한글 — 후보 없음을 보인다
-    searchTaxon(latin, true);
+    if (both) { applyBoth(both); return; }
+    latinOf(text).then(function (latin) {
+      if (!latin) { $("find").value = text; renderSuggest([], true); return; }   // 표에 없는 한글 — 후보 없음을 보인다
+      searchTaxon(latin, true);
+    });
+  }
+  function applyBoth(both) {
+    state.country = both.cc;
+    $("country-chip").hidden = false;
+    $("country-chip-name").textContent = countryName(both.cc);
+    noteCountry();
+    drawBorders(frame(), true);
+    searchTaxon(both.taxon, true);
   }
   function countryOf(text) {
     var q = normName(text);
@@ -2228,7 +2261,11 @@
       suggest.seq += 1;
       var text = input.value.trim();
       if (!text) { closeSuggest(); return; }
-      if (HANGUL.test(text)) { renderSuggest(aliasMatches(text), true); return; }   // 한글 — 관용 표기 목록에서만(020)
+      if (HANGUL.test(text)) {                                  // 한글 — 관용 표기와 한글 찾기 표(020·021)
+        renderSuggest(aliasMatches(text), !state.taxaKo);
+        if (state.taxaKo) suggest.timer = setTimeout(function () { koSuggest(text); }, 150);
+        return;
+      }
       renderSuggest([], text.length < 2);
       if (text.length >= 2) suggest.timer = setTimeout(function () { suggestFetch(text); }, 250);
     });
@@ -3021,6 +3058,7 @@
         return "rgb(" + tempColor(t).join(",") + ")";
       }).join(",") + ")";
       initEnvironments(index.environments || []);
+      state.taxaKo = KO ? index.taxa_ko || null : null;           // 한글 찾기 표 — Casual 에서만(021)
       state.lith = index.lithology || null;                    // 암상의 한글(Casual, tupandactyl 020)
       initCountries(index.countries || []);
       if (!EN) loadLabels();   // 명칭 덮어쓰기는 한국어 이름이다 — 영어판에서는 고치기도 숨는다

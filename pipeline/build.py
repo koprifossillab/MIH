@@ -11,7 +11,7 @@ import json
 from datetime import datetime, timezone
 
 from . import climate, coastlines, countries, fossils, lithology, relief, terrain
-from .common import DERIVED, WINDOW_MA, manifest, period
+from .common import DERIVED, WINDOW_MA, manifest, period, source_path
 from .environments import classify, tree_for_index
 from .intervals import VAGUE_TYPES, load_types, vague_names
 from .timescale import containing, units
@@ -82,6 +82,13 @@ def build(skip_relief=False):
         from . import paleoclim         # numpy·tifffile — 규칙 시험(CI)이 build 를 부르지 않아도 여기서만 부른다
         paleoclim.build()
 
+    # 한글 → 학명 찾기 표(tupandactyl 021) — 이름표(fetch)가 있을 때만. node 가 없으면 건너뛴다(뷰어는 관용 표기만 받는다)
+    from . import taxa_ko
+    try:
+        found_ko = taxa_ko.build() if source_path(manifest("pbdb")["taxa"]["path"]).exists() else None
+    except SystemExit as err:
+        print(f"  한글 찾기 표 건너뜀 — {err}")
+        found_ko = None
     scale = units()
     frames = []
     for entry in reliefs:
@@ -121,6 +128,7 @@ def build(skip_relief=False):
         "timescale": {"names": "국제지질연대층서표 한글판 v2023/04", "boundaries": "ICS v2024/12",
                       "units": scale},
         "environments": tree_for_index(env_counts),
+        "taxa_ko": found_ko,                    # 한글 → 학명 찾기 표(tupandactyl 021)
         "lithology": lithology.for_index(),     # 암상 용어의 한글(tupandactyl 020) — lithology.py 한 곳
         "countries": countries.country_list(country_names),
         "pbdb": fossil_meta,

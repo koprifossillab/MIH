@@ -62,7 +62,9 @@
 (`data-i18n` 표시). 자료의 이름(층서·환경·국가)은 index.json 의 `en` 칸이다 — map.js 에 영어 이름을 적지 않는다.
 
 **Casual 모드의 한글**(tupandactyl 020) — 속·종 학명의 음차는 `viewer/static/viewer/translit.js` 한 곳(연구자의 표기 규칙, 예시는
-`web/viewer/jstest` 의 시험), 암상의 한글은 `pipeline/lithology.py` → index.json. Scientific·영어판에는 쓰지 않는다.
+`web/viewer/jstest` 의 시험), 암상의 한글은 `pipeline/lithology.py` → index.json. 한글로 찾기는 PBDB 속·종 이름을 **파이프라인이 node 로
+translit.js 를 불러** 미리 음차한 표(`pipeline/taxa_ko.py` → `taxa_ko/<첫 글자>.json`, tupandactyl 021) — 규칙을 파이썬에 다시 적지 않는다.
+Scientific·영어판에는 쓰지 않는다.
 
 ## 층서표와 퇴적 환경 — 한 곳에만 적는다
 

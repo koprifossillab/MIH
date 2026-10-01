@@ -95,3 +95,4 @@
 | tupandactyl 014 | 2026-10-01 | [종합 보기의 툴팁을 시점 찾기와 같게](20261001_tupandactyl_014_overview_tooltip.md) |
 | tupandactyl 015 | 2026-10-01 | [팝업의 산출 이름으로 찾기, 분류군 × 국가, 종합 보기의 암상](20261001_tupandactyl_015_taxon_links_combo.md) |
 | tupandactyl 020 | 2026-10-01 | [Casual 모드의 한글: 학명 음차·연대·암상](20261001_tupandactyl_020_korean_names.md) |
+| tupandactyl 021 | 2026-10-01 | [한글로 속·종 찾기: 미리 음차한 표](20261001_tupandactyl_021_korean_search.md) |

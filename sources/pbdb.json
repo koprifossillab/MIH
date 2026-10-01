@@ -18,5 +18,10 @@
     "url": "https://paleobiodb.org/data1.2/intervals/list.json?all_records&vocab=pbdb",
     "path": "data/sources/pbdb/intervals.json",
     "note": "PBDB 시대 이름표(약 1,900 개)와 그 등급(type: age·subage·zone·epoch·period·era …). 산지의 연대가 절 단위로 정해졌는지(age·subage·zone·subzone·chron·subchron) 아니면 모호한지(epoch·subepoch·period·era·eon·bin)를 가르는 데 쓴다 — devlog 016"
+  },
+  "taxa": {
+    "url": "https://paleobiodb.org/data1.2/taxa/list.txt?all_taxa&rank=genus,subgenus,species&taxon_status=valid&show=size&vocab=pbdb",
+    "path": "data/sources/pbdb/taxa.csv",
+    "note": "유효한 속·아속·종 이름표(약 36 만, 산출이 있는 것 28 만). Casual 모드의 한글 찾기 — 이름마다 한글 음차를 미리 만들어 한글 → 학명 표로 쓴다(tupandactyl 021). 산지를 새로 받을 때 함께 새로 받는다."
   }
 }
