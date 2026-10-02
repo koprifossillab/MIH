@@ -835,3 +835,115 @@ button, input, select { font-family: inherit; }
 .guide .guide-item > summary:hover { color: var(--accent); }
 .guide .guide-item[open] > summary { color: var(--accent); }
 .guide .guide-item .note { margin: 2px 0 6px 12px; }
+
+/* ── 휴대폰(760 px 아래, koprifossillab 035) ──────────────────────────
+   전에는 찾기 카드가 창 오른쪽 밖으로 삐져 레이아웃 폭이 500 px 가까이 늘었고, 휴대폰 브라우저가 그 폭에 맞춰 화면 전체를
+   줄여 글씨가 모두 작게 보였다. 이제 페이지는 창 폭을 넘지 않고(가로로 밀리지 않는다), 머리말은 두 줄, 지도가 남은 높이를
+   다 쓰고, 패널은 밑에서 올라오는 판이다(지도 크기는 그대로 — 판이 지도 위에 덮인다) */
+@media (max-width: 760px) {
+  html, body { overflow: hidden; overscroll-behavior: none; }
+  #app { height: 100vh; height: 100dvh; }        /* 주소창이 줄었다 늘어도 맞게 */
+
+  /* 머리말 — 첫 줄은 엠블럼·제목·투영·설정, 둘째 줄은 지금 시점(층서 칸은 옆으로 밀어 본다) */
+  .bar { gap: 2px 8px; padding: 6px 10px 5px; flex-wrap: wrap; align-items: center; }
+  .bar::before { top: 2px; } .bar::after { bottom: 2px; }
+  .brand { flex: 1 1 0; min-width: 0; flex-wrap: nowrap; gap: 6px; }
+  .brand .brand-mark { width: 34px; height: 34px; }
+  .brand strong { font-size: 19px; padding-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+  .brand .ver, .brand .sub { display: none; }
+  .bar .tools { order: 1; gap: 5px; margin-left: auto; flex: none; }
+  .bar .seg button { font-size: 11.5px; padding: 4px 5px; }
+  .bar .gear { font-size: 16px; padding: 4px 6px; }
+  .now { order: 2; flex: 1 0 100%; min-width: 0; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 1px 0; }
+  .now::-webkit-scrollbar { display: none; }
+  .now .age { font-size: 17px; white-space: nowrap; }
+  .now .units { flex-wrap: nowrap; white-space: nowrap; }
+  .now .unit { font-size: 12.5px; }
+  .now .label { white-space: nowrap; font-size: 12.5px; }
+
+  /* 시점 막대 */
+  .timebar > button { padding: 6px 10px; }
+  .timebar .play input { width: 20px; height: 20px; }
+
+  /* 지도가 남은 높이를 다 쓴다 */
+  .stage { flex-direction: column; position: relative; }
+  .mapcol, #app.panel-closed .mapcol { flex: 1 1 auto; height: auto; min-height: 0; }
+
+  /* 찾기 카드 — 지도 위쪽에 가로로 붙인다(끌어 옮기지 않는다). 온도계·도구 묶음은 그 밑으로 */
+  .findfloat, .findfloat.below {
+    left: 8px !important; right: 8px; top: 8px !important; bottom: auto !important; width: auto;
+    padding: 6px 8px; gap: 6px; cursor: auto; touch-action: auto;
+  }
+  .findfloat .grip { display: none; }
+  .find { flex: 1 1 100%; }
+  .find input { font-size: 16px; padding: 6px 8px; }   /* 16 px 아래면 iOS 가 칸을 누를 때 화면을 확대한다 */
+  .find-go { padding: 6px 12px; }
+  .fchip { max-width: 100%; font-size: 13px; }
+  .find-x { padding: 6px 8px; font-size: 15px; }
+  .findfloat .suggest, .findfloat.below .suggest {
+    top: calc(100% + 6px); bottom: auto; left: -2px; right: -66px; min-width: 0; max-height: 55vh; max-height: 55dvh;
+  }
+  .suggest li { padding: 8px 12px; }
+  #map .leaflet-top { top: var(--find-h, 56px); }
+
+  /* 지도 위 카드들을 줄인다 */
+  .thermo { zoom: .72; }
+  .scalebar { zoom: .8; }
+  .mtool { width: 40px; height: 40px; }
+  .mtool svg { width: 20px; height: 20px; }
+  .tool-col { padding: 3px; border-radius: 10px; }
+  .tool-out { max-width: calc(100vw - 80px); }
+  .leaflet-container .leaflet-control-attribution { font-size: 10px; max-width: 70vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* 팝업 — 창 폭 안에서, 글씨는 그대로 */
+  .leaflet-popup-content { max-width: calc(100vw - 72px) !important; font-size: 14px; }
+  .leaflet-tooltip.occ-tip { max-width: calc(100vw - 40px); }
+
+  /* 패널 — 밑에서 올라오는 판. 접으면 밑의 막대 하나만 남는다 */
+  .panel-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; order: 0;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -3px 12px rgba(0, 0, 0, .25);
+    text-align: center; font-size: 15px;
+  }
+  .panel-bar::before { content: ""; position: absolute; top: 5px; left: 50%; width: 36px; height: 4px; margin-left: -18px;
+    border-radius: 2px; background: var(--line); }
+  #app:not(.panel-closed) .panel-bar { bottom: 46vh; bottom: 46dvh; box-shadow: none; }
+  .panel {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; order: 0;
+    height: 46vh; height: 46dvh; width: auto; padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+    border: 0; box-shadow: none; overscroll-behavior: contain; font-size: 15px;
+  }
+  #app.panel-closed .panel { display: none; }
+  /* 지도 밑 가장자리가 막대에 가리지 않게 */
+  #map .leaflet-bottom { bottom: 46px; }
+
+  /* 패널 안 — 누르기 좋게 */
+  .panel h2 { font-size: 15px; padding: 6px 0; }
+  .panel > section:first-child > h2 { margin-top: 4px; }
+  .panel h3 { font-size: 13px; }
+  .note { font-size: 13px; }
+  .chrono .chip { font-size: 14px; padding: 3px 9px; }
+  .chip { font-size: 13px; padding: 2px 8px; }
+  .env .row { margin: 4px 0; }
+  .env.group > .row, .env.term > .row { font-size: 14px; }
+  .env .tog { width: 28px; height: 28px; }
+  .swatch, .colorby, .shapes { font-size: 14px; }
+  .opacity { font-size: 13px; }
+  .panel input[type="checkbox"], .panel input[type="radio"] { width: 18px; height: 18px; }
+  .panel .tool { font-size: 13px; padding: 4px 10px; }
+
+  /* 설정·분석 창 — 거의 꽉 채운다 */
+  .sheet { width: calc(100vw - 16px); max-width: none; max-height: calc(100dvh - 24px); padding: 0 14px 14px; }
+  .sheet h2 { font-size: 16px; }
+  .sheet h3 { font-size: 14px; }
+  .sheet .seg button { font-size: 13.5px; padding: 6px 10px; }
+  .guide .guide-item > summary { font-size: 14px; padding: 7px 0; }
+  .guide .note, .sources ul { font-size: 13.5px; }
+  .sheet-close { font-size: 20px; padding: 6px 10px; }
+}
+@media (max-width: 380px) {
+  .brand strong { font-size: 16.5px; }
+  .bar .seg button { font-size: 11px; padding: 4px 4px; }
+}
