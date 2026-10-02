@@ -19,9 +19,9 @@
 
 **배포**: paleoserver — **http://paleolab/WegenersDream/**(`172.16.116.98`) = `v1.0.1`(Docker Hub 이미지). 컨테이너 `wegenersdream-web-1`
 **연구소 밖**: **https://koprifossillab.github.io/WegenersDream/** — 같은 뷰어의 고정 사본(GitHub Pages, tupandactyl 029). `deploy/static_site.py` 로
-굽고 `.github/workflows/pages.yml` 이 올린다. 자료는 릴리스 `site-data` 의 `wegener-data.tar.gz`(주간 갱신이 덮어쓴다). **저장소 관리자가
-Settings → Pages → Source 를 "GitHub Actions" 로 한 번 켜야 한다** — 10-01 기준 꺼져 있어 v1.0.0 의 배포 단계가 실패했다(굽기까지는 성공).
-켠 뒤 Actions 의 "바깥에서 보는 사이트" 를 한 번 돌린다.
+굽고 `.github/workflows/pages.yml` 이 올린다. 자료는 릴리스 `site-data` 의 `wegener-data.tar.gz`(주간 갱신이 덮어쓴다). Pages(Source "GitHub Actions")는
+10-02 에 켰고 v1.0.1 이 올라가 있다 — 그 전 v1.0.0·v1.0.1 릴리스 때의 배포 단계 실패는 꺼져 있었기 때문이다. 손으로 다시 올리려면
+`gh workflow run pages.yml`.
 (`127.0.0.1:8095`), nginx `snippets/WegenersDream-subpath.conf`, paleolab 첫 화면 카드. 운영 compose·`.env` 는
 `/srv/WegenersDream/`, 자료는 `/srv/WegenersDream/data`(읽기 전용), 명칭 덮어쓰기·비밀키는 `/srv/WegenersDream/state`.
 운영 `.env` 에 `WEGENER_EDITOR_KEY` 가 남아 있어 `/labels` POST 가 열쇠로 열린다 — 화면의 명칭 고치기는 0.18.0 에서 껐다(tupandactyl 002).
