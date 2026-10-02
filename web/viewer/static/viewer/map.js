@@ -4320,8 +4320,16 @@
     var KEY = "wegener.find.v2", card = $("findfloat"), col = card.parentNode;
     var pos = null;
     try { pos = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* 막힌 저장소 */ }
+    // 휴대폰(760 px 아래)에서는 지도 위쪽에 가로로 붙이고(CSS) 끌지 않는다 — 지도의 왼쪽·오른쪽 위 카드는 그 밑으로 내린다(koprifossillab 035)
+    var narrowFind = window.matchMedia ? window.matchMedia("(max-width: 760px)") : { matches: false };
     function place() {
       var W = col.clientWidth, H = col.clientHeight;
+      if (narrowFind.matches) {
+        $("map").style.setProperty("--find-h", (card.offsetHeight + 14) + "px");
+        card.classList.add("below");
+        return;
+      }
+      $("map").style.removeProperty("--find-h");
       if (!pos && W && H) {
         var th = col.querySelector(".thermo"), c = col.getBoundingClientRect();
         if (th && th.offsetWidth) {
@@ -4343,7 +4351,7 @@
       card.classList.toggle("below", card.offsetTop + card.offsetHeight / 2 < H / 2);
     }
     card.addEventListener("pointerdown", function (e) {
-      if (e.button !== 0 || (e.target !== $("find-grip") && e.target.closest("input, button, a, ul, .fchip"))) return;
+      if (narrowFind.matches || e.button !== 0 || (e.target !== $("find-grip") && e.target.closest("input, button, a, ul, .fchip"))) return;
       e.preventDefault();
       var ox = e.clientX - card.offsetLeft, oy = e.clientY - card.offsetTop;
       card.classList.add("dragging");
@@ -4364,7 +4372,7 @@
       card.addEventListener("pointerup", end);
       card.addEventListener("pointercancel", end);
     });
-    if (window.ResizeObserver) new ResizeObserver(place).observe(col); else window.addEventListener("resize", place);
+    if (window.ResizeObserver) { var ro = new ResizeObserver(place); ro.observe(col); ro.observe(card); } else window.addEventListener("resize", place);
     place();
   })();
 
@@ -4372,6 +4380,7 @@
   // 절 제목을 누르면 그 절을 접는다. 좁은 창(760 px 아래)에서는 패널 전체도 막대 하나로 접는다.
   // 접은 상태는 브라우저에 기억한다(없거나 막혀 있으면 기본값). 기본은 넓은 창이면 모두 펼침,
   // 좁은 창이면 시점만 펼침 — 좁은 창에서 패널이 지도 아래로 가 스크롤이 길었다(TODOs).
+  // 좁은 창의 패널은 밑에서 올라오는 판이라 지도를 덮는다 — 처음에는 접어 둔다(koprifossillab 035).
   var PANEL_KEY = "wegener.panel";
   var narrow = window.matchMedia ? window.matchMedia("(max-width: 760px)") : { matches: false };
   function loadPanel() {
@@ -4409,11 +4418,13 @@
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); }
       });
     });
-    setPanel(!(saved && saved.panelClosed));
+    setPanel(saved ? !saved.panelClosed : !narrow.matches);
     $("panel-bar").addEventListener("click", function () {
       setPanel(app.classList.contains("panel-closed"));
       savePanel();
     });
+    // 좁은 창에서 찾기 칸을 누르면 판을 내린다 — 후보 목록이 판에 가리지 않게. 기억하지는 않는다
+    $("find").addEventListener("focus", function () { if (narrow.matches) setPanel(false); });
   })();
 
   start();
